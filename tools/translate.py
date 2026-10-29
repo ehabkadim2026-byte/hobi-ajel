@@ -56,16 +56,43 @@ def load_translator():
 URL_RX = re.compile(r"https?://|www\.|\.com\b|\.net\b|\.org\b")
 
 
+# مسرد قبل الترجمة: اختصارات عراقية يخطئ فيها النموذج (مثلاً KRG ترجمها «كوريا الشمالية»)
+PRE = [(r"\bKRG\b", "Kurdistan Regional Government"), (r"\bKRI\b", "Kurdistan Region"), (r"\bPMF\b", "Popular Mobilization Forces"),
+       (r"\bKDP\b", "Kurdistan Democratic Party"), (r"\bPUK\b", "Patriotic Union of Kurdistan"), (r"\bShengal\b", "Sinjar"),
+       (r"\bSulaimani\b|\bSulaymani\b|\bSlemani\b", "Sulaymaniyah"), (r"\bHewler\b|\bHawler\b", "Erbil"),
+       (r"\bShafaq News\b", "Shafaq"), (r"\bCBI\b", "Central Bank of Iraq"), (r"\bISIS\b|\bISIL\b|\bIS\b", "ISIS"), (r"\.\.", ": ")]
+# تصحيح بعد الترجمة لأسماء معروفة
+POST = [("شافاق", "شفق"), ("سوليماني", "السليمانية"), ("السليمانيه", "السليمانية"), ("الشنغال", "سنجار"), ("شنغال", "سنجار"),
+        ("جمهورية كوريا الشعبية الديمقراطية", "إقليم كردستان"), ("أربيل أربيل", "أربيل"), ("داعش داعش", "داعش")]
+VERSION = 2
+
+
+def pre(text):
+    for a, b in PRE:
+        text = re.sub(a, b, text)
+    return text
+
+
+def post(text):
+    import html
+    text = html.unescape(text).replace(" ،", "،").replace(" .", ".")
+    for a, b in POST:
+        text = text.replace(a, b)
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def needs(text):
     return (bool(text) and len(LATIN.findall(text)) > 8 and not ARABIC.search(text)
             and not URL_RX.search(text) and len(text.split()) >= 3)
 
 
-def main(limit=120, budget_s=50):
+def main(limit=250, budget_s=60):
     t0 = time.time()
     cache = {}
     try:
         cache = json.loads(CACHE.read_text(encoding="utf-8"))
+        if cache.get("_v") != VERSION:
+            cache = {}
     except Exception:  # noqa: BLE001
         pass
     status = {"ok": False, "translated_now": 0, "cached": len(cache), "error": None}
@@ -85,22 +112,23 @@ def main(limit=120, budget_s=50):
                 if time.time() - t0 > budget_s:
                     break
                 batch = todo[i:i + 16]
-                res = tr.translate_batch([sp.encode(x, out_type=str) for x in batch], beam_size=2, max_decoding_length=160)
+                res = tr.translate_batch([sp.encode(pre(x), out_type=str) for x in batch], beam_size=2, max_decoding_length=160)
                 for src, r in zip(batch, res):
-                    out = sp.decode(r.hypotheses[0]).replace("▁", " ").strip()
-                    if out:
+                    out = post(sp.decode(r.hypotheses[0]).replace("▁", " "))
+                    if out and ARABIC.search(out):
                         cache[src] = out
                         status["translated_now"] += 1
         status["ok"] = True
         status["sample"] = [[k, cache[k]] for k in todo[:5] if k in cache]
     except Exception as e:  # noqa: BLE001
         status["error"] = f"{type(e).__name__}: {e}"[:300]
-    cache = {k: v for k, v in cache.items() if needs(k) and k != v}
+    cache = {k: v for k, v in cache.items() if k != "_v" and needs(k) and k != v}
     if len(cache) > 6000:
         cache = dict(list(cache.items())[-4000:])
+    cache["_v"] = VERSION
     CACHE.parent.mkdir(parents=True, exist_ok=True)
     CACHE.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
-    status.update(cached=len(cache), seconds=round(time.time() - t0, 1))
+    status.update(cached=len(cache) - 1, seconds=round(time.time() - t0, 1))
     STATUS.write_text(json.dumps(status, ensure_ascii=False), encoding="utf-8")
     print(status)
 
