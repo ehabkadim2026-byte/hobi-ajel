@@ -33,6 +33,9 @@ CREATE TABLE IF NOT EXISTS items(
   stale INTEGER DEFAULT 0);
 CREATE INDEX IF NOT EXISTS ix_items_pub ON items(published_utc);
 CREATE INDEX IF NOT EXISTS ix_items_fp ON items(fp);
+CREATE INDEX IF NOT EXISTS ix_items_cluster ON items(cluster_id);
+CREATE INDEX IF NOT EXISTS ix_items_source ON items(source_id);
+CREATE INDEX IF NOT EXISTS ix_clusters_last ON clusters(last_utc);
 CREATE TABLE IF NOT EXISTS item_versions(
   item_id TEXT, seen_utc TEXT, title TEXT, text TEXT, views TEXT);
 CREATE TABLE IF NOT EXISTS clusters(

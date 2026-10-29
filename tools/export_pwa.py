@@ -105,7 +105,11 @@ def main(hours=24):
     # أخبار اليوم فقط (منتصف ليل بغداد)، حتى لا يظهر خبر قديم
     bg = now + timedelta(hours=3)
     day_start = iso(bg.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(hours=3))
-    for c in con.execute("SELECT * FROM clusters WHERE last_utc >= ?", (iso(now - timedelta(days=7)),)):
+    recent = con.execute("SELECT * FROM clusters WHERE last_utc >= ?", (iso(now - timedelta(hours=26)),)).fetchall()
+    older_analysis = con.execute("SELECT DISTINCT c.* FROM clusters c JOIN items i ON i.cluster_id=c.id JOIN sources s ON s.id=i.source_id "
+                                 "WHERE c.last_utc >= ? AND c.last_utc < ? AND s.region LIKE 'أجنبي — تحليل%'",
+                                 (iso(now - timedelta(days=7)), iso(now - timedelta(hours=26)))).fetchall()
+    for c in list(recent) + list(older_analysis):
         d = cluster_dossier(con, c)
         st, basis = status_of(d)
         ev = sorted(d["evidence"], key=lambda e: e["time"] or "")
