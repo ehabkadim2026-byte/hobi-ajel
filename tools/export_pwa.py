@@ -38,6 +38,13 @@ def main(hours=72):
     con = core.connect()
     now = now_utc()
     out = []
+    try:
+        tr = json.loads((ROOT / "data" / "translations.json").read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        tr = {}
+    # أخبار اليوم فقط (منتصف ليل بغداد)، حتى لا يظهر خبر قديم
+    bg = now + timedelta(hours=3)
+    day_start = iso(bg.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(hours=3))
     for c in con.execute("SELECT * FROM clusters WHERE last_utc >= ?", (iso(now - timedelta(hours=hours)),)):
         d = cluster_dossier(con, c)
         st, basis = status_of(d)
@@ -47,9 +54,16 @@ def main(hours=72):
         if level not in ("عاجل", "مهم") and any(FLAG_RX.search(t[:80]) for t in texts):
             level = "مهم"  # المصدر نفسه وسمه «عاجل»
         regs = {r[0] or "" for r in con.execute("SELECT s.region FROM items i JOIN sources s ON s.id=i.source_id WHERE i.cluster_id=?", (c["id"],))}
-        scope = "إقليمي" if regs and all(r.startswith("إقليمي") for r in regs) else "العراق"
-        out.append({"id": c["id"], "title": clean_title(d["label"], texts), "status": st, "basis": basis, "level": level, "scope": scope,
-                    "first_utc": d["first"], "latest_utc": max((e["time"] for e in ev if e["time"]), default=None),
+        scope = ("أجنبي" if regs and all(r.startswith("أجنبي") for r in regs)
+                 else "إقليمي" if regs and all(r.startswith("إقليمي") or r.startswith("أجنبي") for r in regs) else "العراق")
+        latest = max((e["time"] for e in ev if e["time"]), default=None)
+        if not latest or latest < day_start:
+            continue
+        title = clean_title(d["label"], texts)
+        title_ar = tr.get(title) or tr.get((d["label"] or "").strip())
+        collected = con.execute("SELECT MIN(collected_utc) FROM items WHERE cluster_id=?", (c["id"],)).fetchone()[0]
+        out.append({"id": c["id"], "title": title_ar or title, "title_orig": title if title_ar else None, "status": st, "basis": basis, "level": level, "scope": scope,
+                    "collected_utc": collected, "first_utc": d["first"], "latest_utc": latest,
                     "date_confirmed": all(e["date_confirmed"] for e in ev), "n_sources": d["n_sources"],
                     "sources": [{"name": e["source"], "url": e["url"], "time": e["time"]} for e in ev][:6]})
     out.sort(key=lambda x: x["latest_utc"] or "", reverse=True)

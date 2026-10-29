@@ -1,0 +1,107 @@
+"""ترجمة عناوين المصادر الأجنبية (إنكليزي → عربي) مجاناً وبلا مفاتيح، داخل GitHub Actions.
+
+يستخدم نموذج Argos Translate (OPUS-MT) عبر ctranslate2 + sentencepiece مباشرة (بدون torch).
+- النموذج يُنزَّل مرة من فهرس Argos الرسمي ويُخزَّن في كاش Actions (~/argos).
+- الترجمات تُحفظ في data/translations.json (مخبأة مع قاعدة البيانات) فلا يُترجم عنوان مرتين.
+- أي فشل لا يوقف الجولة: يكتب الحالة في pwa/translate_status.json ويستمر التطبيق بالعنوان الأصلي.
+ترجمة آلية: تُعرض في التطبيق بوسم «ترجمة آلية» مع العنوان الأصلي.
+"""
+import io
+import json
+import re
+import sys
+import time
+import urllib.request
+import zipfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from marsad import core  # noqa: E402
+
+INDEX = "https://raw.githubusercontent.com/argosopentech/argospm-index/main/index.json"
+MODEL_DIR = Path.home() / "argos" / "en_ar"
+CACHE = ROOT / "data" / "translations.json"
+STATUS = ROOT / "pwa" / "translate_status.json"
+LATIN = re.compile(r"[A-Za-z]")
+ARABIC = re.compile(r"[؀-ۿ]")
+
+
+def _get(url, timeout=120):
+    req = urllib.request.Request(url, headers={"User-Agent": "MarsadHobi/0.3"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def ensure_model():
+    if (MODEL_DIR / "ready").exists():
+        return
+    idx = json.loads(_get(INDEX))
+    pkg = next(p for p in idx if p.get("from_code") == "en" and p.get("to_code") == "ar")
+    blob = _get(pkg["links"][0], timeout=600)
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(io.BytesIO(blob)) as z:
+        z.extractall(MODEL_DIR)
+    (MODEL_DIR / "ready").write_text(json.dumps({"version": pkg.get("package_version")}))
+
+
+def load_translator():
+    import ctranslate2
+    import sentencepiece as spm
+    mb = next(MODEL_DIR.rglob("model.bin"))
+    sp_path = next(MODEL_DIR.rglob("sentencepiece.model"))
+    return ctranslate2.Translator(str(mb.parent), device="cpu", inter_threads=2), spm.SentencePieceProcessor(model_file=str(sp_path))
+
+
+def needs(text):
+    return bool(text) and len(LATIN.findall(text)) > 8 and not ARABIC.search(text)
+
+
+def main(limit=120, budget_s=50):
+    t0 = time.time()
+    cache = {}
+    try:
+        cache = json.loads(CACHE.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        pass
+    status = {"ok": False, "translated_now": 0, "cached": len(cache), "error": None}
+    try:
+        con = core.connect()
+        todo = []
+        for (t,) in con.execute("SELECT DISTINCT title FROM items WHERE collected_utc >= datetime('now','-2 day') ORDER BY collected_utc DESC"):
+            t = (t or "").strip()
+            if needs(t) and t not in cache and t not in todo:
+                todo.append(t)
+        for (t,) in con.execute("SELECT label FROM clusters WHERE last_utc >= datetime('now','-2 day')"):
+            t = (t or "").strip()
+            if needs(t) and t not in cache and t not in todo:
+                todo.append(t)
+        todo = todo[:limit]
+        if todo:
+            ensure_model()
+            tr, sp = load_translator()
+            for i in range(0, len(todo), 16):
+                if time.time() - t0 > budget_s:
+                    break
+                batch = todo[i:i + 16]
+                res = tr.translate_batch([sp.encode(x, out_type=str) for x in batch], beam_size=2, max_decoding_length=160)
+                for src, r in zip(batch, res):
+                    out = sp.decode(r.hypotheses[0]).replace("▁", " ").strip()
+                    if out:
+                        cache[src] = out
+                        status["translated_now"] += 1
+        status["ok"] = True
+        status["sample"] = list(cache.items())[-3:]
+    except Exception as e:  # noqa: BLE001
+        status["error"] = f"{type(e).__name__}: {e}"[:300]
+    if len(cache) > 6000:
+        cache = dict(list(cache.items())[-4000:])
+    CACHE.parent.mkdir(parents=True, exist_ok=True)
+    CACHE.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+    status.update(cached=len(cache), seconds=round(time.time() - t0, 1))
+    STATUS.write_text(json.dumps(status, ensure_ascii=False), encoding="utf-8")
+    print(status)
+
+
+if __name__ == "__main__":
+    main()

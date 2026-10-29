@@ -104,9 +104,29 @@ def collect_telegram(source, last_seen=None, max_pages=3):
     return items
 
 
+IRAQ_RX = re.compile(r"\b(Iraq|Iraqi|Iraqis|Baghdad|Kurdistan|Erbil|Irbil|Basra|Basrah|Mosul|Kirkuk|Najaf|Karbala|Sulaymaniyah|Anbar|Fallujah|Sinjar|Duhok|Sudani|Zaidi)\b", re.I)
+
+
+def _google_news(items):
+    """عناوين Google News بصيغة «العنوان - الناشر»: نفصل اسم الناشر ونضعه مصدراً للمادة."""
+    for it in items:
+        t = it["title"] or ""
+        if " - " in t:
+            head, outlet = t.rsplit(" - ", 1)
+            if 1 < len(outlet) <= 60:
+                it["title"], it["source_name"] = head.strip(), outlet.strip() + " (عبر Google News)"
+        it["text"] = ""
+    return items
+
+
 def collect_source(source, state):
     if source["method"] == "rss":
-        return parse_rss(http_get(source["url"]), source)
+        items = parse_rss(http_get(source["url"]), source)
+        if "news.google.com" in source["url"]:
+            return _google_news(items)
+        if source.get("category") == "صحافة أجنبية" and "/iraq" not in source["url"].lower() and "iraq" not in source["url"].lower():
+            items = [i for i in items if IRAQ_RX.search((i["title"] or "") + " " + (i["text"] or ""))]
+        return items
     if source["method"] == "telegram_preview":
         return collect_telegram(source, state.get(source["id"]))
     raise ValueError("طريقة غير مدعومة آلياً: " + source["method"])

@@ -3,93 +3,98 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f1115">
+<meta name="theme-color" content="#0a0c10">
 <title>هوبي عاجل</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
 <style>
 :root{
-  --bg:#f3f1ed; --surface:#ffffff; --surface-2:#ebe8e2; --ink:#16181d; --ink-2:#3d414a; --muted:#6c707a; --line:#dedad2;
-  --red:#d42a20; --red-soft:#fbe5e2; --amber:#a86500; --amber-soft:#fcefd6; --blue:#1a5f92; --blue-soft:#e1edf7; --green:#177a45; --green-soft:#e0f2e8;
+  --bg:#0a0c10; --surface:#12151c; --surface-2:#1a1e27; --line:#232834; --ink:#f3f0ea; --ink-2:#c9c6c0; --muted:#8b909b;
+  --red:#ef4444; --red-deep:#b91c1c; --gold:#e0b04a; --gold-soft:#2c2412; --blue:#7cb8ea; --blue-soft:#13243a; --green:#5fd093; --green-soft:#10281c;
   --f-head:"Noto Kufi Arabic","IBM Plex Sans Arabic",Tahoma,sans-serif; --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
-  --r:16px; --shadow:0 1px 0 rgba(0,0,0,.04),0 6px 20px -12px rgba(0,0,0,.18);
+  --nav-h:66px; color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){:root{
-  --bg:#0f1115; --surface:#171a20; --surface-2:#20242c; --ink:#f1efea; --ink-2:#c9c7c2; --muted:#9a9ea7; --line:#272b33;
-  --red:#ff5a4e; --red-soft:#3a1714; --amber:#f2b552; --amber-soft:#33260f; --blue:#7fbbe6; --blue-soft:#132535; --green:#6fd29b; --green-soft:#11291c;
-  --shadow:0 1px 0 rgba(255,255,255,.02),0 8px 24px -14px rgba(0,0,0,.6); color-scheme:dark}}
+@media (prefers-color-scheme: light){:root{
+  --bg:#f4f2ee; --surface:#ffffff; --surface-2:#efece6; --line:#e2ded6; --ink:#14161b; --ink-2:#3b3f48; --muted:#6b707a;
+  --red:#d62828; --red-deep:#a61b1b; --gold:#a66d00; --gold-soft:#fbf0d9; --blue:#1d5f94; --blue-soft:#e3eef8; --green:#167a45; --green-soft:#e1f3e8; color-scheme:light}}
 *{box-sizing:border-box} [hidden]{display:none!important}
-html,body{margin:0} body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.65;-webkit-tap-highlight-color:transparent}
-button{font:inherit;color:inherit}
-.wrap{max-width:680px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 14px) max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
-
-/* header */
-.head{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);margin:0 -16px;padding:10px 16px 12px;border-bottom:1px solid transparent}
+html,body{margin:0} body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.65;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit} a{color:inherit}
+.wrap{max-width:680px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right,0px)) calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 28px) max(16px,env(safe-area-inset-left,0px))}
+.head{position:sticky;top:0;z-index:6;margin:0 -16px;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid transparent;transition:border-color .2s}
 .head.scrolled{border-bottom-color:var(--line)}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:center;gap:10px;min-width:0}
-.mark{width:34px;height:34px;border-radius:10px;background:var(--red);display:grid;place-items:center;flex:none;position:relative}
-.mark::after{content:"";width:10px;height:10px;border-radius:50%;background:#fff}
-h1{font-family:var(--f-head);font-weight:800;font-size:1.35rem;margin:0;letter-spacing:-.01em;white-space:nowrap}
-.live{display:inline-flex;align-items:center;gap:7px;font-size:.82rem;color:var(--muted);margin-top:2px}
-.pulse{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 60%,transparent);animation:pulse 2s infinite}
-.live.stale .pulse{background:var(--amber);animation:none} .live.stale{color:var(--amber);font-weight:600}
-@keyframes pulse{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
-.actions{display:flex;gap:8px;flex:none}
-.icon-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer}
-.icon-btn svg{width:20px;height:20px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(145deg,var(--red),var(--red-deep));display:grid;place-items:center;flex:none;box-shadow:0 6px 18px -8px var(--red)}
+.mark i{width:11px;height:11px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.22)}
+h1{font-family:var(--f-head);font-weight:800;font-size:1.3rem;margin:0;line-height:1.2;letter-spacing:-.01em}
+.date{font-size:.8rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;flex:none}
+.icon-btn svg{width:19px;height:19px}
 .icon-btn.spin svg{animation:spin .8s linear infinite} @keyframes spin{to{transform:rotate(-360deg)}}
-
-/* tabs */
-.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background:var(--surface-2);border-radius:14px;padding:4px;margin-top:12px}
-.tabs button{border:0;background:transparent;border-radius:11px;padding:9px 6px;font-weight:600;color:var(--muted);cursor:pointer}
-.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
-.filters{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-top:10px;padding-bottom:2px}
-.filters::-webkit-scrollbar{display:none}
-.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:.88rem;font-weight:600;color:var(--ink-2);cursor:pointer}
+.live{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:.82rem;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;width:fit-content;max-width:100%}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none;animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 55%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.live.stale{color:var(--gold)} .live.stale .pulse{background:var(--gold);animation:none}
+.live b{font-weight:600;color:var(--ink)}
+.ctl{display:grid;gap:10px;margin-top:12px}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:.86rem;font-weight:600;color:var(--ink-2);cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.search{width:100%;margin-top:10px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;font:inherit;color:var(--ink)}
-
-/* section title */
-.sec{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 2px 10px}
-.sec h2{font-family:var(--f-head);font-size:1.05rem;font-weight:700;margin:0}
-.sec span{font-size:.82rem;color:var(--muted)}
-
-/* cards */
+.search{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px;font:inherit;color:var(--ink)}
+.search::placeholder{color:var(--muted)}
+.sec{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:20px 2px 12px}
+.sec h2{font-family:var(--f-head);font-size:1.12rem;font-weight:700;margin:0}
+.sec span{font-size:.8rem;color:var(--muted)}
 .list{display:grid;gap:10px}
-.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px 14px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;overflow:hidden;cursor:pointer}
-.card::before{content:"";position:absolute;inset-block:0;inset-inline-start:0;width:4px;background:var(--lvl,transparent)}
-.card.l-urgent{--lvl:var(--red)} .card.l-imp{--lvl:var(--amber)} .card.l-follow{--lvl:var(--blue)}
-.rank{grid-row:span 3;font-family:var(--f-head);font-weight:800;font-size:1.6rem;line-height:1.1;color:var(--muted);min-width:1.4em;text-align:center;padding-top:2px}
-.card.l-urgent .rank{color:var(--red)}
-.card.no-rank{grid-template-columns:1fr} .card.no-rank .rank{display:none}
-.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.8rem;color:var(--muted)}
-.tag{font-weight:700;font-size:.75rem;border-radius:6px;padding:1px 8px;white-space:nowrap}
-.t-urgent{background:var(--red);color:#fff} .t-imp{background:var(--amber-soft);color:var(--amber)} .t-follow{background:var(--blue-soft);color:var(--blue)}
-.t-new{background:var(--ink);color:var(--bg)}
-.st{font-weight:600;font-size:.75rem;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:grid;grid-template-columns:52px 1fr;gap:2px 14px;cursor:pointer;transition:transform .12s}
+.card:active{transform:scale(.995)}
+.card::before{content:"";position:absolute;inset-block:14px;inset-inline-start:-1px;width:3px;border-radius:3px;background:var(--lvl,transparent)}
+.card.l-urgent{--lvl:var(--red)} .card.l-imp{--lvl:var(--gold)} .card.l-follow{--lvl:var(--blue)}
+.body{min-width:0}
+.when{text-align:center;padding-top:2px;border-inline-end:1px solid var(--line);margin-inline-end:-2px}
+.when b{display:block;font-family:var(--f-head);font-weight:700;font-size:1.02rem;letter-spacing:.01em;line-height:1.3;direction:ltr}
+.when small{display:block;font-size:.68rem;color:var(--muted);margin-top:2px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:20px}
+.tag{font-weight:700;font-size:.72rem;border-radius:6px;padding:1px 8px;white-space:nowrap;line-height:1.7}
+.t-urgent{background:var(--red);color:#fff} .t-imp{background:var(--gold-soft);color:var(--gold)} .t-follow{background:var(--blue-soft);color:var(--blue)}
+.t-new{background:var(--ink);color:var(--bg)} .t-mt{background:var(--surface-2);color:var(--ink-2)}
+.st{font-weight:600;font-size:.72rem;border-radius:999px;padding:1px 9px;white-space:nowrap;line-height:1.7}
 .s-ok{background:var(--green-soft);color:var(--green)} .s-pair{background:var(--blue-soft);color:var(--blue)} .s-unv{background:var(--surface-2);color:var(--muted)}
-.title{font-size:1.04rem;font-weight:600;line-height:1.55;margin:2px 0 0;color:var(--ink);overflow-wrap:anywhere}
-.meta{font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px}
-.more{grid-column:1/-1;border-top:1px dashed var(--line);margin-top:8px;padding-top:10px;display:grid;gap:8px}
-.card.no-rank .more{grid-column:1}
+.title{font-size:1.02rem;font-weight:600;line-height:1.6;margin:4px 0 2px;overflow-wrap:anywhere}
+.orig{font-size:.84rem;color:var(--muted);direction:ltr;text-align:left;line-height:1.45;margin:0 0 4px;font-style:italic;overflow-wrap:anywhere}
+.meta{font-size:.8rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 8px}
+.meta .dot::before{content:"·";margin-inline-end:8px}
+.more{grid-column:1/-1;border-top:1px solid var(--line);margin-top:10px;padding-top:12px;display:grid;gap:10px}
 .srcs{display:grid;gap:6px;margin:0;padding:0;list-style:none}
-.srcs a{display:flex;justify-content:space-between;gap:10px;text-decoration:none;color:var(--blue);font-size:.9rem;font-weight:600;background:var(--surface-2);border-radius:10px;padding:8px 12px}
-.srcs a small{color:var(--muted);font-weight:500;white-space:nowrap}
-.basis{font-size:.82rem;color:var(--muted)}
+.srcs a{display:flex;justify-content:space-between;gap:10px;text-decoration:none;color:var(--blue);font-size:.88rem;font-weight:600;background:var(--surface-2);border-radius:10px;padding:9px 12px}
+.srcs a small{color:var(--muted);font-weight:500;white-space:nowrap;direction:ltr}
+.basis{font-size:.8rem;color:var(--muted)}
 .row-btns{display:flex;gap:8px}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;font-weight:600;font-size:.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:22px;color:var(--muted);text-align:center}
-.skel{height:92px;border-radius:var(--r);background:linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%);background-size:200% 100%;animation:sh 1.2s infinite}
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:11px;padding:9px 16px;font-weight:600;font-size:.88rem;cursor:pointer}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.card.hero{grid-template-columns:1fr;padding:18px;background:linear-gradient(160deg,color-mix(in srgb,var(--red) 16%,var(--surface)) 0%,var(--surface) 55%);border-color:color-mix(in srgb,var(--red) 30%,var(--line))}
+.card.hero::before{display:none}
+.card.hero .title{font-family:var(--f-head);font-size:1.28rem;font-weight:700;line-height:1.55;margin:8px 0 6px}
+.kicker{font-family:var(--f-head);font-size:.74rem;font-weight:700;color:var(--red);letter-spacing:.02em}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:18px;padding:26px 18px;color:var(--muted);text-align:center;font-size:.92rem}
+.skel{height:96px;border-radius:18px;background:linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%);background-size:200% 100%;animation:sh 1.2s infinite}
 @keyframes sh{to{background-position:-200% 0}}
-.foot{margin-top:24px;display:grid;gap:12px}
-.note{font-size:.8rem;color:var(--muted);line-height:1.7}
-.toast{position:fixed;inset-inline:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);max-width:420px;margin:auto;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;text-align:center;font-weight:600;font-size:.9rem;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:9}
+.foot{margin-top:28px;display:grid;gap:10px}
+.note{font-size:.78rem;color:var(--muted);line-height:1.75;margin:0}
+.nav{position:fixed;inset-inline:0;bottom:0;z-index:7;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav-in{max-width:680px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:var(--nav-h)}
+.nav button{border:0;background:transparent;display:grid;place-items:center;align-content:center;gap:3px;color:var(--muted);font-size:.74rem;font-weight:600;cursor:pointer;position:relative}
+.nav svg{width:22px;height:22px}
+.nav button[aria-selected="true"]{color:var(--ink)}
+.nav button[aria-selected="true"]::after{content:"";position:absolute;top:0;width:28px;height:3px;border-radius:0 0 3px 3px;background:var(--red)}
+.badge{position:absolute;top:8px;inset-inline-start:calc(50% + 6px);min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font-size:.66rem;font-weight:700;display:grid;place-items:center;line-height:1}
+.toast{position:fixed;inset-inline:16px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 14px);max-width:420px;margin:auto;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;text-align:center;font-weight:600;font-size:.88rem;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:9}
 .toast.on{opacity:1;transform:none}
-button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+button:focus-visible,a:focus-visible,input:focus-visible,.card:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -98,14 +103,11 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
   <header class="head" id="head">
     <div class="bar">
       <div class="brand">
-        <div class="mark" aria-hidden="true"></div>
-        <div>
-          <h1>هوبي عاجل</h1>
-          <div class="live" id="live"><span class="pulse"></span><span id="liveTxt">جارِ التحميل…</span></div>
-        </div>
+        <div class="mark" aria-hidden="true"><i></i></div>
+        <div style="min-width:0"><h1>هوبي عاجل</h1><div class="date" id="today"></div></div>
       </div>
-      <div class="actions">
-        <button class="icon-btn" id="shareApp" type="button" aria-label="شارك التطبيق مع الفريق">
+      <div style="display:flex;gap:8px">
+        <button class="icon-btn" id="shareApp" type="button" aria-label="شارك التطبيق">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
         </button>
         <button class="icon-btn" id="refresh" type="button" aria-label="تحديث">
@@ -113,131 +115,142 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
         </button>
       </div>
     </div>
-    <div class="tabs" role="tablist">
-      <button role="tab" type="button" data-tab="top" aria-selected="true">آخر 20 مهم</button>
-      <button role="tab" type="button" data-tab="now" aria-selected="false">آخر دقيقتين</button>
-      <button role="tab" type="button" data-tab="all" aria-selected="false">كل الأخبار</button>
-    </div>
-    <div id="allCtl" hidden>
-      <div class="filters" role="group" aria-label="الفترة">
-        <button class="chip" type="button" data-w="10" aria-pressed="false">آخر 10 دقائق</button>
-        <button class="chip" type="button" data-w="60" aria-pressed="true">آخر ساعة</button>
-        <button class="chip" type="button" data-w="360" aria-pressed="false">6 ساعات</button>
-        <button class="chip" type="button" data-w="1440" aria-pressed="false">اليوم</button>
-        <button class="chip" type="button" id="urgOnly" aria-pressed="false">العاجل والمهم فقط</button>
+    <div class="live" id="live"><span class="pulse"></span><span id="liveTxt">جارِ التحميل…</span></div>
+    <div class="ctl" id="allCtl" hidden>
+      <div class="chips" role="group" aria-label="تصفية">
+        <button class="chip" type="button" data-f="all" aria-pressed="true">الكل</button>
+        <button class="chip" type="button" data-f="iq" aria-pressed="false">العراق</button>
+        <button class="chip" type="button" data-f="reg" aria-pressed="false">المنطقة</button>
+        <button class="chip" type="button" data-f="imp" aria-pressed="false">العاجل والمهم</button>
+        <button class="chip" type="button" data-f="ok" aria-pressed="false">المؤكد فقط</button>
       </div>
       <input class="search" id="q" type="search" placeholder="ابحث بكلمة أو اسم…" autocomplete="off">
     </div>
   </header>
 
   <div class="sec"><h2 id="secTitle">آخر 20 خبر مهم</h2><span id="secSub"></span></div>
-  <section class="list" id="list" aria-live="polite">
-    <div class="skel"></div><div class="skel"></div><div class="skel"></div>
-  </section>
+  <section class="list" id="list" aria-live="polite"><div class="skel"></div><div class="skel"></div><div class="skel"></div></section>
 
   <footer class="foot">
-    <p class="note">«آخر 20 مهم» = الأخبار المصنفة عاجل أو مهم أو متابعة من آخر 12 ساعة، مرتبة من الأحدث؛ وإذا قلّت عن 20 تُكمَل بالأعلى تقييماً (عدد الجهات، التحقق، الحداثة). الأخبار تتحدث تلقائياً كل دقيقتين تقريباً من أكثر من 170 قناة تلغرام وموقع عراقي وعربي يتابعها مرصد هوبي، وهذا مو كل الإنترنت.</p>
-    <p class="note"><b>مؤكد</b>: صادر عن الجهة الرسمية نفسها، وهذا يثبت صدور الكلام لا صحة مضمونه. <b>متطابق لدى جهتين</b>: نشرته جهتان، وممكن وحدة تنقل عن الثانية. <b>غير مؤكد</b>: مصدر واحد غير رسمي.</p>
-    <p class="note" style="opacity:.6">نسخة 29/10 · 4</p>
+    <p class="note">أخبار اليوم فقط (من منتصف الليل بتوقيت بغداد). يتحدث التطبيق كل دقيقتين تقريباً من أكثر من 200 قناة تلغرام وموقع عراقي وعربي وأجنبي يتابعها مرصد هوبي، وهذا مو كل الإنترنت. بكل خبر تشوف وقت النشر ووقت الرصد.</p>
+    <p class="note"><b>مؤكد</b>: صادر عن الجهة الرسمية نفسها، وهذا يثبت صدور الكلام لا صحة مضمونه. <b>متطابق لدى جهتين</b>: نشرته جهتان وممكن وحدة تنقل عن الثانية. <b>غير مؤكد</b>: مصدر واحد غير رسمي. <b>ترجمة آلية</b>: عناوين الصحافة العالمية مترجمة آلياً، والعنوان الأصلي تحتها.</p>
+    <p class="note" style="opacity:.55">نسخة 29/10 · 5</p>
   </footer>
 </div>
+
+<nav class="nav" aria-label="الأقسام"><div class="nav-in" role="tablist">
+  <button role="tab" type="button" data-tab="top" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>المهم</button>
+  <button role="tab" type="button" data-tab="now" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>الآن<span class="badge" id="nowBadge" hidden></span></button>
+  <button role="tab" type="button" data-tab="world" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>العالم</button>
+  <button role="tab" type="button" data-tab="all" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>الكل</button>
+</div></nav>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-let news=[],meta=null,tab="top",windowMin=60,urgOnly=false,query="",open=new Set(),loading=false;
+let news=[],meta=null,tab="top",filt="all",query="",open=new Set(),loading=false;
 let seen=new Set(JSON.parse(store.get("hobi_seen")||"[]")), fresh=new Set();
-
 const LV={"عاجل":{w:40,c:"l-urgent",t:'<span class="tag t-urgent">عاجل</span>'},"مهم":{w:25,c:"l-imp",t:'<span class="tag t-imp">مهم</span>'},"متابعة":{w:12,c:"l-follow",t:'<span class="tag t-follow">متابعة</span>'}};
-const ST={"مؤكد":['s-ok',5],"متطابق لدى جهتين":['s-pair',4]};
-const mins=iso=>iso?(Date.now()-new Date(iso))/60000:1e9;
-function ago(iso){ if(!iso) return "وقت غير معروف"; const m=Math.round(mins(iso)); if(m<1) return "الآن"; if(m<60) return `قبل ${m} د`; const h=Math.round(m/60); return h<24?`قبل ${h} س`:`قبل ${Math.round(h/24)} يوم`; }
-function bgd(iso){ if(!iso) return ""; const d=new Date(new Date(iso).getTime()+3*3600e3),p=n=>String(n).padStart(2,"0"); return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`; }
-const srcName=s=>String(s).replace(/ — (telegram|تلغرام|RSS)$/i,"");
-function score(n){ const lv=LV[n.level]?.w||0, st=ST[n.status]?.[1]||0, age=mins(n.latest_utc);
-  return lv + Math.min(n.n_sources||1,6)*4 + st - age/10; }  // نقطة تنخفض كل 10 دقائق
+const ST={"مؤكد":["s-ok",5],"متطابق لدى جهتين":["s-pair",4]};
+const MONTHS=["كانون الثاني","شباط","آذار","نيسان","أيار","حزيران","تموز","آب","أيلول","تشرين الأول","تشرين الثاني","كانون الأول"];
+const DAYS=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+const ms=iso=>iso?new Date(iso).getTime():0, mins=iso=>iso?(Date.now()-ms(iso))/60000:1e9;
+const bg=iso=>new Date(ms(iso)+3*3600e3), p2=n=>String(n).padStart(2,"0");
+const hm=iso=>{ if(!iso) return "--:--"; const d=bg(iso); return `${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`; };
+function ago(iso){ if(!iso) return ""; const m=Math.round(mins(iso)); if(m<1) return "الآن"; if(m<60) return `قبل ${m} د`; return `قبل ${Math.floor(m/60)} س`; }
+function todayStr(){ const d=new Date(Date.now()+3*3600e3); return `${DAYS[d.getUTCDay()]}، ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; }
+function dayStart(){ const d=new Date(Date.now()+3*3600e3); d.setUTCHours(0,0,0,0); return d.getTime()-3*3600e3; }
+const srcName=s=>String(s).replace(/ — (telegram|تلغرام|RSS)$/i,"").replace(/ \(عبر Google News\)$/,"");
+const score=n=>(LV[n.level]?.w||0)+Math.min(n.n_sources||1,6)*4+(ST[n.status]?.[1]||0)-mins(n.latest_utc)/10;
 
-function card(n,i){
-  const lv=LV[n.level], st=ST[n.status]?.[0]||"s-unv", isOpen=open.has(n.id);
-  const srcs=(n.sources||[]), first=srcs.length?srcName(srcs[srcs.length-1].name):"";
-  return `<article class="card ${lv?lv.c:""} ${i==null?"no-rank":""}" data-id="${esc(n.id)}" tabindex="0" aria-expanded="${isOpen}">
-    <div class="rank">${i==null?"":i+1}</div>
-    <div class="tags">${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${lv?lv.t:""}${n.scope==="إقليمي"?'<span class="tag t-follow">المنطقة</span>':""}<span class="st ${st}">${esc(n.status||"غير مؤكد")}</span><span>${esc(ago(n.latest_utc))}</span>${n.date_confirmed?"":"<span>· وقت تقريبي</span>"}</div>
-    <h3 class="title">${esc(n.title)}</h3>
-    <div class="meta"><span>${esc(first)}${n.n_sources===2?" وجهة أخرى":n.n_sources>2?` و${n.n_sources-1} جهات أخرى`:""}</span><span>${esc(bgd(n.latest_utc))} بغداد</span></div>
-    ${isOpen?`<div class="more">
-      <ul class="srcs">${srcs.slice(0,6).map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(srcName(s.name))}<small>${esc(bgd(s.time))}</small></a></li>`).join("")}</ul>
+function card(n,hero){
+  const lv=LV[n.level], st=ST[n.status]?.[0]||"s-unv", isOpen=open.has(n.id), srcs=n.sources||[];
+  const first=srcs.length?srcName(srcs[0].name):"";
+  const tags=`${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${lv?lv.t:""}${n.scope==="إقليمي"?'<span class="tag t-follow">المنطقة</span>':""}${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}<span class="st ${st}">${esc(n.status||"غير مؤكد")}</span>`;
+  const more=isOpen?`<div class="more">
+      <ul class="srcs">${srcs.slice(0,6).map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(srcName(s.name))}<small>${esc(hm(s.time))}</small></a></li>`).join("")}</ul>
       <div class="basis">${esc(n.basis||"")}</div>
-      <div class="row-btns"><button class="btn primary" type="button" data-share="${esc(n.id)}">إرسال للفريق</button><button class="btn" type="button" data-copy="${esc(n.id)}">نسخ</button></div>
-    </div>`:""}
-  </article>`;
+      <div class="row-btns"><button class="btn primary" type="button" data-share="${esc(n.id)}">إرسال للفريق</button><button class="btn" type="button" data-copy="${esc(n.id)}">نسخ</button></div></div>`:"";
+  const metaL=`<div class="meta"><span>${esc(first)}${n.n_sources>2?` و${n.n_sources-1} جهات أخرى`:n.n_sources===2?" وجهة أخرى":""}</span><span class="dot">نُشر ${esc(hm(n.latest_utc))}</span><span class="dot">رُصد ${esc(hm(n.collected_utc))}</span></div>`;
+  const orig=n.title_orig?`<p class="orig">${esc(n.title_orig)}</p>`:"";
+  if(hero) return `<article class="card hero ${lv?lv.c:""}" data-id="${esc(n.id)}" tabindex="0"><div class="kicker">الأبرز الآن · ${esc(ago(n.latest_utc))}</div><div class="tags" style="margin-top:8px">${tags}</div><h3 class="title">${esc(n.title)}</h3>${orig}${metaL}${more}</article>`;
+  return `<article class="card ${lv?lv.c:""}" data-id="${esc(n.id)}" tabindex="0">
+    <div class="when"><b>${esc(hm(n.latest_utc))}</b><small>${esc(ago(n.latest_utc))}</small></div>
+    <div class="body"><div class="tags">${tags}</div>
+    <h3 class="title">${esc(n.title)}</h3>${orig}
+    ${metaL}</div>${more}</article>`;
 }
 
 function render(){
-  if(meta){ const m=mins(meta.updated_utc), l=$("#live"); l.classList.toggle("stale",m>12);
-    $("#liveTxt").textContent = m>12?`آخر تحديث ${ago(meta.updated_utc)} · قد تفوتك أخبار`:`مباشر · تحدّث ${ago(meta.updated_utc)}`; }
-  let rows, title, sub;
-  if(tab==="now"){
-    const end=meta?new Date(meta.updated_utc).getTime():Date.now(), from=end-2*60000;
-    const recent=news.filter(n=>n.latest_utc && new Date(n.latest_utc).getTime()>=from).sort((a,b)=>new Date(b.latest_utc)-new Date(a.latest_utc));
-    const imp=recent.filter(n=>n.level in LV).sort((a,b)=>score(b)-score(a)), rest=recent.filter(n=>!(n.level in LV));
-    $("#secTitle").textContent="المهم بآخر دقيقتين"; $("#secSub").textContent=meta?`حتى تحديث ${bgd(meta.updated_utc)}`:"";
-    $("#list").innerHTML=(imp.length?imp.map(n=>card(n,null)).join(""):'<div class="empty">ما كو خبر مهم بآخر دقيقتين.</div>')
-      +(rest.length?`<div class="sec"><h2>كل اللي نزل بآخر دقيقتين</h2><span>${rest.length} خبر</span></div>`+rest.map(n=>card(n,null)).join(""):"");
-    return;
-  }
+  $("#today").textContent=todayStr();
+  const today=news.filter(n=>ms(n.latest_utc)>=dayStart());
+  if(meta){ const m=mins(meta.updated_utc); $("#live").classList.toggle("stale",m>8);
+    $("#liveTxt").innerHTML = m>8?`آخر تحديث ${esc(ago(meta.updated_utc))} · قد تفوتك أخبار`:`<b>مباشر</b> · آخر رصد ${esc(hm(meta.updated_utc))} · ${today.length} خبر اليوم`; }
+  const end=meta?ms(meta.updated_utc):Date.now(), newNow=today.filter(n=>ms(n.collected_utc)>=end-2.5*60000);
+  const b=$("#nowBadge"); b.hidden=!newNow.length; b.textContent=newNow.length>99?"99+":newNow.length;
+  let html="", title="", sub="";
   if(tab==="top"){
-    const pool=news.filter(n=>mins(n.latest_utc)<=720);
-    let imp=pool.filter(n=>n.level in LV);
-    if(imp.length<20) imp=imp.concat(pool.filter(n=>!(n.level in LV)).map(n=>[score(n),n]).sort((a,b)=>b[0]-a[0]).slice(0,20-imp.length).map(x=>x[1]));
-    rows=imp.sort((a,b)=>new Date(b.latest_utc)-new Date(a.latest_utc)).slice(0,20);
-    title="آخر 20 خبر مهم"; sub="العراق والمنطقة";
+    const pool=today.filter(n=>n.scope!=="أجنبي");
+    let rows=pool.filter(n=>n.level in LV);
+    if(rows.length<20) rows=rows.concat(pool.filter(n=>!(n.level in LV)).sort((a,b)=>score(b)-score(a)).slice(0,20-rows.length));
+    rows=rows.sort((a,b)=>ms(b.latest_utc)-ms(a.latest_utc)).slice(0,20);
+    const heroI=rows.findIndex(n=>(n.level==="عاجل"||n.level==="مهم")&&mins(n.latest_utc)<90);
+    title="آخر 20 خبر مهم"; sub="العراق والمنطقة · اليوم";
+    html=rows.length?rows.map((n,i)=>card(n,i===heroI)).join(""):'<div class="empty">ما كو أخبار مهمة اليوم لحد الآن.</div>';
+  } else if(tab==="now"){
+    const imp=newNow.filter(n=>n.level in LV).sort((a,b)=>score(b)-score(a)), rest=newNow.filter(n=>!(n.level in LV)).sort((a,b)=>ms(b.latest_utc)-ms(a.latest_utc));
+    title="انرصد بآخر دقيقتين"; sub=meta?`آخر رصد ${hm(meta.updated_utc)}`:"";
+    html=(imp.length?imp.map(n=>card(n)).join(""):'<div class="empty">ما كو خبر مهم بآخر دقيقتين.</div>')
+      +(rest.length?`<div class="sec"><h2>باقي اللي نزل</h2><span>${rest.length} خبر</span></div>`+rest.map(n=>card(n)).join(""):"");
+  } else if(tab==="world"){
+    const rows=today.filter(n=>n.scope==="أجنبي").sort((a,b)=>ms(b.latest_utc)-ms(a.latest_utc));
+    title="الصحافة العالمية عن العراق"; sub=`${rows.length} مادة · مترجمة`;
+    html=rows.length?rows.map(n=>card(n)).join(""):'<div class="empty">ما كو مواد أجنبية عن العراق اليوم لحد الآن.</div>';
   } else {
-    const q=query.trim();
-    rows=news.filter(n=>mins(n.latest_utc)<=windowMin && (!urgOnly||n.level==="عاجل"||n.level==="مهم") && (!q||(n.title+" "+(n.sources||[]).map(s=>s.name).join(" ")).includes(q)))
-      .sort((a,b)=>new Date(b.latest_utc)-new Date(a.latest_utc));
-    title="كل الأخبار"; sub=`${rows.length} خبر`;
+    const q=query.trim().toLowerCase();
+    const rows=today.filter(n=>(filt==="all"||(filt==="iq"&&n.scope==="العراق")||(filt==="reg"&&n.scope==="إقليمي")||(filt==="imp"&&(n.level==="عاجل"||n.level==="مهم"))||(filt==="ok"&&n.status==="مؤكد"))
+      && (!q||(n.title+" "+(n.title_orig||"")+" "+(n.sources||[]).map(s=>s.name).join(" ")).toLowerCase().includes(q)))
+      .sort((a,b)=>ms(b.latest_utc)-ms(a.latest_utc));
+    title="كل أخبار اليوم"; sub=`${rows.length} خبر`;
+    html=rows.length?rows.slice(0,300).map(n=>card(n)).join(""):'<div class="empty">ما كو أخبار تطابق البحث.</div>';
   }
-  $("#secTitle").textContent=title; $("#secSub").textContent=sub;
-  $("#list").innerHTML = rows.length ? rows.map((n,i)=>card(n,tab==="top"?i:null)).join("")
-    : `<div class="empty">${tab==="top"?"ما كو أخبار بآخر 12 ساعة.":"ما كو أخبار تطابق الفلتر. جرّب فترة أطول."}</div>`;
+  $("#secTitle").textContent=title; $("#secSub").textContent=sub; $("#list").innerHTML=html;
 }
 
 async function load(manual){
   if(loading) return; loading=true; $("#refresh").classList.add("spin");
   try{
     const [n,m]=await Promise.all([fetch("news.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()),fetch("meta.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json())]);
-    const firstLoad=!news.length && !seen.size;
+    const firstLoad=!news.length&&!seen.size;
     fresh=new Set(firstLoad?[]:n.filter(x=>!seen.has(x.id)).map(x=>x.id));
-    n.forEach(x=>seen.add(x.id)); store.set("hobi_seen",JSON.stringify([...seen].slice(-3000)));
+    n.forEach(x=>seen.add(x.id)); store.set("hobi_seen",JSON.stringify([...seen].slice(-4000)));
     news=n; meta=m; render();
     if(manual) toast(fresh.size?`${fresh.size} خبر جديد`:"ما كو جديد من آخر تحديث");
-  }catch(e){ $("#liveTxt").textContent="ما كدرت أجيب الأخبار. تأكد من الإنترنت"; $("#live").classList.add("stale"); if(!news.length) $("#list").innerHTML='<div class="empty">ما كدرت أجيب الأخبار. تأكد من الإنترنت واضغط زر التحديث.</div>'; }
+  }catch(e){ $("#liveTxt").textContent="ما كدرت أجيب الأخبار، تأكد من الإنترنت"; $("#live").classList.add("stale"); if(!news.length) $("#list").innerHTML='<div class="empty">ما كدرت أجيب الأخبار. تأكد من الإنترنت واضغط زر التحديث.</div>'; }
   finally{ loading=false; $("#refresh").classList.remove("spin"); }
 }
 
 let tt; function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("on"); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove("on"),2200); }
-function textOf(n){ const s=(n.sources||[])[0]; return `${n.level==="عاجل"?"🔴 عاجل | ":""}${n.title}\n(${n.status||"غير مؤكد"}) — ${s?srcName(s.name):""}\n${s?s.url:""}`; }
+function textOf(n){ const s=(n.sources||[])[0]; return `${n.level==="عاجل"?"🔴 عاجل | ":""}${n.title}${n.title_orig?`\n(${n.title_orig})`:""}\n${n.status||"غير مؤكد"} — ${s?srcName(s.name):""} — ${hm(n.latest_utc)} بغداد\n${s?s.url:""}`; }
 async function shareText(text,title){ if(navigator.share){ try{ await navigator.share({title,text}); return; }catch(e){ if(e.name==="AbortError") return; } } copy(text); }
 async function copy(t){ try{ await navigator.clipboard.writeText(t); toast("انتسخ"); }catch(e){ const a=document.createElement("textarea"); a.value=t; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); toast("انتسخ"); } }
 
 $("#list").addEventListener("click",e=>{
   const sh=e.target.closest("[data-share]"), cp=e.target.closest("[data-copy]");
-  if(sh||cp){ const n=news.find(x=>x.id===(sh||cp).dataset[sh?"share":"copy"]); if(n){ sh?shareText(textOf(n),"هوبي عاجل"):copy(textOf(n)); } return; }
+  if(sh||cp){ const n=news.find(x=>x.id===(sh||cp).dataset[sh?"share":"copy"]); if(n) sh?shareText(textOf(n),"هوبي عاجل"):copy(textOf(n)); return; }
   if(e.target.closest("a")) return;
   const c=e.target.closest(".card"); if(!c) return; const id=c.dataset.id; open.has(id)?open.delete(id):open.add(id); render();
 });
 $("#list").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.classList.contains("card")) e.target.click(); });
-$$(".tabs button").forEach(b=>b.addEventListener("click",()=>{ tab=b.dataset.tab; $$(".tabs button").forEach(x=>x.setAttribute("aria-selected",String(x===b))); $("#allCtl").hidden=tab!=="all"; render(); }));
-$$(".chip[data-w]").forEach(b=>b.addEventListener("click",()=>{ windowMin=+b.dataset.w; $$(".chip[data-w]").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
-$("#urgOnly").addEventListener("click",e=>{ urgOnly=!urgOnly; e.currentTarget.setAttribute("aria-pressed",String(urgOnly)); render(); });
+$$(".nav button").forEach(b=>b.addEventListener("click",()=>{ tab=b.dataset.tab; $$(".nav button").forEach(x=>x.setAttribute("aria-selected",String(x===b))); $("#allCtl").hidden=tab!=="all"; render(); scrollTo({top:0,behavior:"smooth"}); }));
+$$(".chip[data-f]").forEach(b=>b.addEventListener("click",()=>{ filt=b.dataset.f; $$(".chip[data-f]").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
 $("#q").addEventListener("input",e=>{ query=e.target.value; render(); });
 $("#refresh").addEventListener("click",()=>load(true));
-$("#shareApp").addEventListener("click",()=>shareText("هوبي عاجل — أهم أخبار العراق والمنطقة، تتحدث كل دقيقتين:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
+$("#shareApp").addEventListener("click",()=>shareText("هوبي عاجل — أهم أخبار العراق والمنطقة والصحافة العالمية، تتحدث كل دقيقتين:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
 addEventListener("scroll",()=>$("#head").classList.toggle("scrolled",scrollY>4),{passive:true});
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden && meta && mins(meta.updated_utc)>1.5) load(); });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&meta&&mins(meta.updated_utc)>1.5) load(); });
 load(); setInterval(()=>{ if(!document.hidden) load(); },2*60000); setInterval(render,60000);
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>

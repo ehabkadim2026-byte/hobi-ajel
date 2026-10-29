@@ -19,14 +19,32 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
       - uses: actions/cache/restore@v4
-        with: {path: data/marsad.db, key: "marsad-db-${{ github.run_id }}", restore-keys: "marsad-db-"}
+        with:
+          path: |
+            data/marsad.db
+            data/translations.json
+          key: "marsad-db-${{ github.run_id }}"
+          restore-keys: "marsad-db-"
+      - name: translation model cache (Argos en→ar، مجاني)
+        uses: actions/cache@v4
+        with: {path: ~/argos, key: argos-en-ar-v1}
+      - run: pip install -q ctranslate2 sentencepiece
+        continue-on-error: true
       - run: python3 -m marsad.cli sources
       - run: python3 -m marsad.cli collect --limit 400
       - name: process (بدون PDF واللوحة لتسريع الجولة)
         run: python3 -c "from marsad import core; c=core.connect(); core.cluster_items(c); core.generate_alerts(c)"
+      - name: translate foreign titles (ترجمة آلية؛ فشلها لا يوقف الجولة)
+        run: python3 -m tools.translate
+        continue-on-error: true
+        timeout-minutes: 6
       - run: python3 -m tools.export_pwa
       - uses: actions/cache/save@v4
-        with: {path: data/marsad.db, key: "marsad-db-${{ github.run_id }}"}
+        with:
+          path: |
+            data/marsad.db
+            data/translations.json
+          key: "marsad-db-${{ github.run_id }}"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: {path: pwa}
