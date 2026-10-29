@@ -94,6 +94,15 @@ h1{font-family:var(--f-head);font-weight:800;font-size:1.3rem;margin:0;line-heig
 .idx.l-urgent{--lvl:var(--red)} .idx.l-imp{--lvl:var(--gold)} .idx.l-follow{--lvl:var(--blue)}
 .sec.sub h2{font-size:.95rem;color:var(--muted)}
 .nav button{font-size:.7rem;text-align:center;line-height:1.2;padding:0 2px}
+.tbl{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.tr{display:grid;grid-template-columns:58px 1fr 92px;gap:10px;padding:11px 12px;border-top:1px solid var(--line);text-decoration:none;color:var(--ink);align-items:start}
+.tr:first-child{border-top:0}
+.tr.th{background:var(--surface-2);font-size:.74rem;color:var(--muted);font-weight:700;padding:8px 12px;align-items:center;line-height:1.4}
+.tt b{display:block;font-family:var(--f-head);font-size:.95rem;direction:ltr;text-align:right}
+.tt small,.ts small{display:block;font-size:.7rem;color:var(--muted)}
+.th2{font-size:.9rem;font-weight:600;line-height:1.55}
+.th2 .tag{font-size:.66rem;vertical-align:1px}
+.ts{font-size:.76rem;color:var(--blue);font-weight:600;line-height:1.4;overflow-wrap:anywhere}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:18px;padding:26px 18px;color:var(--muted);text-align:center;font-size:.92rem}
 .skel{height:96px;border-radius:18px;background:linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%);background-size:200% 100%;animation:sh 1.2s infinite}
 @keyframes sh{to{background-position:-200% 0}}
@@ -148,9 +157,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,.card:focus-visible{out
   <section class="list" id="list" aria-live="polite"><div class="skel"></div><div class="skel"></div><div class="skel"></div></section>
 
   <footer class="foot">
-    <p class="note"><b>العاجل</b>: فهرس العاجل والمهم بآخر 24 ساعة. <b>العراق</b>: كل خبر يخص العراق بأي موضوع. <b>المنطقة</b>: الشرق الأوسط والمنطقة. <b>الإعلام عن العراق</b>: ما تنشره القنوات والصحف العربية والأجنبية عن العراق. كل قسم يعرض 10 إلى 20 خبراً على الأقل، وإذا قلّت أخبار الفترة يكمّل بأحدث ما قبلها. يتحدث كل دقيقتين تقريباً من أكثر من 200 قناة وموقع يتابعها مرصد هوبي، وهذا مو كل الإنترنت. بكل خبر يوم وتاريخ ووقت النشر ووقت الرصد بتوقيت بغداد.</p>
+    <p class="note"><b>العاجل</b>: جدول آخر 5 دقائق للمهم عن العراق، ثم فهرس العاجل والمهم بآخر 24 ساعة. <b>العراق</b>: كل خبر يخص العراق بأي موضوع. <b>المنطقة</b>: الشرق الأوسط والمنطقة. <b>الإعلام عن العراق</b>: ما تنشره القنوات والصحف العربية والأجنبية عن العراق. كل قسم يعرض 10 إلى 20 خبراً على الأقل، وإذا قلّت أخبار الفترة يكمّل بأحدث ما قبلها. يتحدث كل دقيقتين تقريباً من أكثر من 200 قناة وموقع يتابعها مرصد هوبي، وهذا مو كل الإنترنت. بكل خبر يوم وتاريخ ووقت النشر ووقت الرصد بتوقيت بغداد.</p>
     <p class="note"><b>مؤكد</b>: صادر عن الجهة الرسمية نفسها، وهذا يثبت صدور الكلام لا صحة مضمونه. <b>متطابق لدى جهتين</b>: نشرته جهتان وممكن وحدة تنقل عن الثانية. <b>غير مؤكد</b>: مصدر واحد غير رسمي. <b>ترجمة آلية</b>: عناوين الصحافة العالمية مترجمة آلياً، والعنوان الأصلي تحتها.</p>
-    <p class="note" style="opacity:.55">نسخة 29/10 · 6</p>
+    <p class="note" style="opacity:.55">نسخة 29/10 · 7</p>
   </footer>
 </div>
 
@@ -229,9 +238,14 @@ function render(){
   ["iraq","region","media"].forEach(k=>{ const el=$(`.nav [data-tab=${k}] .badge`); const c=pools[k].filter(n=>mins(n.latest_utc)<=3).length; if(el){el.hidden=!c; el.textContent=c>99?"99+":c;} });
   let html="";
   if(tab==="urgent"){
+    const kind=u=>/t\.me\//.test(u||"")?"تلغرام":/news\.google/.test(u||"")?"صحيفة/وكالة":/facebook|x\.com|twitter|instagram|tiktok|youtube/.test(u||"")?"تواصل":"موقع/وكالة";
+    const five=all.filter(n=>n.about_iraq&&(n.level in LV)&&mins(n.latest_utc)<=5).sort((a,b)=>score(b)-score(a));
+    html+=`<div class="sec"><h2>آخر 5 دقائق · المهم عن العراق</h2><span>${five.length} خبر</span></div>`
+      +(five.length?`<div class="tbl" role="table"><div class="tr th" role="row"><span>الوقت</span><span>الخبر</span><span>المصدر</span></div>${five.map(n=>{const s=(n.sources||[])[0]||{};return `<a class="tr" role="row" href="${esc(s.url||"#")}" target="_blank" rel="noopener"><span class="tt"><b>${esc(hm(n.latest_utc))}</b><small>${esc(ago(n.latest_utc))}</small></span><span class="th2">${LV[n.level]?LV[n.level].t:""} ${esc(n.title)}</span><span class="ts">${esc(srcName(s.name||""))}<small>${esc(kind(s.url))}${n.n_sources>1?` · ${n.n_sources} جهات`:""}</small></span></a>`}).join("")}</div>`
+      :'<div class="note-box">ما نشرت القنوات والوكالات والمواقع المرصودة خبراً مهماً عن العراق بآخر 5 دقائق.</div>');
     const urg=all.filter(n=>n.level==="عاجل").sort(byNew), imp=all.filter(n=>n.level==="مهم").sort(byNew);
     let fol=[]; if(urg.length+imp.length<10) fol=all.filter(n=>n.level==="متابعة").sort(byNew).slice(0,20-urg.length-imp.length);
-    html=`<div class="index">${[["عاجل",urg,"l-urgent"],["مهم",imp,"l-imp"],["متابعة",fol,"l-follow"]].map(([k,a,c])=>`<a href="#g-${c}" class="idx ${c}"><b>${a.length}</b>${k}</a>`).join("")}</div>`
+    html+=`<div class="index">${[["عاجل",urg,"l-urgent"],["مهم",imp,"l-imp"],["متابعة",fol,"l-follow"]].map(([k,a,c])=>`<a href="#g-${c}" class="idx ${c}"><b>${a.length}</b>${k}</a>`).join("")}</div>`
       + `<div id="g-l-urgent">${block("العاجل","آخر 24 ساعة · العراق والمنطقة",urg,true)}</div>`
       + `<div id="g-l-imp">${block("المهم",`${imp.length} خبر`,imp)}</div>`
       + (fol.length?`<div id="g-l-follow">${block("للمتابعة","لإكمال القائمة",fol)}</div>`:"");
