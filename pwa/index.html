@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#121317">
+<title>هوبي عاجل</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@600;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f6f4f1; --card:#ffffff; --ink:#1b1d22; --muted:#666a73; --line:#e3dfd8;
+  --signal:#c62828; --ok:#1b7a47; --ok-bg:#e4f3ea; --pair:#155e8f; --pair-bg:#e2eef7; --unv:#8a5a00; --unv-bg:#fbefd9;
+  --f-head:"Noto Kufi Arabic","IBM Plex Sans Arabic",Tahoma,sans-serif; --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#121317; --card:#1b1d23; --ink:#eceae6; --muted:#a3a6ad; --line:#2c2f37;
+  --signal:#ff6b61; --ok:#6fd49c; --ok-bg:#16301f; --pair:#80bfe8; --pair-bg:#142838; --unv:#f0b85a; --unv-bg:#33270f; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;padding-top:env(safe-area-inset-top,0px)}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px;display:grid;gap:14px}
+h1{font-family:var(--f-head);font-weight:800;font-size:1.7rem;margin:0;display:flex;align-items:center;gap:10px}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--signal)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.fresh{font-size:.9rem;color:var(--muted)} .fresh.stale{color:var(--unv);font-weight:600}
+.btn{font:inherit;font-weight:600;border:1px solid var(--line);border-radius:10px;padding:8px 14px;background:var(--card);color:var(--ink);cursor:pointer}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.seg button{font:inherit;font-weight:600;border:0;border-radius:9px;padding:10px 4px;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.toggle{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)} .toggle input{width:18px;height:18px}
+.list{display:grid;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:8px;min-width:0}
+.card h2{font-size:1.05rem;font-weight:600;margin:0}
+.row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:.85rem;color:var(--muted)}
+.badge{font-weight:600;font-size:.8rem;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.b-ok{color:var(--ok);background:var(--ok-bg)} .b-pair{color:var(--pair);background:var(--pair-bg)} .b-unv{color:var(--unv);background:var(--unv-bg)}
+.lv{font-weight:700;font-size:.8rem;border-radius:6px;padding:1px 8px} .lv-urgent{background:var(--signal);color:#fff} .lv-imp{border:1px solid var(--signal);color:var(--signal)}
+.src a{color:var(--pair);text-decoration:none;border-bottom:1px solid currentColor}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:18px;color:var(--muted);text-align:center}
+.note{font-size:.8rem;color:var(--muted)}
+.gate{display:grid;gap:12px;margin-top:20vh;text-align:center}
+.gate input{font:inherit;font-size:1.4rem;text-align:center;letter-spacing:.3em;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--pair);outline-offset:2px}
+</style>
+</head>
+<body>
+<main class="wrap" id="app" hidden>
+  <h1><span class="dot" aria-hidden="true"></span>هوبي عاجل</h1>
+  <div class="top"><div class="fresh" id="fresh">جارِ التحميل…</div><button class="btn" id="refresh" type="button">تحديث</button></div>
+  <div class="seg" role="group" aria-label="الفترة">
+    <button type="button" data-w="10" aria-pressed="true">آخر 10 دقائق</button>
+    <button type="button" data-w="60" aria-pressed="false">آخر ساعة</button>
+    <button type="button" data-w="1440" aria-pressed="false">اليوم</button>
+  </div>
+  <label class="toggle" for="onlyImp"><input id="onlyImp" type="checkbox" checked>المهم والعاجل فقط</label>
+  <section class="list" id="list" aria-live="polite"></section>
+  <p class="note">الأخبار تتحدث كل 10 دقائق تقريباً من القنوات والمواقع التي يتابعها مرصد هوبي فقط. «مؤكد» = صادر عن الجهة الرسمية نفسها، وهذا يثبت صدور الكلام لا صحة مضمونه. «متطابق لدى جهتين» قد تنقل الجهتان عن بعضهما.</p>
+</main>
+<main class="wrap" id="gate" hidden>
+  <form class="gate" id="gateForm">
+    <h1 style="justify-content:center"><span class="dot" aria-hidden="true"></span>هوبي عاجل</h1>
+    <label for="code">اكتب رمز الدخول</label>
+    <input id="code" inputmode="numeric" autocomplete="off" maxlength="12">
+    <button class="btn" type="submit">دخول</button>
+    <p class="note" id="gateMsg"></p>
+  </form>
+</main>
+<script>
+const ACCESS_HASH = "f13aadf32be963023cd69cec77b96ca9e6e3634dc253cc613ab9b3f5acb89687"; // فارغ = بلا رمز
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let news = [], meta = null, windowMin = 10;
+const store = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+async function sha(t){ const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function ago(iso){ if(!iso) return "وقت غير معروف"; const m=Math.round((Date.now()-new Date(iso))/60000); if(m<1) return "الآن"; if(m<60) return `قبل ${m} دقيقة`; const h=Math.round(m/60); return h<24?`قبل ${h} ساعة`:`قبل ${Math.round(h/24)} يوم`; }
+function bgd(iso){ if(!iso) return ""; const d=new Date(new Date(iso).getTime()+3*3600e3), p=n=>String(n).padStart(2,"0"); return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())} بغداد`; }
+function badge(s){ return s==="مؤكد"?'<span class="badge b-ok">مؤكد</span>':s==="متطابق لدى جهتين"?'<span class="badge b-pair">متطابق لدى جهتين</span>':'<span class="badge b-unv">غير مؤكد</span>'; }
+function render(){
+  if(meta){ const m=Math.round((Date.now()-new Date(meta.updated_utc))/60000), f=$("#fresh");
+    f.textContent=`آخر تحديث: ${ago(meta.updated_utc)} · ${bgd(meta.updated_utc)}`+(m>25?" — التحديث متأخر، قد تفوتك أخبار":""); f.classList.toggle("stale", m>25); }
+  const onlyImp=$("#onlyImp").checked, cut=Date.now()-windowMin*60000, rank={"عاجل":0,"مهم":1};
+  const rows=news.filter(n=>n.latest_utc && new Date(n.latest_utc)>=cut && (!onlyImp || n.level in rank))
+    .sort((a,b)=>((rank[a.level]??2)-(rank[b.level]??2)) || (new Date(b.latest_utc)-new Date(a.latest_utc)));
+  const label=windowMin===10?"آخر 10 دقائق":windowMin===60?"آخر ساعة":"اليوم";
+  $("#list").innerHTML = rows.length ? rows.map(n=>`<article class="card">
+    <div class="row">${n.level==="عاجل"?'<span class="lv lv-urgent">عاجل</span>':n.level==="مهم"?'<span class="lv lv-imp">مهم</span>':""}${badge(n.status)}<span>${esc(ago(n.latest_utc))}</span><span>${esc(bgd(n.latest_utc))}</span>${n.date_confirmed?"":"<span>· وقت تقريبي</span>"}</div>
+    <h2>${esc(n.title)}</h2>
+    <div class="row src">${(n.sources||[]).slice(0,3).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(String(s.name).replace(/ — (telegram|تلغرام)$/,""))}</a>`).join(" · ")}<span>· ${esc(n.basis)}</span></div></article>`).join("")
+    : `<div class="empty">ما كو خبر ${onlyImp?"مهم ":""}خلال ${label} بالمصادر المتابعة.${windowMin<1440?" جرّب «آخر ساعة» أو «اليوم».":""}</div>`;
+}
+async function load(){
+  try{
+    const [n, m] = await Promise.all([fetch("news.json?t="+Date.now()).then(r=>r.json()), fetch("meta.json?t="+Date.now()).then(r=>r.json())]);
+    news = n; meta = m; render();
+  }catch(e){ $("#fresh").textContent = "ما كدرت أجيب الأخبار. تأكد من الإنترنت واضغط «تحديث»."; }
+}
+function start(){ $("#gate").hidden=true; $("#app").hidden=false; load(); setInterval(load, 5*60000); setInterval(render, 60000); }
+document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{ windowMin=+b.dataset.w; document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
+$("#onlyImp").addEventListener("change", render);
+$("#refresh").addEventListener("click", load);
+$("#gateForm").addEventListener("submit", async e => { e.preventDefault();
+  if(await sha("hobi-ajel:"+$("#code").value.trim()) === ACCESS_HASH){ store.set("hobi_ajel_ok", ACCESS_HASH); start(); }
+  else $("#gateMsg").textContent = "الرمز غلط."; });
+if(!ACCESS_HASH || store.get("hobi_ajel_ok")===ACCESS_HASH) start(); else $("#gate").hidden=false;
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>

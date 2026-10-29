@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+data/marsad.db
+data/backups/
+exports/

@@ -1,0 +1,239 @@
+<title>لوحة مرصد هوبي</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* التخطيط: شريط علوي ثابت للحالة والتغطية، ثم تبويبات؛ كل تبويب عمود واحد مقروء على الموبايل، والجداول تمرر داخلها. */
+:root{
+  --bg:#f3f5f7; --panel:#ffffff; --ink:#16212b; --muted:#5b6b78; --line:#d9e0e6; --accent:#1f5f8b; --accent-soft:#e3eef6;
+  --urgent:#b3261e; --urgent-bg:#fbe9e7; --important:#b45309; --important-bg:#fdf0e1; --follow:#5a6b00; --follow-bg:#f1f4dc; --digest:#5b6b78; --digest-bg:#eef1f4;
+  --ok:#1e7a4c; --warn:#a15c00; --bad:#b3261e;
+  --f-display:"Noto Kufi Arabic","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f161c; --panel:#162029; --ink:#e4ebf0; --muted:#97a6b2; --line:#2a3743; --accent:#7db6dd; --accent-soft:#1c3446;
+  --urgent:#ff8a80; --urgent-bg:#3a1a18; --important:#f5b25b; --important-bg:#3a2a14; --follow:#c6d36a; --follow-bg:#2b3114; --digest:#97a6b2; --digest-bg:#1d2832;
+  --ok:#6fd3a0; --warn:#f5b25b; --bad:#ff8a80; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f161c; --panel:#162029; --ink:#e4ebf0; --muted:#97a6b2; --line:#2a3743; --accent:#7db6dd; --accent-soft:#1c3446;
+  --urgent:#ff8a80; --urgent-bg:#3a1a18; --important:#f5b25b; --important-bg:#3a2a14; --follow:#c6d36a; --follow-bg:#2b3114; --digest:#97a6b2; --digest-bg:#1d2832;
+  --ok:#6fd3a0; --warn:#f5b25b; --bad:#ff8a80; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65;direction:rtl}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+header .wrap{padding-block:12px 0;display:grid;gap:8px}
+.brand{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+h1{font-family:var(--f-display);font-size:1.25rem;margin:0}
+.stamp{font-size:.82rem;color:var(--muted)}
+.stamp b{font-family:var(--f-mono);font-weight:500;color:var(--ink)}
+nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+nav a{padding:8px 12px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;font-weight:500}
+nav a[aria-current="page"]{color:var(--accent);border-color:var(--accent)}
+nav a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.limits{margin-top:16px;padding:10px 14px;border:1px dashed var(--line);border-radius:8px;font-size:.86rem;color:var(--muted)}
+h2{font-family:var(--f-display);font-size:1.05rem;margin:22px 0 10px}
+.grid{display:grid;gap:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pill{display:inline-block;font-size:.76rem;font-weight:600;padding:1px 9px;border-radius:999px;letter-spacing:.01em;white-space:nowrap}
+.l-عاجل{color:var(--urgent);background:var(--urgent-bg)} .l-مهم{color:var(--important);background:var(--important-bg)}
+.l-متابعة{color:var(--follow);background:var(--follow-bg)} .l-ملخص{color:var(--digest);background:var(--digest-bg)}
+.tag{font-size:.76rem;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 7px;white-space:nowrap}
+.alert{background:var(--panel);border:1px solid var(--line);border-inline-start:4px solid var(--digest);border-radius:8px;padding:12px 14px;display:grid;gap:4px;min-width:0}
+.alert.lv-عاجل{border-inline-start-color:var(--urgent)} .alert.lv-مهم{border-inline-start-color:var(--important)} .alert.lv-متابعة{border-inline-start-color:var(--follow)}
+.alert h3{margin:0;font-size:1rem;font-weight:600;text-wrap:balance}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:.88rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+a{color:var(--accent)}
+.ev{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:grid;gap:4px;text-decoration:none;color:inherit;min-width:0}
+.ev:hover{border-color:var(--accent)}
+.ev .t{font-weight:600}
+.meta{font-size:.82rem;color:var(--muted)}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}
+.filters label{display:grid;gap:2px;font-size:.8rem;color:var(--muted)}
+input,select,button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0}
+button{cursor:pointer;background:var(--accent-soft);color:var(--accent);font-weight:600;border-color:transparent}
+.tbl{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+th{color:var(--muted);font-weight:500;white-space:nowrap;position:sticky;top:0;background:var(--panel)}
+td.when{white-space:nowrap}
+.est{color:var(--warn);font-size:.75rem}
+.stale{color:var(--bad);font-size:.75rem}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.tile .n{font-family:var(--f-mono);font-size:1.4rem}
+.tile .k{font-size:.8rem;color:var(--muted)}
+.s-يعمل{color:var(--ok)} .s-متوقف,.s-فشل{color:var(--bad)} .s-قديم{color:var(--warn)}
+section[hidden]{display:none}
+.timeline{list-style:none;margin:0;padding:0;display:grid;gap:8px;border-inline-start:2px solid var(--line);padding-inline-start:14px}
+.timeline li{position:relative}
+.timeline li::before{content:"";position:absolute;inset-inline-start:-20px;top:9px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.box h3{margin:0 0 6px;font-size:.92rem;color:var(--muted);font-weight:600}
+.box ul{margin:0;padding-inline-start:18px}
+.toast{font-size:.82rem;color:var(--ok)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <h1>مرصد هوبي</h1>
+      <span class="stamp">آخر تحديث: <b id="gen"></b> بتوقيت بغداد · لقطة ثابتة من الأرشيف</span>
+    </div>
+    <nav aria-label="أقسام اللوحة">
+      <a href="#brief">الموجز</a><a href="#search">البحث</a><a href="#events">الأحداث</a><a href="#watch">ملفات الرصد</a><a href="#health">صحة المصادر</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="limits" id="limits"></p>
+
+  <section id="v-brief">
+    <h2>التنبيهات</h2>
+    <div class="grid" id="alerts"></div>
+    <h2>أهم الأحداث</h2>
+    <div class="grid" id="topEvents"></div>
+  </section>
+
+  <section id="v-search" hidden>
+    <h2>البحث في الأرشيف</h2>
+    <div class="filters">
+      <label for="q">كلمة أو اسم<input id="q" type="search" placeholder="مثال: ترقية الضباط"></label>
+      <label for="fp">المنصة<select id="fp"><option value="">الكل</option></select></label>
+      <label for="fs">المصدر<select id="fs"><option value="">الكل</option></select></label>
+      <label for="fw">ملف الرصد<select id="fw"><option value="">الكل</option></select></label>
+      <label for="fv">حالة التحقق<select id="fv"><option value="">الكل</option><option value="رسمي">مصدر رسمي أولي</option><option value="جهات">أكثر من جهة</option><option value="واحدة">جهة واحدة</option></select></label>
+      <label for="ff">من تاريخ<input id="ff" type="date"></label>
+      <label for="ft">إلى تاريخ<input id="ft" type="date"></label>
+    </div>
+    <div class="row" style="margin:10px 0"><span class="meta" id="count"></span><button id="copycsv" type="button">نسخ النتائج CSV</button><span class="toast" id="toast" aria-live="polite"></span></div>
+    <div class="tbl"><table><thead><tr><th>وقت النشر</th><th>المصدر</th><th>العنوان</th><th>النوع (آلي)</th><th>التحقق</th></tr></thead><tbody id="results"></tbody></table></div>
+    <textarea id="csvfallback" hidden rows="4" style="width:100%;margin-top:8px" aria-label="نص CSV للنسخ اليدوي"></textarea>
+  </section>
+
+  <section id="v-events" hidden>
+    <h2>كل الأحداث المجمّعة</h2>
+    <p class="meta">كل حدث يجمع المواد المتطابقة من جهات مختلفة. النسخ الناقلة لا تُعدّ تأكيدات مستقلة.</p>
+    <div class="grid" id="allEvents"></div>
+  </section>
+
+  <section id="v-event" hidden></section>
+
+  <section id="v-watch" hidden>
+    <h2>ملفات الرصد</h2>
+    <div class="grid" id="watchlists"></div>
+  </section>
+
+  <section id="v-wl" hidden></section>
+
+  <section id="v-health" hidden>
+    <h2>صحة المصادر والاتصالات</h2>
+    <div class="tiles" id="htiles"></div>
+    <h2>مصادر جُمعت أو فشلت</h2>
+    <div class="tbl"><table><thead><tr><th>الحالة</th><th>المنصة</th><th>المصدر</th><th>آخر جمع ناجح</th><th>آخر خطأ</th></tr></thead><tbody id="hrows"></tbody></table></div>
+  </section>
+</main>
+
+<script>
+const DATA = /*__DATA__*/null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const BGD = 3*3600*1000;
+function bgd(iso, withTime=true){ if(!iso) return "غير متوفر"; const d=new Date(new Date(iso).getTime()+BGD); const p=n=>String(n).padStart(2,"0");
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())}`+(withTime?` ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`:""); }
+function norm(t){ return String(t||"").normalize("NFKC").replace(/[ؐ-ًؚ-ٰٟـ]/g,"").replace(/[أإآٱ]/g,"ا").replace(/[ىی]/g,"ي").replace(/ة/g,"ه").replace(/[گک]/g,"ك").toLowerCase(); }
+const lvlClass = l => "l-"+(l==="ملخص دوري"?"ملخص":l);
+const evIndex = new Map(DATA.events.map((e,i)=>[e.id,i]));
+const wlName = Object.fromEntries(DATA.watchlists.map(w=>[w.id,w.name]));
+
+$("#gen").textContent = bgd(DATA.generated_utc);
+const plats = [...new Set(DATA.items.map(i=>i.platform))];
+const unread = DATA.health.filter(h=>["غير مقروء","يحتاج ربطاً","بانتظار قرار"].includes(h.state)).length;
+const working = DATA.health.filter(h=>h.state==="يعمل").length;
+$("#limits").innerHTML = `حدود التغطية: الأرشيف يضم <b class="num">${DATA.items.length}</b> مادة من <b class="num">${working}</b> مصدراً جُمع فعلاً، من أصل <b class="num">${DATA.health.length}</b> مسجلاً. <b class="num">${unread}</b> مصدراً مسجلاً لا يُقرأ آلياً (أغلبها فيسبوك وX وإنستغرام). غياب خبر هنا يعني أنه لم يظهر في المصادر المرصودة، لا أنه لم يُنشر. التصنيف والمستويات آلية وتحتاج قراءة.`;
+
+function alertCard(a){ const b=JSON.parse(a.body); const i=evIndex.get(a.cluster_id);
+  return `<article class="alert lv-${esc(a.level)}"><div class="row"><span class="pill ${lvlClass(a.level)}">${esc(a.level)}</span>${a.is_update?'<span class="tag">تحديث</span>':'<span class="tag">جديد</span>'}<span class="meta">${esc(bgd(b["متى"]))}</span></div>
+  <h3>${esc(b["ماذا حدث"])}</h3><dl class="kv"><dt>لماذا</dt><dd>${esc(b["لماذا يستحق الانتباه"])}</dd><dt>المصدر</dt><dd><a href="${esc(b["الرابط"])}" target="_blank" rel="noopener">${esc(b["المصدر"])}</a></dd>
+  <dt>التحقق</dt><dd>${esc(b["درجة التحقق"])}</dd><dt>الجديد</dt><dd>${esc(b["الجديد"])}</dd><dt>المقترح</dt><dd>${esc(b["الإجراء البحثي المقترح"])}</dd></dl>
+  ${i!==undefined?`<a href="#ev-${i}">صفحة الحدث</a>`:""}</article>`; }
+function evCard(e){ const i=evIndex.get(e.id);
+  return `<a class="ev" href="#ev-${i}"><div class="row"><span class="pill ${lvlClass(e.level)}">${esc(e.level)}</span>${e.storyline?'<span class="tag">خط قصصي</span>':""}<span class="meta num">${e.n_items} مادة · ${e.n_sources} جهة</span></div>
+  <span class="t">${esc(e.label)}</span><span class="meta">${esc(e.verification)} · آخر تحديث ${esc(bgd(e.last))}</span></a>`; }
+
+function renderBrief(){
+  $("#alerts").innerHTML = DATA.alerts.length ? DATA.alerts.filter(a=>["عاجل","مهم"].includes(a.level)).map(alertCard).join("") || '<p class="meta">لا تنبيه عاجل أو مهم في هذه الدورة.</p>' : '<p class="meta">لا تنبيهات بعد.</p>';
+  const top = DATA.events.filter(e=>e.level!=="ملخص دوري").slice(0,12);
+  $("#topEvents").innerHTML = top.map(evCard).join("") || '<p class="meta">لا أحداث بمستوى متابعة فأعلى.</p>';
+}
+
+function fillSelect(id, values, label=v=>v){ const s=$(id); values.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=label(v);s.appendChild(o);}); }
+fillSelect("#fp", plats, v=>({telegram:"تلغرام",web:"مواقع"})[v]||v);
+fillSelect("#fs", [...new Set(DATA.items.map(i=>i.source_name))].sort());
+fillSelect("#fw", DATA.watchlists.map(w=>w.id), v=>wlName[v]);
+let current=[];
+function renderSearch(){
+  const q=norm($("#q").value).split(/\s+/).filter(Boolean), p=$("#fp").value, s=$("#fs").value, w=$("#fw").value, v=$("#fv").value, f=$("#ff").value, t=$("#ft").value;
+  current = DATA.items.filter(i=>{
+    const hay=norm(i.title+" "+i.source_name);
+    if(q.some(x=>!hay.includes(x))) return false;
+    if(p && i.platform!==p) return false; if(s && i.source_name!==s) return false;
+    if(w && !(i.watchlists||"").includes(`"${w}"`)) return false;
+    if(v==="رسمي" && !(i.verification||"").startsWith("مصدر رسمي")) return false;
+    if(v==="جهات" && !(i.verification||"").startsWith("منشور لدى")) return false;
+    if(v==="واحدة" && i.verification!=="جهة واحدة") return false;
+    const d=i.published_utc?bgd(i.published_utc,false):"";
+    if(f && (!d || d<f)) return false; if(t && (!d || d>t)) return false;
+    return true; });
+  $("#count").textContent = `${current.length} نتيجة داخل الأرشيف المرصود`;
+  $("#results").innerHTML = current.map(i=>{ const ei=evIndex.get(i.cluster_id);
+    return `<tr><td class="when num">${esc(bgd(i.published_utc))}${i.date_confirmed?"":'<div class="est">مُستنتج</div>'}${i.stale?'<div class="stale">قديم</div>':""}</td>
+    <td>${esc(i.source_name)}</td><td><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a>${ei!==undefined?` · <a href="#ev-${ei}">الحدث</a>`:""}</td><td>${esc(i.kind)}</td><td>${esc(i.verification)}</td></tr>`; }).join("");
+}
+["#q","#fp","#fs","#fw","#fv","#ff","#ft"].forEach(id=>$(id).addEventListener("input",renderSearch));
+$("#copycsv").addEventListener("click",()=>{
+  const rows=[["وقت النشر (بغداد)","التاريخ مؤكد","المصدر","العنوان","الرابط","النوع","التحقق"],...current.map(i=>[bgd(i.published_utc),i.date_confirmed?"نعم":"لا",i.source_name,i.title,i.url,i.kind,i.verification])];
+  const csv=rows.map(r=>r.map(c=>`"${String(c??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+  const ta=$("#csvfallback");
+  navigator.clipboard?.writeText(csv).then(()=>{$("#toast").textContent=`نُسخت ${current.length} نتيجة`; ta.hidden=true;})
+    .catch(()=>{ta.hidden=false;ta.value=csv;ta.select();$("#toast").textContent="انسخ النص المحدد يدوياً";});
+});
+
+function renderEvents(){ $("#allEvents").innerHTML = DATA.events.map(evCard).join(""); }
+function renderEvent(i){ const e=DATA.events[i]; if(!e){ $("#v-event").innerHTML="<p>الحدث غير موجود.</p>"; return; }
+  $("#v-event").innerHTML = `<h2>${esc(e.label)}</h2><div class="row"><span class="pill ${lvlClass(e.level)}">${esc(e.level)}</span>${e.watchlists.map(w=>`<span class="tag">${esc(wlName[w]||w)}</span>`).join("")}<span class="meta num">${e.n_items} مادة · ${e.n_sources} جهة · من ${esc(bgd(e.first))} إلى ${esc(bgd(e.last))}</span></div>
+  <div class="grid" style="margin-top:12px">
+   <div class="box"><h3>ماذا نعرف؟</h3><p style="margin:0">${esc(e.label)} — ${esc(e.verification)}.</p></div>
+   <div class="box"><h3>ما الدليل؟ (التسلسل)</h3><ol class="timeline">${e.evidence.map(x=>`<li><span class="num meta">${esc(bgd(x.time))}</span>${x.date_confirmed?"":' <span class="est">تاريخ مُستنتج</span>'} · <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source)}</a> · <span class="meta">${esc(x.kind)}</span><div>${esc(x.title)}</div></li>`).join("")}</ol>
+     <p class="meta" style="margin:8px 0 0">${esc(e.earliest_found.note)}: ${esc(e.earliest_found.source)}.</p></div>
+   <div class="box"><h3>ما لم يتأكد</h3><ul>${e.unconfirmed.map(u=>`<li>${esc(u)}</li>`).join("")}</ul></div>
+   <div class="box"><h3>رواية مخالفة أو تصحيح</h3>${e.contrary.length?`<ul>${e.contrary.map(c=>`<li><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.source)}</a>: ${esc(c.title)}</li>`).join("")}</ul>`:'<p class="meta" style="margin:0">لم نجد ضمن المصادر المرصودة، وهذا لا ينفي وجودها.</p>'}</div>
+   <div class="box"><h3>درجة الثقة</h3><p style="margin:0"><b>${esc(e.confidence)}</b> — ${esc(e.confidence_why)}.</p><p class="meta" style="margin:4px 0 0">سبب المستوى: ${esc(e.why.join("، ")||"—")}</p></div>
+  </div><p><a href="#events">كل الأحداث</a></p>`; }
+function renderWatch(){ $("#watchlists").innerHTML = DATA.watchlists.map(w=>{ const n=DATA.items.filter(i=>(i.watchlists||"").includes(`"${w.id}"`)).length;
+  return `<a class="ev" href="#wl-${esc(w.id)}"><span class="t">${esc(w.name)}</span><span class="meta">أولوية ${w.priority} · <span class="num">${n}</span> مادة · ${w.terms.slice(0,6).map(esc).join("، ")}…</span></a>`; }).join(""); }
+function renderWl(id){ const w=DATA.watchlists.find(x=>x.id===id); if(!w){$("#v-wl").innerHTML="<p>الملف غير موجود.</p>";return;}
+  const evs=DATA.events.filter(e=>e.watchlists.includes(id));
+  $("#v-wl").innerHTML=`<h2>${esc(w.name)}</h2><div class="box"><h3>قاموس البحث</h3><p style="margin:0">${w.terms.map(esc).join("، ")}</p>${w.exclude?`<p class="meta" style="margin:4px 0 0">استبعاد تشابه: ${w.exclude.map(esc).join("، ")}</p>`:""}</div>
+  <h2>الأحداث (${evs.length})</h2><div class="grid">${evs.map(evCard).join("")||'<p class="meta">لا شيء في الأرشيف الحالي.</p>'}</div><p><a href="#watch">كل الملفات</a></p>`; }
+function renderHealth(){ const c={}; DATA.health.forEach(h=>c[h.state]=(c[h.state]||0)+1);
+  $("#htiles").innerHTML = Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="tile"><div class="n">${v}</div><div class="k">${esc(k)}</div></div>`).join("");
+  const rows = DATA.health.filter(h=>h.last_success||h.last_error).sort((a,b)=>(a.state>b.state?1:-1));
+  $("#hrows").innerHTML = rows.map(h=>`<tr><td class="s-${esc(h.state.split(" ")[0])}">${esc(h.state)}</td><td>${esc(h.platform)}</td><td>${esc(h.name)}</td><td class="num">${esc(bgd(h.last_success))}</td><td>${esc(h.last_error||"")}</td></tr>`).join(""); }
+
+const views=["brief","search","events","event","watch","wl","health"];
+function route(){ const h=location.hash.slice(1)||"brief"; let v=h, arg=null;
+  if(h.startsWith("ev-")){v="event";arg=+h.slice(3);} else if(h.startsWith("wl-")){v="wl";arg=h.slice(3);} if(!views.includes(v)) v="brief";
+  views.forEach(x=>$("#v-"+x).hidden = x!==v);
+  document.querySelectorAll("nav a").forEach(a=>{ const t=a.getAttribute("href").slice(1); a.toggleAttribute("aria-current", t===v || (v==="event"&&t==="events") || (v==="wl"&&t==="watch")); if(a.hasAttribute("aria-current")) a.setAttribute("aria-current","page"); });
+  if(v==="event") renderEvent(arg); if(v==="wl") renderWl(arg); window.scrollTo(0,0); }
+renderBrief(); renderSearch(); renderEvents(); renderWatch(); renderHealth(); route();
+addEventListener("hashchange", route);
+</script>

@@ -1,0 +1,31 @@
+# نسخة الهاتف المستقلة من «هوبي عاجل»: جمع كل 10 دقائق + نشر التطبيق على GitHub Pages.
+# يعمل فقط بعد رفع المستودع وتفعيل Pages (Settings → Pages → Source: GitHub Actions). لا أسرار مطلوبة.
+# ملاحظة: GitHub قد يؤخر المواعيد المجدولة عدة دقائق في أوقات الضغط.
+name: hobi-ajel
+on:
+  schedule: [{cron: "*/10 * * * *"}]
+  workflow_dispatch: {}
+permissions: {contents: read, pages: write, id-token: write}
+concurrency: {group: hobi-ajel, cancel-in-progress: false}
+jobs:
+  collect-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: {name: github-pages}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - uses: actions/cache/restore@v4
+        with: {path: data/marsad.db, key: "marsad-db-${{ github.run_id }}", restore-keys: "marsad-db-"}
+      - run: python3 -m marsad.cli sources
+      - run: python3 -m marsad.cli collect --limit 60
+      - name: process (بدون PDF واللوحة لتسريع الجولة)
+        run: python3 -c "from marsad import core; c=core.connect(); core.cluster_items(c); core.generate_alerts(c)"
+      - run: python3 -m tools.export_pwa
+      - uses: actions/cache/save@v4
+        with: {path: data/marsad.db, key: "marsad-db-${{ github.run_id }}"}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: {path: pwa}
+      - uses: actions/deploy-pages@v4
