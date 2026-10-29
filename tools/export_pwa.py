@@ -46,14 +46,21 @@ def main(hours=72):
         level = d["level"]
         if level not in ("عاجل", "مهم") and any(FLAG_RX.search(t[:80]) for t in texts):
             level = "مهم"  # المصدر نفسه وسمه «عاجل»
-        out.append({"id": c["id"], "title": clean_title(d["label"], texts), "status": st, "basis": basis, "level": level,
+        regs = {r[0] or "" for r in con.execute("SELECT s.region FROM items i JOIN sources s ON s.id=i.source_id WHERE i.cluster_id=?", (c["id"],))}
+        scope = "إقليمي" if regs and all(r.startswith("إقليمي") for r in regs) else "العراق"
+        out.append({"id": c["id"], "title": clean_title(d["label"], texts), "status": st, "basis": basis, "level": level, "scope": scope,
                     "first_utc": d["first"], "latest_utc": max((e["time"] for e in ev if e["time"]), default=None),
                     "date_confirmed": all(e["date_confirmed"] for e in ev), "n_sources": d["n_sources"],
                     "sources": [{"name": e["source"], "url": e["url"], "time": e["time"]} for e in ev][:6]})
     out.sort(key=lambda x: x["latest_utc"] or "", reverse=True)
     pwa = ROOT / "pwa"
     (pwa / "news.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
-    ok = [h["name"] for h in core.health(con, now) if h["state"] == "يعمل"]
+    hl = core.health(con, now)
+    ok = [h["name"] for h in hl if h["state"] == "يعمل"]
+    cnt = dict(con.execute("SELECT source_id, COUNT(*) FROM items WHERE published_utc >= ? GROUP BY source_id", (iso(now - timedelta(hours=24)),)).fetchall())
+    act = {r[0] for r in con.execute("SELECT id FROM sources WHERE method IN ('rss','telegram_preview')")}
+    (pwa / "health.json").write_text(json.dumps([{"name": h["name"], "state": h["state"], "items_24h": cnt.get(h["id"], 0), "last_success": h["last_success"], "error": h["last_error"]}
+                                                 for h in hl if h["id"] in act], ensure_ascii=False), encoding="utf-8")
     (pwa / "meta.json").write_text(json.dumps({"updated_utc": iso(now), "stories": len(out), "sources_ok": len(ok)},
                                               ensure_ascii=False), encoding="utf-8")
     print(len(out), "خبراً في pwa/news.json")

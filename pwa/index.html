@@ -114,8 +114,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
       </div>
     </div>
     <div class="tabs" role="tablist">
-      <button role="tab" type="button" data-tab="now" aria-selected="true">آخر 3 دقائق</button>
-      <button role="tab" type="button" data-tab="top" aria-selected="false">أهم 10</button>
+      <button role="tab" type="button" data-tab="top" aria-selected="true">آخر 20 مهم</button>
+      <button role="tab" type="button" data-tab="now" aria-selected="false">آخر دقيقتين</button>
       <button role="tab" type="button" data-tab="all" aria-selected="false">كل الأخبار</button>
     </div>
     <div id="allCtl" hidden>
@@ -130,15 +130,15 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
     </div>
   </header>
 
-  <div class="sec"><h2 id="secTitle">المهم بآخر 3 دقائق</h2><span id="secSub"></span></div>
+  <div class="sec"><h2 id="secTitle">آخر 20 خبر مهم</h2><span id="secSub"></span></div>
   <section class="list" id="list" aria-live="polite">
     <div class="skel"></div><div class="skel"></div><div class="skel"></div>
   </section>
 
   <footer class="foot">
-    <p class="note">الترتيب يعتمد على درجة الخبر (عاجل، مهم، متابعة)، وعدد الجهات اللي نشرته، وحالة التحقق، وحداثته. الأخبار تتحدث تلقائياً كل 3 دقائق تقريباً من نحو 170 قناة تلغرام وموقع يتابعها مرصد هوبي، وهذا مو كل الإنترنت.</p>
+    <p class="note">«آخر 20 مهم» = الأخبار المصنفة عاجل أو مهم أو متابعة من آخر 12 ساعة، مرتبة من الأحدث؛ وإذا قلّت عن 20 تُكمَل بالأعلى تقييماً (عدد الجهات، التحقق، الحداثة). الأخبار تتحدث تلقائياً كل دقيقتين تقريباً من أكثر من 170 قناة تلغرام وموقع عراقي وعربي يتابعها مرصد هوبي، وهذا مو كل الإنترنت.</p>
     <p class="note"><b>مؤكد</b>: صادر عن الجهة الرسمية نفسها، وهذا يثبت صدور الكلام لا صحة مضمونه. <b>متطابق لدى جهتين</b>: نشرته جهتان، وممكن وحدة تنقل عن الثانية. <b>غير مؤكد</b>: مصدر واحد غير رسمي.</p>
-    <p class="note" style="opacity:.6">نسخة 29/10 · 3</p>
+    <p class="note" style="opacity:.6">نسخة 29/10 · 4</p>
   </footer>
 </div>
 <div class="toast" id="toast" role="status"></div>
@@ -147,7 +147,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-let news=[],meta=null,tab="now",windowMin=60,urgOnly=false,query="",open=new Set(),loading=false;
+let news=[],meta=null,tab="top",windowMin=60,urgOnly=false,query="",open=new Set(),loading=false;
 let seen=new Set(JSON.parse(store.get("hobi_seen")||"[]")), fresh=new Set();
 
 const LV={"عاجل":{w:40,c:"l-urgent",t:'<span class="tag t-urgent">عاجل</span>'},"مهم":{w:25,c:"l-imp",t:'<span class="tag t-imp">مهم</span>'},"متابعة":{w:12,c:"l-follow",t:'<span class="tag t-follow">متابعة</span>'}};
@@ -164,7 +164,7 @@ function card(n,i){
   const srcs=(n.sources||[]), first=srcs.length?srcName(srcs[srcs.length-1].name):"";
   return `<article class="card ${lv?lv.c:""} ${i==null?"no-rank":""}" data-id="${esc(n.id)}" tabindex="0" aria-expanded="${isOpen}">
     <div class="rank">${i==null?"":i+1}</div>
-    <div class="tags">${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${lv?lv.t:""}<span class="st ${st}">${esc(n.status||"غير مؤكد")}</span><span>${esc(ago(n.latest_utc))}</span>${n.date_confirmed?"":"<span>· وقت تقريبي</span>"}</div>
+    <div class="tags">${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${lv?lv.t:""}${n.scope==="إقليمي"?'<span class="tag t-follow">المنطقة</span>':""}<span class="st ${st}">${esc(n.status||"غير مؤكد")}</span><span>${esc(ago(n.latest_utc))}</span>${n.date_confirmed?"":"<span>· وقت تقريبي</span>"}</div>
     <h3 class="title">${esc(n.title)}</h3>
     <div class="meta"><span>${esc(first)}${n.n_sources===2?" وجهة أخرى":n.n_sources>2?` و${n.n_sources-1} جهات أخرى`:""}</span><span>${esc(bgd(n.latest_utc))} بغداد</span></div>
     ${isOpen?`<div class="more">
@@ -180,17 +180,20 @@ function render(){
     $("#liveTxt").textContent = m>12?`آخر تحديث ${ago(meta.updated_utc)} · قد تفوتك أخبار`:`مباشر · تحدّث ${ago(meta.updated_utc)}`; }
   let rows, title, sub;
   if(tab==="now"){
-    const end=meta?new Date(meta.updated_utc).getTime():Date.now(), from=end-3*60000;
+    const end=meta?new Date(meta.updated_utc).getTime():Date.now(), from=end-2*60000;
     const recent=news.filter(n=>n.latest_utc && new Date(n.latest_utc).getTime()>=from).sort((a,b)=>new Date(b.latest_utc)-new Date(a.latest_utc));
     const imp=recent.filter(n=>n.level in LV).sort((a,b)=>score(b)-score(a)), rest=recent.filter(n=>!(n.level in LV));
-    $("#secTitle").textContent="المهم بآخر 3 دقائق"; $("#secSub").textContent=meta?`حتى تحديث ${bgd(meta.updated_utc)}`:"";
-    $("#list").innerHTML=(imp.length?imp.map(n=>card(n,null)).join(""):'<div class="empty">ما كو خبر مهم بآخر 3 دقائق.</div>')
-      +(rest.length?`<div class="sec"><h2>كل اللي نزل بآخر 3 دقائق</h2><span>${rest.length} خبر</span></div>`+rest.map(n=>card(n,null)).join(""):"");
+    $("#secTitle").textContent="المهم بآخر دقيقتين"; $("#secSub").textContent=meta?`حتى تحديث ${bgd(meta.updated_utc)}`:"";
+    $("#list").innerHTML=(imp.length?imp.map(n=>card(n,null)).join(""):'<div class="empty">ما كو خبر مهم بآخر دقيقتين.</div>')
+      +(rest.length?`<div class="sec"><h2>كل اللي نزل بآخر دقيقتين</h2><span>${rest.length} خبر</span></div>`+rest.map(n=>card(n,null)).join(""):"");
     return;
   }
   if(tab==="top"){
-    rows=news.filter(n=>mins(n.latest_utc)<=360).map(n=>[score(n),n]).sort((a,b)=>b[0]-a[0]).slice(0,10).map(x=>x[1]);
-    title="أهم 10 أخبار الآن"; sub="من آخر 6 ساعات";
+    const pool=news.filter(n=>mins(n.latest_utc)<=720);
+    let imp=pool.filter(n=>n.level in LV);
+    if(imp.length<20) imp=imp.concat(pool.filter(n=>!(n.level in LV)).map(n=>[score(n),n]).sort((a,b)=>b[0]-a[0]).slice(0,20-imp.length).map(x=>x[1]));
+    rows=imp.sort((a,b)=>new Date(b.latest_utc)-new Date(a.latest_utc)).slice(0,20);
+    title="آخر 20 خبر مهم"; sub="العراق والمنطقة";
   } else {
     const q=query.trim();
     rows=news.filter(n=>mins(n.latest_utc)<=windowMin && (!urgOnly||n.level==="عاجل"||n.level==="مهم") && (!q||(n.title+" "+(n.sources||[]).map(s=>s.name).join(" ")).includes(q)))
@@ -199,7 +202,7 @@ function render(){
   }
   $("#secTitle").textContent=title; $("#secSub").textContent=sub;
   $("#list").innerHTML = rows.length ? rows.map((n,i)=>card(n,tab==="top"?i:null)).join("")
-    : `<div class="empty">${tab==="top"?"ما كو أخبار بآخر 6 ساعات.":"ما كو أخبار تطابق الفلتر. جرّب فترة أطول."}</div>`;
+    : `<div class="empty">${tab==="top"?"ما كو أخبار بآخر 12 ساعة.":"ما كو أخبار تطابق الفلتر. جرّب فترة أطول."}</div>`;
 }
 
 async function load(manual){
@@ -232,10 +235,10 @@ $$(".chip[data-w]").forEach(b=>b.addEventListener("click",()=>{ windowMin=+b.dat
 $("#urgOnly").addEventListener("click",e=>{ urgOnly=!urgOnly; e.currentTarget.setAttribute("aria-pressed",String(urgOnly)); render(); });
 $("#q").addEventListener("input",e=>{ query=e.target.value; render(); });
 $("#refresh").addEventListener("click",()=>load(true));
-$("#shareApp").addEventListener("click",()=>shareText("هوبي عاجل — أهم أخبار العراق، تتحدث كل 3 دقائق:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
+$("#shareApp").addEventListener("click",()=>shareText("هوبي عاجل — أهم أخبار العراق والمنطقة، تتحدث كل دقيقتين:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
 addEventListener("scroll",()=>$("#head").classList.toggle("scrolled",scrollY>4),{passive:true});
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden && meta && mins(meta.updated_utc)>2) load(); });
-load(); setInterval(()=>{ if(!document.hidden) load(); },3*60000); setInterval(render,60000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && meta && mins(meta.updated_utc)>1.5) load(); });
+load(); setInterval(()=>{ if(!document.hidden) load(); },2*60000); setInterval(render,60000);
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>

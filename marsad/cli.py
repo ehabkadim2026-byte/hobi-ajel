@@ -9,7 +9,7 @@ from .notify import deliver
 from .textnorm import to_baghdad
 
 
-def collect_all(con, limit, priority_only, workers=6):
+def collect_all(con, limit, priority_only, workers=10):
     """جمع خادمي مباشر (يحتاج شبكة مفتوحة). يحترم حدود الطلبات بتوقف بين المصادر، ويسجل كل فشل كنقطة عمى."""
     from datetime import datetime, timezone
     from .collect import collect_source
