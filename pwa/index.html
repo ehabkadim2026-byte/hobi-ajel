@@ -56,7 +56,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
     <button type="button" data-w="60" aria-pressed="false">آخر ساعة</button>
     <button type="button" data-w="1440" aria-pressed="false">اليوم</button>
   </div>
-  <label class="toggle" for="onlyImp"><input id="onlyImp" type="checkbox" checked>المهم والعاجل فقط</label>
+  <label class="toggle" for="onlyImp"><input id="onlyImp" type="checkbox" checked>إخفاء الأخبار الروتينية</label>
   <section class="list" id="list" aria-live="polite"></section>
   <p class="note">الأخبار تتحدث كل 10 دقائق تقريباً من القنوات والمواقع التي يتابعها مرصد هوبي فقط. «مؤكد» = صادر عن الجهة الرسمية نفسها، وهذا يثبت صدور الكلام لا صحة مضمونه. «متطابق لدى جهتين» قد تنقل الجهتان عن بعضهما.</p>
 </main>
@@ -70,7 +70,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
   </form>
 </main>
 <script>
-const ACCESS_HASH = "f13aadf32be963023cd69cec77b96ca9e6e3634dc253cc613ab9b3f5acb89687"; // فارغ = بلا رمز
+const ACCESS_HASH = ""; // فارغ = بلا رمز
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let news = [], meta = null, windowMin = 10;
@@ -82,15 +82,17 @@ function badge(s){ return s==="مؤكد"?'<span class="badge b-ok">مؤكد</spa
 function render(){
   if(meta){ const m=Math.round((Date.now()-new Date(meta.updated_utc))/60000), f=$("#fresh");
     f.textContent=`آخر تحديث: ${ago(meta.updated_utc)} · ${bgd(meta.updated_utc)}`+(m>25?" — التحديث متأخر، قد تفوتك أخبار":""); f.classList.toggle("stale", m>25); }
-  const onlyImp=$("#onlyImp").checked, cut=Date.now()-windowMin*60000, rank={"عاجل":0,"مهم":1};
+  const onlyImp=$("#onlyImp").checked, cut=Date.now()-windowMin*60000, rank={"عاجل":0,"مهم":1,"متابعة":2};
   const rows=news.filter(n=>n.latest_utc && new Date(n.latest_utc)>=cut && (!onlyImp || n.level in rank))
-    .sort((a,b)=>((rank[a.level]??2)-(rank[b.level]??2)) || (new Date(b.latest_utc)-new Date(a.latest_utc)));
+    .sort((a,b)=>((rank[a.level]??3)-(rank[b.level]??3)) || (new Date(b.latest_utc)-new Date(a.latest_utc)));
   const label=windowMin===10?"آخر 10 دقائق":windowMin===60?"آخر ساعة":"اليوم";
-  $("#list").innerHTML = rows.length ? rows.map(n=>`<article class="card">
-    <div class="row">${n.level==="عاجل"?'<span class="lv lv-urgent">عاجل</span>':n.level==="مهم"?'<span class="lv lv-imp">مهم</span>':""}${badge(n.status)}<span>${esc(ago(n.latest_utc))}</span><span>${esc(bgd(n.latest_utc))}</span>${n.date_confirmed?"":"<span>· وقت تقريبي</span>"}</div>
+  const card=n=>`<article class="card">
+    <div class="row">${n.level==="عاجل"?'<span class="lv lv-urgent">عاجل</span>':n.level==="مهم"?'<span class="lv lv-imp">مهم</span>':n.level==="متابعة"?'<span class="lv lv-imp" style="opacity:.6">متابعة</span>':""}${badge(n.status)}<span>${esc(ago(n.latest_utc))}</span><span>${esc(bgd(n.latest_utc))}</span>${n.date_confirmed?"":"<span>· وقت تقريبي</span>"}</div>
     <h2>${esc(n.title)}</h2>
-    <div class="row src">${(n.sources||[]).slice(0,3).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(String(s.name).replace(/ — (telegram|تلغرام)$/,""))}</a>`).join(" · ")}<span>· ${esc(n.basis)}</span></div></article>`).join("")
-    : `<div class="empty">ما كو خبر ${onlyImp?"مهم ":""}خلال ${label} بالمصادر المتابعة.${windowMin<1440?" جرّب «آخر ساعة» أو «اليوم».":""}</div>`;
+    <div class="row src">${(n.sources||[]).slice(0,3).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(String(s.name).replace(/ — (telegram|تلغرام)$/,""))}</a>`).join(" · ")}<span>· ${esc(n.basis)}</span></div></article>`;
+  const latest=news.filter(n=>n.latest_utc&&(!onlyImp||n.level in rank)).sort((a,b)=>new Date(b.latest_utc)-new Date(a.latest_utc)).slice(0,8);
+  $("#list").innerHTML = rows.length ? rows.map(card).join("")
+    : `<div class="empty">ما كو خبر جديد خلال ${label}. هذني آخر الأخبار:</div>`+latest.map(card).join("");
 }
 async function load(){
   try{

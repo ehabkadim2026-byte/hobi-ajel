@@ -12,6 +12,28 @@ from marsad.textnorm import iso, now_utc  # noqa: E402
 from tools.export_app import status_of  # noqa: E402
 
 
+import re  # noqa: E402
+
+URL_RX = re.compile(r"https?://\S+|t\.me/\S+|www\.\S+")
+SIG_RX = re.compile(r"(الدائرة الاعلامية|المكتب الاعلامي|المكتب الإعلامي|الدائرة الإعلامية|تابعونا|للاشتراك|رابط القناة)")
+FLAG_RX = re.compile(r"(^|\s|[🔴🚨⭕️🔻])عاجل")
+
+
+def clean_title(label, texts):
+    """عنوان مقروء: يتجاهل الروابط وتواقيع القنوات، ويأخذ أول سطر له معنى."""
+    def ok(line):
+        line = URL_RX.sub("", line).strip(" -–|:🔻🔴📌⭕️🚨•")
+        return line if len(line) >= 20 and not (SIG_RX.search(line) and len(line) < 45) else ""
+    if ok(label or ""):
+        return ok(label)
+    for t in texts:
+        for line in (t or "").split("\n"):
+            if ok(line):
+                return ok(line)[:200]
+    joined = URL_RX.sub("", " ".join((texts[0] if texts else label or "").split())).strip()
+    return (joined or label or "")[:200]
+
+
 def main(hours=72):
     con = core.connect()
     now = now_utc()
@@ -20,7 +42,11 @@ def main(hours=72):
         d = cluster_dossier(con, c)
         st, basis = status_of(d)
         ev = sorted(d["evidence"], key=lambda e: e["time"] or "")
-        out.append({"id": c["id"], "title": d["label"], "status": st, "basis": basis, "level": d["level"],
+        texts = [r[0] or "" for r in con.execute("SELECT COALESCE(text, title) FROM items WHERE cluster_id=? ORDER BY published_utc", (c["id"],))]
+        level = d["level"]
+        if level not in ("عاجل", "مهم") and any(FLAG_RX.search(t[:80]) for t in texts):
+            level = "مهم"  # المصدر نفسه وسمه «عاجل»
+        out.append({"id": c["id"], "title": clean_title(d["label"], texts), "status": st, "basis": basis, "level": level,
                     "first_utc": d["first"], "latest_utc": max((e["time"] for e in ev if e["time"]), default=None),
                     "date_confirmed": all(e["date_confirmed"] for e in ev), "n_sources": d["n_sources"],
                     "sources": [{"name": e["source"], "url": e["url"], "time": e["time"]} for e in ev][:6]})
