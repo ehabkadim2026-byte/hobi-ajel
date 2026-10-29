@@ -2678,6 +2678,45 @@
    "region": "أجنبي",
    "lang": "en",
    "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=SA&ceid=SA:ar&q=%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%20when:1d",
+   "name": "الإعلام العربي عن العراق — العراق (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=SA&ceid=SA:ar&q=%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%20when:1d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "إعلام عربي وإقليمي",
+   "region": "إقليمي — عربي (Google News)",
+   "lang": "ar",
+   "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=SA&ceid=SA:ar&q=%D8%A8%D8%BA%D8%AF%D8%A7%D8%AF%20when:1d",
+   "name": "الإعلام العربي عن العراق — بغداد (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=SA&ceid=SA:ar&q=%D8%A8%D8%BA%D8%AF%D8%A7%D8%AF%20when:1d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "إعلام عربي وإقليمي",
+   "region": "إقليمي — عربي (Google News)",
+   "lang": "ar",
+   "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=SA&ceid=SA:ar&q=%D9%83%D8%B1%D8%AF%D8%B3%D8%AA%D8%A7%D9%86%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%20when:1d",
+   "name": "الإعلام العربي عن العراق — كردستان العراق (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=SA&ceid=SA:ar&q=%D9%83%D8%B1%D8%AF%D8%B3%D8%AA%D8%A7%D9%86%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%20when:1d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "إعلام عربي وإقليمي",
+   "region": "إقليمي — عربي (Google News)",
+   "lang": "ar",
+   "official": false
   }
  ]
 }

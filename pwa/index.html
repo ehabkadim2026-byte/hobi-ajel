@@ -39,7 +39,9 @@ h1{font-family:var(--f-head);font-weight:800;font-size:1.3rem;margin:0;line-heig
 @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 55%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .live.stale{color:var(--gold)} .live.stale .pulse{background:var(--gold);animation:none}
 .live b{font-weight:600;color:var(--ink)}
-.ctl{display:grid;gap:10px;margin-top:12px}
+.ctl{display:grid;gap:10px;margin-top:16px}
+.list>div{display:grid;gap:10px}
+.note-box{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:12px 14px;color:var(--muted);font-size:.88rem}
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:.86rem;font-weight:600;color:var(--ink-2);cursor:pointer}
@@ -80,6 +82,18 @@ h1{font-family:var(--f-head);font-weight:800;font-size:1.3rem;margin:0;line-heig
 .card.hero::before{display:none}
 .card.hero .title{font-family:var(--f-head);font-size:1.28rem;font-weight:700;line-height:1.55;margin:8px 0 6px}
 .kicker{font-family:var(--f-head);font-size:.74rem;font-weight:700;color:var(--red);letter-spacing:.02em}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface-2);border-radius:13px;padding:4px}
+.seg button{border:0;background:transparent;border-radius:10px;padding:9px 6px;font-weight:600;font-size:.88rem;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.chip.small{padding:4px 12px;font-size:.8rem}
+.t-topic{background:transparent;border:1px solid var(--line);color:var(--ink-2);font-weight:600}
+.when small+small{margin-top:0}
+.index{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.idx{display:grid;gap:2px;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:.82rem;color:var(--muted);font-weight:600;border-top:3px solid var(--lvl)}
+.idx b{font-family:var(--f-head);font-size:1.4rem;color:var(--ink);line-height:1.2}
+.idx.l-urgent{--lvl:var(--red)} .idx.l-imp{--lvl:var(--gold)} .idx.l-follow{--lvl:var(--blue)}
+.sec.sub h2{font-size:.95rem;color:var(--muted)}
+.nav button{font-size:.7rem;text-align:center;line-height:1.2;padding:0 2px}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:18px;padding:26px 18px;color:var(--muted);text-align:center;font-size:.92rem}
 .skel{height:96px;border-radius:18px;background:linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%);background-size:200% 100%;animation:sh 1.2s infinite}
 @keyframes sh{to{background-position:-200% 0}}
@@ -116,33 +130,35 @@ button:focus-visible,a:focus-visible,input:focus-visible,.card:focus-visible{out
       </div>
     </div>
     <div class="live" id="live"><span class="pulse"></span><span id="liveTxt">جارِ التحميل…</span></div>
-    <div class="ctl" id="allCtl" hidden>
-      <div class="chips" role="group" aria-label="تصفية">
-        <button class="chip" type="button" data-f="all" aria-pressed="true">الكل</button>
-        <button class="chip" type="button" data-f="iq" aria-pressed="false">العراق</button>
-        <button class="chip" type="button" data-f="reg" aria-pressed="false">المنطقة</button>
-        <button class="chip" type="button" data-f="imp" aria-pressed="false">العاجل والمهم</button>
-        <button class="chip" type="button" data-f="ok" aria-pressed="false">المؤكد فقط</button>
-      </div>
-      <input class="search" id="q" type="search" placeholder="ابحث بكلمة أو اسم…" autocomplete="off">
-    </div>
   </header>
 
-  <div class="sec"><h2 id="secTitle">آخر 20 خبر مهم</h2><span id="secSub"></span></div>
+      <div class="ctl" id="ctl" hidden>
+      <div class="seg" id="mediaSeg" role="group" aria-label="نوع الإعلام" hidden>
+        <button type="button" data-m="عربي" aria-pressed="true">قنوات وصحف عربية</button>
+        <button type="button" data-m="أجنبي" aria-pressed="false">قنوات وصحف أجنبية</button>
+      </div>
+      <div class="chips" id="winChips" role="group" aria-label="الفترة">
+        <button class="chip" type="button" data-w="3" aria-pressed="true">آخر 3 دقائق</button>
+        <button class="chip" type="button" data-w="360" aria-pressed="false">آخر 6 ساعات</button>
+        <button class="chip" type="button" data-w="1440" aria-pressed="false">آخر 24 ساعة</button>
+      </div>
+      <div class="chips" id="topicChips" role="group" aria-label="الموضوع"></div>
+      <input class="search" id="q" type="search" placeholder="ابحث بكلمة أو اسم…" autocomplete="off">
+    </div>
   <section class="list" id="list" aria-live="polite"><div class="skel"></div><div class="skel"></div><div class="skel"></div></section>
 
   <footer class="foot">
-    <p class="note">أخبار اليوم فقط (من منتصف الليل بتوقيت بغداد). يتحدث التطبيق كل دقيقتين تقريباً من أكثر من 200 قناة تلغرام وموقع عراقي وعربي وأجنبي يتابعها مرصد هوبي، وهذا مو كل الإنترنت. بكل خبر تشوف وقت النشر ووقت الرصد.</p>
+    <p class="note"><b>العاجل</b>: فهرس العاجل والمهم بآخر 24 ساعة. <b>العراق</b>: كل خبر يخص العراق بأي موضوع. <b>المنطقة</b>: الشرق الأوسط والمنطقة. <b>الإعلام عن العراق</b>: ما تنشره القنوات والصحف العربية والأجنبية عن العراق. كل قسم يعرض 10 إلى 20 خبراً على الأقل، وإذا قلّت أخبار الفترة يكمّل بأحدث ما قبلها. يتحدث كل دقيقتين تقريباً من أكثر من 200 قناة وموقع يتابعها مرصد هوبي، وهذا مو كل الإنترنت. بكل خبر يوم وتاريخ ووقت النشر ووقت الرصد بتوقيت بغداد.</p>
     <p class="note"><b>مؤكد</b>: صادر عن الجهة الرسمية نفسها، وهذا يثبت صدور الكلام لا صحة مضمونه. <b>متطابق لدى جهتين</b>: نشرته جهتان وممكن وحدة تنقل عن الثانية. <b>غير مؤكد</b>: مصدر واحد غير رسمي. <b>ترجمة آلية</b>: عناوين الصحافة العالمية مترجمة آلياً، والعنوان الأصلي تحتها.</p>
-    <p class="note" style="opacity:.55">نسخة 29/10 · 5</p>
+    <p class="note" style="opacity:.55">نسخة 29/10 · 6</p>
   </footer>
 </div>
 
 <nav class="nav" aria-label="الأقسام"><div class="nav-in" role="tablist">
-  <button role="tab" type="button" data-tab="top" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>المهم</button>
-  <button role="tab" type="button" data-tab="now" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>الآن<span class="badge" id="nowBadge" hidden></span></button>
-  <button role="tab" type="button" data-tab="world" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>العالم</button>
-  <button role="tab" type="button" data-tab="all" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>الكل</button>
+  <button role="tab" type="button" data-tab="urgent" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>العاجل</button>
+  <button role="tab" type="button" data-tab="iraq" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>العراق<span class="badge" hidden></span></button>
+  <button role="tab" type="button" data-tab="region" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3z"/><path d="M9 4v13M15 7v13"/></svg>المنطقة<span class="badge" hidden></span></button>
+  <button role="tab" type="button" data-tab="media" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>الإعلام<span class="badge" hidden></span></button>
 </div></nav>
 <div class="toast" id="toast" role="status"></div>
 
@@ -150,73 +166,84 @@ button:focus-visible,a:focus-visible,input:focus-visible,.card:focus-visible{out
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-let news=[],meta=null,tab="top",filt="all",query="",open=new Set(),loading=false;
+let news=[],meta=null,tab="urgent",win=3,topic="الكل",media="عربي",query="",open=new Set(),loading=false;
 let seen=new Set(JSON.parse(store.get("hobi_seen")||"[]")), fresh=new Set();
 const LV={"عاجل":{w:40,c:"l-urgent",t:'<span class="tag t-urgent">عاجل</span>'},"مهم":{w:25,c:"l-imp",t:'<span class="tag t-imp">مهم</span>'},"متابعة":{w:12,c:"l-follow",t:'<span class="tag t-follow">متابعة</span>'}};
 const ST={"مؤكد":["s-ok",5],"متطابق لدى جهتين":["s-pair",4]};
+const TOPICS=["الكل","سياسة","أمن","اقتصاد","خدمات","صحة","تعليم","ثقافة","مجتمع","رياضة","طقس","عام"];
 const MONTHS=["كانون الثاني","شباط","آذار","نيسان","أيار","حزيران","تموز","آب","أيلول","تشرين الأول","تشرين الثاني","كانون الأول"];
 const DAYS=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
 const ms=iso=>iso?new Date(iso).getTime():0, mins=iso=>iso?(Date.now()-ms(iso))/60000:1e9;
 const bg=iso=>new Date(ms(iso)+3*3600e3), p2=n=>String(n).padStart(2,"0");
 const hm=iso=>{ if(!iso) return "--:--"; const d=bg(iso); return `${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`; };
+const day=iso=>{ const d=bg(iso); return DAYS[d.getUTCDay()]; };
+const dm=iso=>{ const d=bg(iso); return `${d.getUTCDate()}/${d.getUTCMonth()+1}`; };
+const full=iso=>iso?`${day(iso)} ${dm(iso)} · ${hm(iso)}`:"غير معروف";
 function ago(iso){ if(!iso) return ""; const m=Math.round(mins(iso)); if(m<1) return "الآن"; if(m<60) return `قبل ${m} د`; return `قبل ${Math.floor(m/60)} س`; }
 function todayStr(){ const d=new Date(Date.now()+3*3600e3); return `${DAYS[d.getUTCDay()]}، ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; }
-function dayStart(){ const d=new Date(Date.now()+3*3600e3); d.setUTCHours(0,0,0,0); return d.getTime()-3*3600e3; }
 const srcName=s=>String(s).replace(/ — (telegram|تلغرام|RSS)$/i,"").replace(/ \(عبر Google News\)$/,"");
 const score=n=>(LV[n.level]?.w||0)+Math.min(n.n_sources||1,6)*4+(ST[n.status]?.[1]||0)-mins(n.latest_utc)/10;
+const byNew=(a,b)=>ms(b.latest_utc)-ms(a.latest_utc);
 
 function card(n,hero){
   const lv=LV[n.level], st=ST[n.status]?.[0]||"s-unv", isOpen=open.has(n.id), srcs=n.sources||[];
   const first=srcs.length?srcName(srcs[0].name):"";
-  const tags=`${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${lv?lv.t:""}${n.scope==="إقليمي"?'<span class="tag t-follow">المنطقة</span>':""}${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}<span class="st ${st}">${esc(n.status||"غير مؤكد")}</span>`;
+  const tags=`${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${lv?lv.t:""}<span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}<span class="st ${st}">${esc(n.status||"غير مؤكد")}</span>`;
   const more=isOpen?`<div class="more">
-      <ul class="srcs">${srcs.slice(0,6).map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(srcName(s.name))}<small>${esc(hm(s.time))}</small></a></li>`).join("")}</ul>
+      <ul class="srcs">${srcs.slice(0,6).map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(srcName(s.name))}<small>${esc(full(s.time))}</small></a></li>`).join("")}</ul>
       <div class="basis">${esc(n.basis||"")}</div>
       <div class="row-btns"><button class="btn primary" type="button" data-share="${esc(n.id)}">إرسال للفريق</button><button class="btn" type="button" data-copy="${esc(n.id)}">نسخ</button></div></div>`:"";
-  const metaL=`<div class="meta"><span>${esc(first)}${n.n_sources>2?` و${n.n_sources-1} جهات أخرى`:n.n_sources===2?" وجهة أخرى":""}</span><span class="dot">نُشر ${esc(hm(n.latest_utc))}</span><span class="dot">رُصد ${esc(hm(n.collected_utc))}</span></div>`;
+  const metaL=`<div class="meta"><span>${esc(first)}${n.n_sources>2?` و${n.n_sources-1} جهات`:n.n_sources===2?" وجهة أخرى":""}</span><span class="dot">رُصد ${esc(full(n.collected_utc))}</span></div>`;
   const orig=n.title_orig?`<p class="orig">${esc(n.title_orig)}</p>`:"";
-  if(hero) return `<article class="card hero ${lv?lv.c:""}" data-id="${esc(n.id)}" tabindex="0"><div class="kicker">الأبرز الآن · ${esc(ago(n.latest_utc))}</div><div class="tags" style="margin-top:8px">${tags}</div><h3 class="title">${esc(n.title)}</h3>${orig}${metaL}${more}</article>`;
+  if(hero) return `<article class="card hero ${lv?lv.c:""}" data-id="${esc(n.id)}" tabindex="0"><div class="kicker">الأبرز الآن · ${esc(full(n.latest_utc))}</div><div class="tags" style="margin-top:8px">${tags}</div><h3 class="title">${esc(n.title)}</h3>${orig}${metaL}${more}</article>`;
   return `<article class="card ${lv?lv.c:""}" data-id="${esc(n.id)}" tabindex="0">
-    <div class="when"><b>${esc(hm(n.latest_utc))}</b><small>${esc(ago(n.latest_utc))}</small></div>
-    <div class="body"><div class="tags">${tags}</div>
-    <h3 class="title">${esc(n.title)}</h3>${orig}
-    ${metaL}</div>${more}</article>`;
+    <div class="when"><b>${esc(hm(n.latest_utc))}</b><small>${esc(day(n.latest_utc))}</small><small>${esc(dm(n.latest_utc))}</small></div>
+    <div class="body"><div class="tags">${tags}</div><h3 class="title">${esc(n.title)}</h3>${orig}${metaL}</div>${more}</article>`;
 }
+const block=(title,sub,rows,heroFirst)=>`<div class="sec"><h2>${esc(title)}</h2><span>${esc(sub)}</span></div>`+(rows.length?rows.map((n,i)=>card(n,heroFirst&&i===0)).join(""):'<div class="empty">ما كو أخبار بهذا القسم لحد الآن.</div>');
+
+// يطبّق نافذة الوقت مع حد أدنى 10 أخبار: إذا قلّت، يكمّل بأحدث ما قبلها حتى 20
+function windowed(pool){
+  const inWin=pool.filter(n=>mins(n.latest_utc)<=win).sort(byNew);
+  if(inWin.length>=10||win>=1440) return [inWin,[]];
+  const rest=pool.filter(n=>mins(n.latest_utc)>win).sort(byNew).slice(0,20-inWin.length);
+  return [inWin,rest];
+}
+function filtered(pool){
+  const q=query.trim().toLowerCase();
+  return pool.filter(n=>(topic==="الكل"||n.topic===topic)&&(!q||(n.title+" "+(n.title_orig||"")+" "+(n.sources||[]).map(s=>s.name).join(" ")).toLowerCase().includes(q)));
+}
+const WIN_LABEL={3:"آخر 3 دقائق",360:"آخر 6 ساعات",1440:"آخر 24 ساعة"};
 
 function render(){
   $("#today").textContent=todayStr();
-  const today=news.filter(n=>ms(n.latest_utc)>=dayStart());
+  const all=news.filter(n=>mins(n.latest_utc)<=1440);
   if(meta){ const m=mins(meta.updated_utc); $("#live").classList.toggle("stale",m>8);
-    $("#liveTxt").innerHTML = m>8?`آخر تحديث ${esc(ago(meta.updated_utc))} · قد تفوتك أخبار`:`<b>مباشر</b> · آخر رصد ${esc(hm(meta.updated_utc))} · ${today.length} خبر اليوم`; }
-  const end=meta?ms(meta.updated_utc):Date.now(), newNow=today.filter(n=>ms(n.collected_utc)>=end-2.5*60000);
-  const b=$("#nowBadge"); b.hidden=!newNow.length; b.textContent=newNow.length>99?"99+":newNow.length;
-  let html="", title="", sub="";
-  if(tab==="top"){
-    const pool=today.filter(n=>n.scope!=="أجنبي");
-    let rows=pool.filter(n=>n.level in LV);
-    if(rows.length<20) rows=rows.concat(pool.filter(n=>!(n.level in LV)).sort((a,b)=>score(b)-score(a)).slice(0,20-rows.length));
-    rows=rows.sort((a,b)=>ms(b.latest_utc)-ms(a.latest_utc)).slice(0,20);
-    const heroI=rows.findIndex(n=>(n.level==="عاجل"||n.level==="مهم")&&mins(n.latest_utc)<90);
-    title="آخر 20 خبر مهم"; sub="العراق والمنطقة · اليوم";
-    html=rows.length?rows.map((n,i)=>card(n,i===heroI)).join(""):'<div class="empty">ما كو أخبار مهمة اليوم لحد الآن.</div>';
-  } else if(tab==="now"){
-    const imp=newNow.filter(n=>n.level in LV).sort((a,b)=>score(b)-score(a)), rest=newNow.filter(n=>!(n.level in LV)).sort((a,b)=>ms(b.latest_utc)-ms(a.latest_utc));
-    title="انرصد بآخر دقيقتين"; sub=meta?`آخر رصد ${hm(meta.updated_utc)}`:"";
-    html=(imp.length?imp.map(n=>card(n)).join(""):'<div class="empty">ما كو خبر مهم بآخر دقيقتين.</div>')
-      +(rest.length?`<div class="sec"><h2>باقي اللي نزل</h2><span>${rest.length} خبر</span></div>`+rest.map(n=>card(n)).join(""):"");
-  } else if(tab==="world"){
-    const rows=today.filter(n=>n.scope==="أجنبي").sort((a,b)=>ms(b.latest_utc)-ms(a.latest_utc));
-    title="الصحافة العالمية عن العراق"; sub=`${rows.length} مادة · مترجمة`;
-    html=rows.length?rows.map(n=>card(n)).join(""):'<div class="empty">ما كو مواد أجنبية عن العراق اليوم لحد الآن.</div>';
+    $("#liveTxt").innerHTML = m>8?`آخر تحديث ${esc(ago(meta.updated_utc))} · قد تفوتك أخبار`:`<b>مباشر</b> · آخر رصد ${esc(hm(meta.updated_utc))} · ${all.length} خبر بآخر 24 ساعة`; }
+  $("#ctl").hidden=tab==="urgent"; $("#mediaSeg").hidden=tab!=="media";
+  const pools={
+    iraq: all.filter(n=>n.about_iraq),
+    region: all.filter(n=>!n.about_iraq&&n.origin!=="أجنبي"),
+    media: all.filter(n=>n.about_iraq&&n.origin===(media==="عربي"?"عربي":"أجنبي")),
+  };
+  ["iraq","region","media"].forEach(k=>{ const el=$(`.nav [data-tab=${k}] .badge`); const c=pools[k].filter(n=>mins(n.latest_utc)<=3).length; if(el){el.hidden=!c; el.textContent=c>99?"99+":c;} });
+  let html="";
+  if(tab==="urgent"){
+    const urg=all.filter(n=>n.level==="عاجل").sort(byNew), imp=all.filter(n=>n.level==="مهم").sort(byNew);
+    let fol=[]; if(urg.length+imp.length<10) fol=all.filter(n=>n.level==="متابعة").sort(byNew).slice(0,20-urg.length-imp.length);
+    html=`<div class="index">${[["عاجل",urg,"l-urgent"],["مهم",imp,"l-imp"],["متابعة",fol,"l-follow"]].map(([k,a,c])=>`<a href="#g-${c}" class="idx ${c}"><b>${a.length}</b>${k}</a>`).join("")}</div>`
+      + `<div id="g-l-urgent">${block("العاجل","آخر 24 ساعة · العراق والمنطقة",urg,true)}</div>`
+      + `<div id="g-l-imp">${block("المهم",`${imp.length} خبر`,imp)}</div>`
+      + (fol.length?`<div id="g-l-follow">${block("للمتابعة","لإكمال القائمة",fol)}</div>`:"");
   } else {
-    const q=query.trim().toLowerCase();
-    const rows=today.filter(n=>(filt==="all"||(filt==="iq"&&n.scope==="العراق")||(filt==="reg"&&n.scope==="إقليمي")||(filt==="imp"&&(n.level==="عاجل"||n.level==="مهم"))||(filt==="ok"&&n.status==="مؤكد"))
-      && (!q||(n.title+" "+(n.title_orig||"")+" "+(n.sources||[]).map(s=>s.name).join(" ")).toLowerCase().includes(q)))
-      .sort((a,b)=>ms(b.latest_utc)-ms(a.latest_utc));
-    title="كل أخبار اليوم"; sub=`${rows.length} خبر`;
-    html=rows.length?rows.slice(0,300).map(n=>card(n)).join(""):'<div class="empty">ما كو أخبار تطابق البحث.</div>';
+    const pool=filtered(pools[tab]);
+    const [inWin,rest]=windowed(pool);
+    const T={iraq:"أخبار العراق",region:"الشرق الأوسط والمنطقة",media:media==="عربي"?"الإعلام العربي عن العراق":"الإعلام الأجنبي عن العراق"}[tab];
+    const subT=`${WIN_LABEL[win]} · ${inWin.length} خبر${topic!=="الكل"?" · "+topic:""}`;
+    html=((!inWin.length&&rest.length)?`<div class="sec"><h2>${esc(T)}</h2><span>${esc(subT)}</span></div><div class="note-box">ما نزل خبر جديد ب${WIN_LABEL[win]}. هذي أحدث الأخبار:</div>`:block(T,subT,inWin))
+      +(rest.length&&inWin.length?`<div class="sec sub"><h2>أحدث ما قبلها</h2><span>لإكمال ${inWin.length+rest.length} خبر</span></div>`:"")+rest.map(n=>card(n)).join("");
   }
-  $("#secTitle").textContent=title; $("#secSub").textContent=sub; $("#list").innerHTML=html;
+  $("#list").innerHTML=html;
 }
 
 async function load(manual){
@@ -225,30 +252,33 @@ async function load(manual){
     const [n,m]=await Promise.all([fetch("news.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()),fetch("meta.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json())]);
     const firstLoad=!news.length&&!seen.size;
     fresh=new Set(firstLoad?[]:n.filter(x=>!seen.has(x.id)).map(x=>x.id));
-    n.forEach(x=>seen.add(x.id)); store.set("hobi_seen",JSON.stringify([...seen].slice(-4000)));
+    n.forEach(x=>seen.add(x.id)); store.set("hobi_seen",JSON.stringify([...seen].slice(-5000)));
     news=n; meta=m; render();
     if(manual) toast(fresh.size?`${fresh.size} خبر جديد`:"ما كو جديد من آخر تحديث");
   }catch(e){ $("#liveTxt").textContent="ما كدرت أجيب الأخبار، تأكد من الإنترنت"; $("#live").classList.add("stale"); if(!news.length) $("#list").innerHTML='<div class="empty">ما كدرت أجيب الأخبار. تأكد من الإنترنت واضغط زر التحديث.</div>'; }
   finally{ loading=false; $("#refresh").classList.remove("spin"); }
 }
-
 let tt; function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("on"); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove("on"),2200); }
-function textOf(n){ const s=(n.sources||[])[0]; return `${n.level==="عاجل"?"🔴 عاجل | ":""}${n.title}${n.title_orig?`\n(${n.title_orig})`:""}\n${n.status||"غير مؤكد"} — ${s?srcName(s.name):""} — ${hm(n.latest_utc)} بغداد\n${s?s.url:""}`; }
+function textOf(n){ const s=(n.sources||[])[0]; return `${n.level==="عاجل"?"🔴 عاجل | ":""}${n.title}${n.title_orig?`\n(${n.title_orig})`:""}\n${n.status||"غير مؤكد"} — ${s?srcName(s.name):""} — ${full(n.latest_utc)} بغداد\n${s?s.url:""}`; }
 async function shareText(text,title){ if(navigator.share){ try{ await navigator.share({title,text}); return; }catch(e){ if(e.name==="AbortError") return; } } copy(text); }
 async function copy(t){ try{ await navigator.clipboard.writeText(t); toast("انتسخ"); }catch(e){ const a=document.createElement("textarea"); a.value=t; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); toast("انتسخ"); } }
 
 $("#list").addEventListener("click",e=>{
   const sh=e.target.closest("[data-share]"), cp=e.target.closest("[data-copy]");
   if(sh||cp){ const n=news.find(x=>x.id===(sh||cp).dataset[sh?"share":"copy"]); if(n) sh?shareText(textOf(n),"هوبي عاجل"):copy(textOf(n)); return; }
+  const ix=e.target.closest(".idx"); if(ix){ e.preventDefault(); const t=document.querySelector(ix.getAttribute("href")); if(t) scrollTo({top:t.getBoundingClientRect().top+scrollY-170,behavior:"smooth"}); return; }
   if(e.target.closest("a")) return;
   const c=e.target.closest(".card"); if(!c) return; const id=c.dataset.id; open.has(id)?open.delete(id):open.add(id); render();
 });
 $("#list").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.classList.contains("card")) e.target.click(); });
-$$(".nav button").forEach(b=>b.addEventListener("click",()=>{ tab=b.dataset.tab; $$(".nav button").forEach(x=>x.setAttribute("aria-selected",String(x===b))); $("#allCtl").hidden=tab!=="all"; render(); scrollTo({top:0,behavior:"smooth"}); }));
-$$(".chip[data-f]").forEach(b=>b.addEventListener("click",()=>{ filt=b.dataset.f; $$(".chip[data-f]").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
+$$(".nav button").forEach(b=>b.addEventListener("click",()=>{ tab=b.dataset.tab; $$(".nav button").forEach(x=>x.setAttribute("aria-selected",String(x===b))); render(); scrollTo({top:0,behavior:"smooth"}); }));
+$$("#winChips .chip").forEach(b=>b.addEventListener("click",()=>{ win=+b.dataset.w; $$("#winChips .chip").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
+$$("#mediaSeg button").forEach(b=>b.addEventListener("click",()=>{ media=b.dataset.m; $$("#mediaSeg button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
+$("#topicChips").innerHTML=TOPICS.map(t=>`<button class="chip small" type="button" data-t="${t}" aria-pressed="${t==="الكل"}">${t}</button>`).join("");
+$$("#topicChips .chip").forEach(b=>b.addEventListener("click",()=>{ topic=b.dataset.t; $$("#topicChips .chip").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
 $("#q").addEventListener("input",e=>{ query=e.target.value; render(); });
 $("#refresh").addEventListener("click",()=>load(true));
-$("#shareApp").addEventListener("click",()=>shareText("هوبي عاجل — أهم أخبار العراق والمنطقة والصحافة العالمية، تتحدث كل دقيقتين:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
+$("#shareApp").addEventListener("click",()=>shareText("هوبي عاجل — أخبار العراق والمنطقة والإعلام العربي والأجنبي عن العراق، تتحدث كل دقيقتين:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
 addEventListener("scroll",()=>$("#head").classList.toggle("scrolled",scrollY>4),{passive:true});
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&meta&&mins(meta.updated_utc)>1.5) load(); });
 load(); setInterval(()=>{ if(!document.hidden) load(); },2*60000); setInterval(render,60000);

@@ -119,11 +119,19 @@ def _google_news(items):
     return items
 
 
+IRAQI_OUTLETS = re.compile(r"(السومرية|شفق|بغداد اليوم|المدى|الصباح|واع|الأنباء العراقية|964|رووداو|روداو|كوردستان|كردستان ?24|الفرات|المعلومة|المسلة|العالم الجديد|"
+                           r"ألترا عراق|الترا عراق|الغد برس|دجلة|الرابعة|الشرقية|يس عراق|الزمان|صوت العراق|كتابات|موازين|العراق اليوم|نون|براثا|الاقتصاد نيوز|المربد|"
+                           r"السومرية نيوز|عراق|العراقية|NRT|INA|Shafaq|Rudaw|Kurdistan24|Baghdad|Iraqi)", re.I)
+
+
 def collect_source(source, state):
     if source["method"] == "rss":
         items = parse_rss(http_get(source["url"]), source)
         if "news.google.com" in source["url"]:
-            return _google_news(items)
+            items = _google_news(items)
+            if "hl=ar" in source["url"]:  # الإعلام العربي غير العراقي فقط؛ العراقي مرصود مباشرة
+                items = [i for i in items if not IRAQI_OUTLETS.search(i.get("source_name") or "")]
+            return items
         if source.get("category") == "صحافة أجنبية" and "/iraq" not in source["url"].lower() and "iraq" not in source["url"].lower():
             items = [i for i in items if IRAQ_RX.search((i["title"] or "") + " " + (i["text"] or ""))]
         return items

@@ -34,7 +34,50 @@ def clean_title(label, texts):
     return (joined or label or "")[:200]
 
 
-def main(hours=72):
+from marsad.textnorm import norm_ar  # noqa: E402
+
+IRAQ_AR = [norm_ar(w) for w in ["العراق", "عراقي", "عراقية", "العراقيين", "بغداد", "البصرة", "الموصل", "أربيل", "اربيل", "كركوك", "النجف", "كربلاء",
+           "السليمانية", "الأنبار", "الفلوجة", "سنجار", "دهوك", "نينوى", "ديالى", "صلاح الدين", "ذي قار", "الناصرية", "ميسان", "واسط", "بابل",
+           "إقليم كردستان", "اقليم كوردستان", "السوداني", "الزيدي", "الحشد الشعبي", "الكاظمي",
+           "مجلس النواب", "مجلس الوزراء", "الإطار التنسيقي", "مجلس القضاء الأعلى", "الدينار", "الزوراء", "القوة الجوية", "الطلبة", "الشرطة الاتحادية"]]
+FOREIGN_AR = [norm_ar(w) for w in ["إسرائيل", "الإسرائيلي", "فلسطين", "الفلسطيني", "غزة", "الضفة", "لبنان", "اللبناني", "حزب الله", "سوريا", "السوري", "دمشق",
+              "إيران", "الإيراني", "طهران", "تركيا", "التركي", "أنقرة", "السعودية", "الرياض", "الإمارات", "قطر", "الكويت", "الأردن", "مصر", "اليمن", "الحوثي",
+              "واشنطن", "ترامب", "روسيا", "أوكرانيا", "الصين", "أوروبا", "فرنسا", "بريطانيا", "هرمز", "الخليج"]]
+IRAQ_EN = re.compile(r"\b(Iraq|Iraqi|Iraqis|Baghdad|Kurdistan|Erbil|Basra|Mosul|Kirkuk|Najaf|Karbala|Sulaymaniyah|Anbar|Sinjar|Duhok)\b", re.I)
+TOPICS = [
+    ("أمن", "أمن أمني قصف انفجار اغتيال اعتقال القبض إرهاب داعش اشتباك الحشد الجيش الشرطة صاروخ مسيرة هجوم قتلى جرحى ضربة عملية عسكرية مسلحين عبوة",
+     r"attack|killed|strike|militia|drone|rocket|security|army|troops|bomb|ISIS|Daesh|militant|explosion|arrest"),
+    ("سياسة", "البرلمان مجلس النواب الحكومة رئيس الوزراء وزير انتخابات الكتلة تحالف رئاسة قانون سفير دبلوماسي زيارة اجتماع الإطار التنسيقي حزب نائب جلسة",
+     r"parliament|minister|government|election|president|diplomat|envoy|talks|lawmaker|coalition|party|policy|sanction"),
+    ("اقتصاد", "الدولار النفط الموازنة رواتب مصرف البنك المركزي أسعار تجارة استثمار صادرات الذهب الدينار الضرائب الكمارك برميل",
+     r"oil|dollar|budget|bank|trade|economy|investment|exports|salaries|crude|market|price|dinar"),
+    ("خدمات", "الكهرباء الماء المياه مجاري طرق مشاريع مشروع سد بلدية إعمار الإسكان النقل المطار جسر ماء الشرب انقطاع",
+     r"electricity|water|infrastructure|housing|airport|project|power outage"),
+    ("صحة", "صحة مستشفى وباء مرض طبي دواء كوليرا لقاح إصابات الأطباء علاج",
+     r"health|hospital|disease|medical|cholera|vaccine|outbreak|patients"),
+    ("تعليم", "التربية امتحانات جامعة طلاب مدارس الدوام التعليم العالي الطلبة نتائج القبول",
+     r"school|university|students|education|exam"),
+    ("ثقافة", "ثقافة مهرجان فن فنان كتاب معرض تراث آثار مسرح سينما شعر رواية متحف",
+     r"culture|festival|art|artist|heritage|museum|film|book|archaeolog"),
+    ("رياضة", "منتخب كرة الدوري مباراة نادي لاعب بطولة الاتحاد العراقي لكرة القدم أولمبي",
+     r"football|soccer|match|league|team|player|sport|olympic|cup"),
+    ("مجتمع", "عشائر عشيرة نزاع مناشدة حادث مروري غرق حريق زواج طلاق متظاهرين تظاهرة احتجاج مواطنين المرأة الأطفال",
+     r"protest|tribe|women|children|refugees|displaced|society|rights"),
+    ("طقس", "طقس أمطار درجات الحرارة الأنواء عاصفة غبار سيول", r"weather|rain|storm|flood|heat"),
+]
+TOPICS = [(n, [norm_ar(w) for w in ar.split()], re.compile(r"\b(" + en + r")", re.I)) for n, ar, en in TOPICS]
+
+
+def topic_of(norm_text, en_text):
+    best, score = "عام", 0
+    for name, words, rx in TOPICS:
+        sc = sum(1 for w in words if w and w in norm_text) + len(rx.findall(en_text or ""))
+        if sc > score:
+            best, score = name, sc
+    return best
+
+
+def main(hours=24):
     con = core.connect()
     now = now_utc()
     out = []
@@ -54,15 +97,23 @@ def main(hours=72):
         if level not in ("عاجل", "مهم") and any(FLAG_RX.search(t[:80]) for t in texts):
             level = "مهم"  # المصدر نفسه وسمه «عاجل»
         regs = {r[0] or "" for r in con.execute("SELECT s.region FROM items i JOIN sources s ON s.id=i.source_id WHERE i.cluster_id=?", (c["id"],))}
+        origins = {"أجنبي" if r.startswith("أجنبي") else "عربي" if r.startswith("إقليمي") else "عراقي" for r in regs} or {"عراقي"}
+        origin = "عراقي" if "عراقي" in origins else "عربي" if "عربي" in origins else "أجنبي"
+        alltext = " ".join(texts) + " " + (d["label"] or "")
+        ntext = norm_ar(alltext)
+        iraq_kw = any(w in ntext for w in IRAQ_AR) or bool(IRAQ_EN.search(alltext))
+        foreign_kw = any(w in ntext for w in FOREIGN_AR)
+        about_iraq = iraq_kw or origin == "أجنبي" or (origin == "عراقي" and not foreign_kw)
         scope = ("أجنبي" if regs and all(r.startswith("أجنبي") for r in regs)
                  else "إقليمي" if regs and all(r.startswith("إقليمي") or r.startswith("أجنبي") for r in regs) else "العراق")
         latest = max((e["time"] for e in ev if e["time"]), default=None)
-        if not latest or latest < day_start:
+        if not latest or latest < iso(now - timedelta(hours=24)):
             continue
         title = clean_title(d["label"], texts)
         title_ar = tr.get(title) or tr.get((d["label"] or "").strip())
         collected = con.execute("SELECT MIN(collected_utc) FROM items WHERE cluster_id=?", (c["id"],)).fetchone()[0]
-        out.append({"id": c["id"], "title": title_ar or title, "title_orig": title if title_ar else None, "status": st, "basis": basis, "level": level, "scope": scope,
+        out.append({"id": c["id"], "title": title_ar or title, "title_orig": title if title_ar else None, "status": st, "basis": basis, "level": level, "scope": scope, "origin": origin, "about_iraq": about_iraq,
+                    "topic": topic_of(ntext + " " + norm_ar(title_ar or ""), alltext),
                     "collected_utc": collected, "first_utc": d["first"], "latest_utc": latest,
                     "date_confirmed": all(e["date_confirmed"] for e in ev), "n_sources": d["n_sources"],
                     "sources": [{"name": e["source"], "url": e["url"], "time": e["time"]} for e in ev][:6]})
