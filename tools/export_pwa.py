@@ -126,7 +126,13 @@ def main(hours=24):
     act = {r[0] for r in con.execute("SELECT id FROM sources WHERE method IN ('rss','telegram_preview')")}
     (pwa / "health.json").write_text(json.dumps([{"name": h["name"], "state": h["state"], "items_24h": cnt.get(h["id"], 0), "last_success": h["last_success"], "error": h["last_error"]}
                                                  for h in hl if h["id"] in act], ensure_ascii=False), encoding="utf-8")
-    (pwa / "meta.json").write_text(json.dumps({"updated_utc": iso(now), "stories": len(out), "sources_ok": len(ok)},
+    (pwa / "meta.json").write_text(json.dumps({"updated_utc": iso(now), "stories": len(out), "sources_ok": len(ok),
+                                               "sections": {"iraq": sum(1 for o in out if o["about_iraq"]),
+                                                            "region": sum(1 for o in out if not o["about_iraq"] and o["origin"] != "أجنبي"),
+                                                            "arab_on_iraq": sum(1 for o in out if o["about_iraq"] and o["origin"] == "عربي"),
+                                                            "foreign_on_iraq": sum(1 for o in out if o["origin"] == "أجنبي"),
+                                                            "translated": sum(1 for o in out if o.get("title_orig")),
+                                                            "urgent": sum(1 for o in out if o["level"] == "عاجل"), "important": sum(1 for o in out if o["level"] == "مهم")}},
                                               ensure_ascii=False), encoding="utf-8")
     print(len(out), "خبراً في pwa/news.json")
 
