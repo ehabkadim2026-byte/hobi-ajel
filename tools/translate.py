@@ -53,8 +53,12 @@ def load_translator():
     return ctranslate2.Translator(str(mb.parent), device="cpu", inter_threads=2), spm.SentencePieceProcessor(model_file=str(sp_path))
 
 
+URL_RX = re.compile(r"https?://|www\.|\.com\b|\.net\b|\.org\b")
+
+
 def needs(text):
-    return bool(text) and len(LATIN.findall(text)) > 8 and not ARABIC.search(text)
+    return (bool(text) and len(LATIN.findall(text)) > 8 and not ARABIC.search(text)
+            and not URL_RX.search(text) and len(text.split()) >= 3)
 
 
 def main(limit=120, budget_s=50):
@@ -68,11 +72,8 @@ def main(limit=120, budget_s=50):
     try:
         con = core.connect()
         todo = []
-        for (t,) in con.execute("SELECT DISTINCT title FROM items WHERE collected_utc >= datetime('now','-2 day') ORDER BY collected_utc DESC"):
-            t = (t or "").strip()
-            if needs(t) and t not in cache and t not in todo:
-                todo.append(t)
-        for (t,) in con.execute("SELECT label FROM clusters WHERE last_utc >= datetime('now','-2 day')"):
+        for (t,) in con.execute("SELECT DISTINCT i.title FROM items i JOIN sources s ON s.id=i.source_id "
+                                "WHERE s.lang='en' AND i.collected_utc >= datetime('now','-2 day') ORDER BY i.collected_utc DESC"):
             t = (t or "").strip()
             if needs(t) and t not in cache and t not in todo:
                 todo.append(t)
@@ -91,9 +92,10 @@ def main(limit=120, budget_s=50):
                         cache[src] = out
                         status["translated_now"] += 1
         status["ok"] = True
-        status["sample"] = list(cache.items())[-3:]
+        status["sample"] = [[k, cache[k]] for k in todo[:5] if k in cache]
     except Exception as e:  # noqa: BLE001
         status["error"] = f"{type(e).__name__}: {e}"[:300]
+    cache = {k: v for k, v in cache.items() if needs(k) and k != v}
     if len(cache) > 6000:
         cache = dict(list(cache.items())[-4000:])
     CACHE.parent.mkdir(parents=True, exist_ok=True)
