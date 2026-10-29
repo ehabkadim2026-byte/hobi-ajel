@@ -60,11 +60,11 @@ URL_RX = re.compile(r"https?://|www\.|\.com\b|\.net\b|\.org\b")
 PRE = [(r"\bKRG\b", "Kurdistan Regional Government"), (r"\bKRI\b", "Kurdistan Region"), (r"\bPMF\b", "Popular Mobilization Forces"),
        (r"\bKDP\b", "Kurdistan Democratic Party"), (r"\bPUK\b", "Patriotic Union of Kurdistan"), (r"\bShengal\b", "Sinjar"),
        (r"\bSulaimani\b|\bSulaymani\b|\bSlemani\b", "Sulaymaniyah"), (r"\bHewler\b|\bHawler\b", "Erbil"),
-       (r"\bShafaq News\b", "Shafaq"), (r"\bCBI\b", "Central Bank of Iraq"), (r"\bISIS\b|\bISIL\b|\bIS\b", "ISIS"), (r"\.\.", ": ")]
+       (r"\bShafaq News\b", "Shafaq"), (r"\bCBI\b", "Central Bank of Iraq"), (r"\bISIS\b|\bISIL\b|\bIslamic State\b", "Daesh"), (r"\.\.", ": ")]
 # تصحيح بعد الترجمة لأسماء معروفة
 POST = [("شافاق", "شفق"), ("سوليماني", "السليمانية"), ("السليمانيه", "السليمانية"), ("الشنغال", "سنجار"), ("شنغال", "سنجار"),
-        ("جمهورية كوريا الشعبية الديمقراطية", "إقليم كردستان"), ("أربيل أربيل", "أربيل"), ("داعش داعش", "داعش")]
-VERSION = 2
+        ("جمهورية كوريا الشعبية الديمقراطية", "إقليم كردستان"), ("أربيل أربيل", "أربيل"), ("داعش داعش", "داعش"), ("الشفاق", "شفق"), ("نظام المعلومات الإسلامية", "داعش"), ("دائرة الاستخبارات الإسلامية", "داعش"), ("الدولة الإسلامية", "داعش")]
+VERSION = 3
 
 
 def pre(text):
@@ -115,7 +115,7 @@ def main(limit=250, budget_s=60):
                 res = tr.translate_batch([sp.encode(pre(x), out_type=str) for x in batch], beam_size=2, max_decoding_length=160)
                 for src, r in zip(batch, res):
                     out = post(sp.decode(r.hypotheses[0]).replace("▁", " "))
-                    if out and ARABIC.search(out):
+                    if out and ARABIC.search(out) and len(out.split()) >= 0.45 * len(src.split()):
                         cache[src] = out
                         status["translated_now"] += 1
         status["ok"] = True
