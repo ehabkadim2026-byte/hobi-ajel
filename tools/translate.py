@@ -86,7 +86,7 @@ def needs(text):
             and not URL_RX.search(text) and len(text.split()) >= 3)
 
 
-def main(limit=250, budget_s=60):
+def main(limit=500, budget_s=90):
     t0 = time.time()
     cache = {}
     try:

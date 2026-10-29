@@ -68,6 +68,13 @@ TOPICS = [
 TOPICS = [(n, [norm_ar(w) for w in ar.split()], re.compile(r"\b(" + en + r")", re.I)) for n, ar, en in TOPICS]
 
 
+KURDISH = re.compile(r"[ەێۆڵڕڤ]")
+ARABIC_CH = re.compile(r"[\u0600-\u06FF]")
+INTERVIEW_RX = re.compile(r"\b(interview|Q&A|speaks to|in conversation|podcast)\b", re.I)
+OPINION_RX = re.compile(r"\b(opinion|op-ed|column|commentary|editorial|view)\b", re.I)
+ANALYSIS_RX = re.compile(r"\b(analysis|explainer|explained|why|how|what .* means|inside|the future of|strategy|lessons)\b", re.I)
+
+
 def topic_of(norm_text, en_text):
     best, score = "عام", 0
     for name, words, rx in TOPICS:
@@ -88,7 +95,7 @@ def main(hours=24):
     # أخبار اليوم فقط (منتصف ليل بغداد)، حتى لا يظهر خبر قديم
     bg = now + timedelta(hours=3)
     day_start = iso(bg.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(hours=3))
-    for c in con.execute("SELECT * FROM clusters WHERE last_utc >= ?", (iso(now - timedelta(hours=hours)),)):
+    for c in con.execute("SELECT * FROM clusters WHERE last_utc >= ?", (iso(now - timedelta(days=7)),)):
         d = cluster_dossier(con, c)
         st, basis = status_of(d)
         ev = sorted(d["evidence"], key=lambda e: e["time"] or "")
@@ -109,12 +116,26 @@ def main(hours=24):
         scope = ("أجنبي" if regs and all(r.startswith("أجنبي") for r in regs)
                  else "إقليمي" if regs and all(r.startswith("إقليمي") or r.startswith("أجنبي") for r in regs) else "العراق")
         latest = max((e["time"] for e in ev if e["time"]), default=None)
-        if not latest or latest < iso(now - timedelta(hours=24)):
+        is_analysis_src = any(r.startswith("أجنبي — تحليل") for r in regs)
+        if not latest or latest < iso(now - timedelta(days=7 if is_analysis_src else 1)):
             continue
+        if len(KURDISH.findall(alltext)) >= 3:
+            continue  # المحتوى الكردي لا يُعرض (لا توجد ترجمة كردي→عربي مجانية موثوقة حالياً)
         title = clean_title(d["label"], texts)
         title_ar = tr.get(title) or tr.get((d["label"] or "").strip())
+        if not ARABIC_CH.search(title_ar or title):
+            continue  # لا نعرض عنواناً غير مترجم للعربية
+        en = title if title_ar else ""
+        kind = None
+        if origin == "أجنبي":
+            kind = ("مقابلة" if INTERVIEW_RX.search(en) else "رأي" if OPINION_RX.search(en)
+                    else "تحليل" if (is_analysis_src or ANALYSIS_RX.search(en)) else None)
+        if is_analysis_src and not kind:
+            kind = "تحليل"
+        if latest < iso(now - timedelta(days=1)) and not kind:
+            continue
         collected = con.execute("SELECT MIN(collected_utc) FROM items WHERE cluster_id=?", (c["id"],)).fetchone()[0]
-        out.append({"id": c["id"], "title": title_ar or title, "title_orig": title if title_ar else None, "status": st, "basis": basis, "level": level, "scope": scope, "origin": origin, "about_iraq": about_iraq,
+        out.append({"id": c["id"], "title": title_ar or title, "title_orig": title if title_ar else None, "status": st, "basis": basis, "level": level, "scope": scope, "origin": origin, "about_iraq": about_iraq, "kind": kind,
                     "topic": topic_of(ntext + " " + norm_ar(title_ar or ""), alltext),
                     "collected_utc": collected, "first_utc": d["first"], "latest_utc": latest,
                     "date_confirmed": all(e["date_confirmed"] for e in ev), "n_sources": d["n_sources"],
@@ -133,7 +154,7 @@ def main(hours=24):
                                                             "region": sum(1 for o in out if not o["about_iraq"] and o["origin"] != "أجنبي"),
                                                             "arab_on_iraq": sum(1 for o in out if o["about_iraq"] and o["origin"] == "عربي"),
                                                             "foreign_on_iraq": sum(1 for o in out if o["origin"] == "أجنبي"),
-                                                            "translated": sum(1 for o in out if o.get("title_orig")),
+                                                            "translated": sum(1 for o in out if o.get("title_orig")), "analysis": sum(1 for o in out if o.get("kind")),
                                                             "urgent": sum(1 for o in out if o["level"] == "عاجل"), "important": sum(1 for o in out if o["level"] == "مهم")}},
                                               ensure_ascii=False), encoding="utf-8")
     print(len(out), "خبراً في pwa/news.json")

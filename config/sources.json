@@ -2717,6 +2717,58 @@
    "region": "إقليمي — عربي (Google News)",
    "lang": "ar",
    "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20%28site:foreignpolicy.com%20OR%20site:al-monitor.com%20OR%20site:washingtoninstitute.org%20OR%20site:carnegieendowment.org%20OR%20site:atlanticcouncil.org%20OR%20site:chathamhouse.org%20OR%20site:crisisgroup.org%20OR%20site:mei.edu%20OR%20site:amwaj.media%20OR%20site:newarab.com%20OR%20site:warontherocks.com%20OR%20site:foreignaffairs.com%20OR%20site:economist.com%20OR%20site:csis.org%20OR%20site:brookings.edu%20OR%20site:thecradle.co%20OR%20site:middleeasteye.net%29%20when:7d",
+   "name": "التحليل الأجنبي — مراكز ومجلات (Google News)",
+   "url": "https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20%28site:foreignpolicy.com%20OR%20site:al-monitor.com%20OR%20site:washingtoninstitute.org%20OR%20site:carnegieendowment.org%20OR%20site:atlanticcouncil.org%20OR%20site:chathamhouse.org%20OR%20site:crisisgroup.org%20OR%20site:mei.edu%20OR%20site:amwaj.media%20OR%20site:newarab.com%20OR%20site:warontherocks.com%20OR%20site:foreignaffairs.com%20OR%20site:economist.com%20OR%20site:csis.org%20OR%20site:brookings.edu%20OR%20site:thecradle.co%20OR%20site:middleeasteye.net%29%20when:7d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "تحليل أجنبي",
+   "region": "أجنبي — تحليل",
+   "lang": "en",
+   "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20analysis%20when:3d",
+   "name": "التحليل الأجنبي — Iraq analysis (Google News)",
+   "url": "https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20analysis%20when:3d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "تحليل أجنبي",
+   "region": "أجنبي — تحليل",
+   "lang": "en",
+   "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20interview%20when:3d",
+   "name": "التحليل الأجنبي — Iraq interview (Google News)",
+   "url": "https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20interview%20when:3d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "تحليل أجنبي",
+   "region": "أجنبي — تحليل",
+   "lang": "en",
+   "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20opinion%20OR%20op-ed%20OR%20column%20when:3d",
+   "name": "التحليل الأجنبي — Iraq opinion (Google News)",
+   "url": "https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20opinion%20OR%20op-ed%20OR%20column%20when:3d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "تحليل أجنبي",
+   "region": "أجنبي — تحليل",
+   "lang": "en",
+   "official": false
   }
  ]
 }
