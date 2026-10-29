@@ -367,11 +367,12 @@ def score_cluster(con, c):
         s += 1
         why.append("5 مواد فأكثر")
     two = c["n_sources"] >= 2 or c["verification"].startswith("مصدر رسمي")
-    if s >= 7 and two:
+    # عتبات مرنة (طلب Ehab 29/10): العاجل لا يشترط حدثاً خطيراً بالضرورة
+    if (s >= 5 and two) or s >= 6:
         lvl = "عاجل"
-    elif s >= 5:
-        lvl = "مهم"
     elif s >= 3:
+        lvl = "مهم"
+    elif s >= 2:
         lvl = "متابعة"
     else:
         lvl = "ملخص دوري"

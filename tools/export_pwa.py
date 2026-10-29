@@ -94,8 +94,10 @@ def main(hours=24):
         ev = sorted(d["evidence"], key=lambda e: e["time"] or "")
         texts = [r[0] or "" for r in con.execute("SELECT COALESCE(text, title) FROM items WHERE cluster_id=? ORDER BY published_utc", (c["id"],))]
         level = d["level"]
-        if level not in ("عاجل", "مهم") and any(FLAG_RX.search(t[:80]) for t in texts):
-            level = "مهم"  # المصدر نفسه وسمه «عاجل»
+        if level != "عاجل" and any(FLAG_RX.search(t[:80]) for t in texts):
+            # المصدر نفسه وسمه «عاجل»: يصير عاجلاً، إلا إذا كانت القناة مجمّعاً يسمي كل شي عاجل (اسمها فيه «عاجل»)
+            names = [e["source"] or "" for e in ev]
+            level = "مهم" if all("عاجل" in n for n in names) else "عاجل"
         regs = {r[0] or "" for r in con.execute("SELECT s.region FROM items i JOIN sources s ON s.id=i.source_id WHERE i.cluster_id=?", (c["id"],))}
         origins = {"أجنبي" if r.startswith("أجنبي") else "عربي" if r.startswith("إقليمي") else "عراقي" for r in regs} or {"عراقي"}
         origin = "عراقي" if "عراقي" in origins else "عربي" if "عربي" in origins else "أجنبي"
