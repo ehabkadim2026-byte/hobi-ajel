@@ -1,7 +1,7 @@
 # نسخة الهاتف المستقلة من «هوبي عاجل»: جمع كل 10 دقائق + نشر التطبيق على GitHub Pages.
 # يعمل فقط بعد رفع المستودع وتفعيل Pages (Settings → Pages → Source: GitHub Actions). لا أسرار مطلوبة.
 # مواعيد GitHub المجدولة غير مضمونة (قد تتأخر ساعات في المستودعات الجديدة)، لذلك كل جولة
-# تطلق الجولة التالية بنفسها بعد ~10 دقائق من بدايتها. الموعد المجدول احتياط يعيد تشغيل السلسلة إن انقطعت.
+# تطلق الجولة التالية بنفسها بعد ~3 دقائق من بدايتها. الموعد المجدول احتياط يعيد تشغيل السلسلة إن انقطعت.
 name: hobi-ajel
 on:
   schedule: [{cron: "*/10 * * * *"}]
@@ -31,10 +31,10 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with: {path: pwa}
       - uses: actions/deploy-pages@v4
-      - name: next round (سلسلة — الجولة التالية بعد ~10 دقائق من بداية هذه)
+      - name: next round (سلسلة — الجولة التالية بعد ~3 دقائق من بداية هذه)
         if: always()
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |
-          wait=$(( 570 - ($(date +%s) - START) )); if [ "$wait" -gt 0 ]; then sleep "$wait"; fi
+          wait=$(( 175 - ($(date +%s) - START) )); if [ "$wait" -gt 0 ]; then sleep "$wait"; fi
           n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/hobi-ajel.yml/runs?per_page=10" --jq '[.workflow_runs[]|select(.status=="queued" or .status=="pending" or .status=="waiting" or .status=="requested")]|length')
           if [ "$n" = "0" ]; then gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/hobi-ajel.yml/dispatches" -f ref=main && echo "dispatched"; else echo "next round already queued ($n)"; fi

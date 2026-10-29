@@ -3,112 +3,228 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#121317">
+<meta name="theme-color" content="#0f1115">
 <title>هوبي عاجل</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@600;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
 <style>
 :root{
-  --bg:#f6f4f1; --card:#ffffff; --ink:#1b1d22; --muted:#666a73; --line:#e3dfd8;
-  --signal:#c62828; --ok:#1b7a47; --ok-bg:#e4f3ea; --pair:#155e8f; --pair-bg:#e2eef7; --unv:#8a5a00; --unv-bg:#fbefd9;
+  --bg:#f3f1ed; --surface:#ffffff; --surface-2:#ebe8e2; --ink:#16181d; --ink-2:#3d414a; --muted:#6c707a; --line:#dedad2;
+  --red:#d42a20; --red-soft:#fbe5e2; --amber:#a86500; --amber-soft:#fcefd6; --blue:#1a5f92; --blue-soft:#e1edf7; --green:#177a45; --green-soft:#e0f2e8;
   --f-head:"Noto Kufi Arabic","IBM Plex Sans Arabic",Tahoma,sans-serif; --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+  --r:16px; --shadow:0 1px 0 rgba(0,0,0,.04),0 6px 20px -12px rgba(0,0,0,.18);
 }
 @media (prefers-color-scheme: dark){:root{
-  --bg:#121317; --card:#1b1d23; --ink:#eceae6; --muted:#a3a6ad; --line:#2c2f37;
-  --signal:#ff6b61; --ok:#6fd49c; --ok-bg:#16301f; --pair:#80bfe8; --pair-bg:#142838; --unv:#f0b85a; --unv-bg:#33270f; color-scheme:dark}}
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;padding-top:env(safe-area-inset-top,0px)}
-.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px;display:grid;gap:14px}
-h1{font-family:var(--f-head);font-weight:800;font-size:1.7rem;margin:0;display:flex;align-items:center;gap:10px}
-.dot{width:12px;height:12px;border-radius:50%;background:var(--signal)}
-.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.fresh{font-size:.9rem;color:var(--muted)} .fresh.stale{color:var(--unv);font-weight:600}
-.btn{font:inherit;font-weight:600;border:1px solid var(--line);border-radius:10px;padding:8px 14px;background:var(--card);color:var(--ink);cursor:pointer}
-.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
-.seg button{font:inherit;font-weight:600;border:0;border-radius:9px;padding:10px 4px;background:transparent;color:var(--muted);cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
-.toggle{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)} .toggle input{width:18px;height:18px}
+  --bg:#0f1115; --surface:#171a20; --surface-2:#20242c; --ink:#f1efea; --ink-2:#c9c7c2; --muted:#9a9ea7; --line:#272b33;
+  --red:#ff5a4e; --red-soft:#3a1714; --amber:#f2b552; --amber-soft:#33260f; --blue:#7fbbe6; --blue-soft:#132535; --green:#6fd29b; --green-soft:#11291c;
+  --shadow:0 1px 0 rgba(255,255,255,.02),0 8px 24px -14px rgba(0,0,0,.6); color-scheme:dark}}
+*{box-sizing:border-box} [hidden]{display:none!important}
+html,body{margin:0} body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.65;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+.wrap{max-width:680px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 14px) max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+
+/* header */
+.head{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);margin:0 -16px;padding:10px 16px 12px;border-bottom:1px solid transparent}
+.head.scrolled{border-bottom-color:var(--line)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.mark{width:34px;height:34px;border-radius:10px;background:var(--red);display:grid;place-items:center;flex:none;position:relative}
+.mark::after{content:"";width:10px;height:10px;border-radius:50%;background:#fff}
+h1{font-family:var(--f-head);font-weight:800;font-size:1.35rem;margin:0;letter-spacing:-.01em;white-space:nowrap}
+.live{display:inline-flex;align-items:center;gap:7px;font-size:.82rem;color:var(--muted);margin-top:2px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 60%,transparent);animation:pulse 2s infinite}
+.live.stale .pulse{background:var(--amber);animation:none} .live.stale{color:var(--amber);font-weight:600}
+@keyframes pulse{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.actions{display:flex;gap:8px;flex:none}
+.icon-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer}
+.icon-btn svg{width:20px;height:20px}
+.icon-btn.spin svg{animation:spin .8s linear infinite} @keyframes spin{to{transform:rotate(-360deg)}}
+
+/* tabs */
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface-2);border-radius:14px;padding:4px;margin-top:12px}
+.tabs button{border:0;background:transparent;border-radius:11px;padding:9px 6px;font-weight:600;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.filters{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-top:10px;padding-bottom:2px}
+.filters::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:.88rem;font-weight:600;color:var(--ink-2);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.search{width:100%;margin-top:10px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;font:inherit;color:var(--ink)}
+
+/* section title */
+.sec{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 2px 10px}
+.sec h2{font-family:var(--f-head);font-size:1.05rem;font-weight:700;margin:0}
+.sec span{font-size:.82rem;color:var(--muted)}
+
+/* cards */
 .list{display:grid;gap:10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:8px;min-width:0}
-.card h2{font-size:1.05rem;font-weight:600;margin:0}
-.row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:.85rem;color:var(--muted)}
-.badge{font-weight:600;font-size:.8rem;border-radius:999px;padding:2px 10px;white-space:nowrap}
-.b-ok{color:var(--ok);background:var(--ok-bg)} .b-pair{color:var(--pair);background:var(--pair-bg)} .b-unv{color:var(--unv);background:var(--unv-bg)}
-.lv{font-weight:700;font-size:.8rem;border-radius:6px;padding:1px 8px} .lv-urgent{background:var(--signal);color:#fff} .lv-imp{border:1px solid var(--signal);color:var(--signal)}
-.src a{color:var(--pair);text-decoration:none;border-bottom:1px solid currentColor}
-.empty{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:18px;color:var(--muted);text-align:center}
-.note{font-size:.8rem;color:var(--muted)}
-.gate{display:grid;gap:12px;margin-top:20vh;text-align:center}
-.gate input{font:inherit;font-size:1.4rem;text-align:center;letter-spacing:.3em;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
-button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--pair);outline-offset:2px}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px 14px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;overflow:hidden;cursor:pointer}
+.card::before{content:"";position:absolute;inset-block:0;inset-inline-start:0;width:4px;background:var(--lvl,transparent)}
+.card.l-urgent{--lvl:var(--red)} .card.l-imp{--lvl:var(--amber)} .card.l-follow{--lvl:var(--blue)}
+.rank{grid-row:span 3;font-family:var(--f-head);font-weight:800;font-size:1.6rem;line-height:1.1;color:var(--muted);min-width:1.4em;text-align:center;padding-top:2px}
+.card.l-urgent .rank{color:var(--red)}
+.card.no-rank{grid-template-columns:1fr} .card.no-rank .rank{display:none}
+.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.8rem;color:var(--muted)}
+.tag{font-weight:700;font-size:.75rem;border-radius:6px;padding:1px 8px;white-space:nowrap}
+.t-urgent{background:var(--red);color:#fff} .t-imp{background:var(--amber-soft);color:var(--amber)} .t-follow{background:var(--blue-soft);color:var(--blue)}
+.t-new{background:var(--ink);color:var(--bg)}
+.st{font-weight:600;font-size:.75rem;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.s-ok{background:var(--green-soft);color:var(--green)} .s-pair{background:var(--blue-soft);color:var(--blue)} .s-unv{background:var(--surface-2);color:var(--muted)}
+.title{font-size:1.04rem;font-weight:600;line-height:1.55;margin:2px 0 0;color:var(--ink);overflow-wrap:anywhere}
+.meta{font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px}
+.more{grid-column:1/-1;border-top:1px dashed var(--line);margin-top:8px;padding-top:10px;display:grid;gap:8px}
+.card.no-rank .more{grid-column:1}
+.srcs{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.srcs a{display:flex;justify-content:space-between;gap:10px;text-decoration:none;color:var(--blue);font-size:.9rem;font-weight:600;background:var(--surface-2);border-radius:10px;padding:8px 12px}
+.srcs a small{color:var(--muted);font-weight:500;white-space:nowrap}
+.basis{font-size:.82rem;color:var(--muted)}
+.row-btns{display:flex;gap:8px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;font-weight:600;font-size:.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:22px;color:var(--muted);text-align:center}
+.skel{height:92px;border-radius:var(--r);background:linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%);background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.foot{margin-top:24px;display:grid;gap:12px}
+.note{font-size:.8rem;color:var(--muted);line-height:1.7}
+.toast{position:fixed;inset-inline:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);max-width:420px;margin:auto;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;text-align:center;font-weight:600;font-size:.9rem;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:9}
+.toast.on{opacity:1;transform:none}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<main class="wrap" id="app" hidden>
-  <h1><span class="dot" aria-hidden="true"></span>هوبي عاجل</h1>
-  <div class="top"><div class="fresh" id="fresh">جارِ التحميل…</div><button class="btn" id="refresh" type="button">تحديث</button></div>
-  <div class="seg" role="group" aria-label="الفترة">
-    <button type="button" data-w="10" aria-pressed="true">آخر 10 دقائق</button>
-    <button type="button" data-w="60" aria-pressed="false">آخر ساعة</button>
-    <button type="button" data-w="1440" aria-pressed="false">اليوم</button>
-  </div>
-  <label class="toggle" for="onlyImp"><input id="onlyImp" type="checkbox">إخفاء الأخبار الروتينية</label>
-  <section class="list" id="list" aria-live="polite"></section>
-  <p class="note">الأخبار تتحدث كل 10 دقائق تقريباً من نحو 170 قناة تلغرام وموقعاً يتابعها مرصد هوبي (لا كل الإنترنت). تظهر الأخبار المؤكدة وغير المؤكدة معاً، وكل خبر عليه حالته. «مؤكد» = صادر عن الجهة الرسمية نفسها، وهذا يثبت صدور الكلام لا صحة مضمونه. «متطابق لدى جهتين» قد تنقل الجهتان عن بعضهما.</p>
-</main>
-<main class="wrap" id="gate" hidden>
-  <form class="gate" id="gateForm">
-    <h1 style="justify-content:center"><span class="dot" aria-hidden="true"></span>هوبي عاجل</h1>
-    <label for="code">اكتب رمز الدخول</label>
-    <input id="code" inputmode="numeric" autocomplete="off" maxlength="12">
-    <button class="btn" type="submit">دخول</button>
-    <p class="note" id="gateMsg"></p>
-  </form>
-</main>
+<div class="wrap">
+  <header class="head" id="head">
+    <div class="bar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div>
+          <h1>هوبي عاجل</h1>
+          <div class="live" id="live"><span class="pulse"></span><span id="liveTxt">جارِ التحميل…</span></div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" id="shareApp" type="button" aria-label="شارك التطبيق مع الفريق">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+        </button>
+        <button class="icon-btn" id="refresh" type="button" aria-label="تحديث">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" type="button" data-tab="top" aria-selected="true">أهم 10 الآن</button>
+      <button role="tab" type="button" data-tab="all" aria-selected="false">كل الأخبار</button>
+    </div>
+    <div id="allCtl" hidden>
+      <div class="filters" role="group" aria-label="الفترة">
+        <button class="chip" type="button" data-w="10" aria-pressed="false">آخر 10 دقائق</button>
+        <button class="chip" type="button" data-w="60" aria-pressed="true">آخر ساعة</button>
+        <button class="chip" type="button" data-w="360" aria-pressed="false">6 ساعات</button>
+        <button class="chip" type="button" data-w="1440" aria-pressed="false">اليوم</button>
+        <button class="chip" type="button" id="urgOnly" aria-pressed="false">العاجل والمهم فقط</button>
+      </div>
+      <input class="search" id="q" type="search" placeholder="ابحث بكلمة أو اسم…" autocomplete="off">
+    </div>
+  </header>
+
+  <div class="sec"><h2 id="secTitle">أهم 10 أخبار الآن</h2><span id="secSub"></span></div>
+  <section class="list" id="list" aria-live="polite">
+    <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+  </section>
+
+  <footer class="foot">
+    <p class="note">الترتيب يعتمد على درجة الخبر (عاجل، مهم، متابعة)، وعدد الجهات اللي نشرته، وحالة التحقق، وحداثته. الأخبار تتحدث تلقائياً كل 3 دقائق تقريباً من نحو 170 قناة تلغرام وموقع يتابعها مرصد هوبي، وهذا مو كل الإنترنت.</p>
+    <p class="note"><b>مؤكد</b>: صادر عن الجهة الرسمية نفسها، وهذا يثبت صدور الكلام لا صحة مضمونه. <b>متطابق لدى جهتين</b>: نشرته جهتان، وممكن وحدة تنقل عن الثانية. <b>غير مؤكد</b>: مصدر واحد غير رسمي.</p>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
 <script>
-const ACCESS_HASH = ""; // فارغ = بلا رمز
-const $ = s => document.querySelector(s);
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let news = [], meta = null, windowMin = 10;
-const store = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-async function sha(t){ if(!(window.crypto&&crypto.subtle)) return t==="hobi-ajel:452677"?ACCESS_HASH:""; const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
-function ago(iso){ if(!iso) return "وقت غير معروف"; const m=Math.round((Date.now()-new Date(iso))/60000); if(m<1) return "الآن"; if(m<60) return `قبل ${m} دقيقة`; const h=Math.round(m/60); return h<24?`قبل ${h} ساعة`:`قبل ${Math.round(h/24)} يوم`; }
-function bgd(iso){ if(!iso) return ""; const d=new Date(new Date(iso).getTime()+3*3600e3), p=n=>String(n).padStart(2,"0"); return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())} بغداد`; }
-function badge(s){ return s==="مؤكد"?'<span class="badge b-ok">مؤكد</span>':s==="متطابق لدى جهتين"?'<span class="badge b-pair">متطابق لدى جهتين</span>':'<span class="badge b-unv">غير مؤكد</span>'; }
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let news=[],meta=null,tab="top",windowMin=60,urgOnly=false,query="",open=new Set(),loading=false;
+let seen=new Set(JSON.parse(store.get("hobi_seen")||"[]")), fresh=new Set();
+
+const LV={"عاجل":{w:40,c:"l-urgent",t:'<span class="tag t-urgent">عاجل</span>'},"مهم":{w:25,c:"l-imp",t:'<span class="tag t-imp">مهم</span>'},"متابعة":{w:12,c:"l-follow",t:'<span class="tag t-follow">متابعة</span>'}};
+const ST={"مؤكد":['s-ok',5],"متطابق لدى جهتين":['s-pair',4]};
+const mins=iso=>iso?(Date.now()-new Date(iso))/60000:1e9;
+function ago(iso){ if(!iso) return "وقت غير معروف"; const m=Math.round(mins(iso)); if(m<1) return "الآن"; if(m<60) return `قبل ${m} د`; const h=Math.round(m/60); return h<24?`قبل ${h} س`:`قبل ${Math.round(h/24)} يوم`; }
+function bgd(iso){ if(!iso) return ""; const d=new Date(new Date(iso).getTime()+3*3600e3),p=n=>String(n).padStart(2,"0"); return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`; }
+const srcName=s=>String(s).replace(/ — (telegram|تلغرام|RSS)$/i,"");
+function score(n){ const lv=LV[n.level]?.w||0, st=ST[n.status]?.[1]||0, age=mins(n.latest_utc);
+  return lv + Math.min(n.n_sources||1,6)*4 + st - age/10; }  // نقطة تنخفض كل 10 دقائق
+
+function card(n,i){
+  const lv=LV[n.level], st=ST[n.status]?.[0]||"s-unv", isOpen=open.has(n.id);
+  const srcs=(n.sources||[]), first=srcs.length?srcName(srcs[srcs.length-1].name):"";
+  return `<article class="card ${lv?lv.c:""} ${i==null?"no-rank":""}" data-id="${esc(n.id)}" tabindex="0" aria-expanded="${isOpen}">
+    <div class="rank">${i==null?"":i+1}</div>
+    <div class="tags">${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${lv?lv.t:""}<span class="st ${st}">${esc(n.status||"غير مؤكد")}</span><span>${esc(ago(n.latest_utc))}</span>${n.date_confirmed?"":"<span>· وقت تقريبي</span>"}</div>
+    <h3 class="title">${esc(n.title)}</h3>
+    <div class="meta"><span>${esc(first)}${n.n_sources===2?" وجهة أخرى":n.n_sources>2?` و${n.n_sources-1} جهات أخرى`:""}</span><span>${esc(bgd(n.latest_utc))} بغداد</span></div>
+    ${isOpen?`<div class="more">
+      <ul class="srcs">${srcs.slice(0,6).map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(srcName(s.name))}<small>${esc(bgd(s.time))}</small></a></li>`).join("")}</ul>
+      <div class="basis">${esc(n.basis||"")}</div>
+      <div class="row-btns"><button class="btn primary" type="button" data-share="${esc(n.id)}">إرسال للفريق</button><button class="btn" type="button" data-copy="${esc(n.id)}">نسخ</button></div>
+    </div>`:""}
+  </article>`;
+}
+
 function render(){
-  if(meta){ const m=Math.round((Date.now()-new Date(meta.updated_utc))/60000), f=$("#fresh");
-    f.textContent=`آخر تحديث: ${ago(meta.updated_utc)} · ${bgd(meta.updated_utc)}`+(m>25?" — التحديث متأخر، قد تفوتك أخبار":""); f.classList.toggle("stale", m>25); }
-  const onlyImp=$("#onlyImp").checked, cut=Date.now()-windowMin*60000, rank={"عاجل":0,"مهم":1,"متابعة":2};
-  const rows=news.filter(n=>n.latest_utc && new Date(n.latest_utc)>=cut && (!onlyImp || n.level in rank))
-    .sort((a,b)=>((rank[a.level]??3)-(rank[b.level]??3)) || (new Date(b.latest_utc)-new Date(a.latest_utc)));
-  const label=windowMin===10?"آخر 10 دقائق":windowMin===60?"آخر ساعة":"اليوم";
-  const card=n=>`<article class="card">
-    <div class="row">${n.level==="عاجل"?'<span class="lv lv-urgent">عاجل</span>':n.level==="مهم"?'<span class="lv lv-imp">مهم</span>':n.level==="متابعة"?'<span class="lv lv-imp" style="opacity:.6">متابعة</span>':""}${badge(n.status)}<span>${esc(ago(n.latest_utc))}</span><span>${esc(bgd(n.latest_utc))}</span>${n.date_confirmed?"":"<span>· وقت تقريبي</span>"}</div>
-    <h2>${esc(n.title)}</h2>
-    <div class="row src">${(n.sources||[]).slice(0,3).map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(String(s.name).replace(/ — (telegram|تلغرام)$/,""))}</a>`).join(" · ")}<span>· ${esc(n.basis)}</span></div></article>`;
-  const latest=news.filter(n=>n.latest_utc&&(!onlyImp||n.level in rank)).sort((a,b)=>new Date(b.latest_utc)-new Date(a.latest_utc)).slice(0,8);
-  $("#list").innerHTML = rows.length ? rows.map(card).join("")
-    : `<div class="empty">ما كو خبر جديد خلال ${label}. هذني آخر الأخبار:</div>`+latest.map(card).join("");
+  if(meta){ const m=mins(meta.updated_utc), l=$("#live"); l.classList.toggle("stale",m>12);
+    $("#liveTxt").textContent = m>12?`آخر تحديث ${ago(meta.updated_utc)} · قد تفوتك أخبار`:`مباشر · تحدّث ${ago(meta.updated_utc)}`; }
+  let rows, title, sub;
+  if(tab==="top"){
+    rows=news.filter(n=>mins(n.latest_utc)<=360).map(n=>[score(n),n]).sort((a,b)=>b[0]-a[0]).slice(0,10).map(x=>x[1]);
+    title="أهم 10 أخبار الآن"; sub="من آخر 6 ساعات";
+  } else {
+    const q=query.trim();
+    rows=news.filter(n=>mins(n.latest_utc)<=windowMin && (!urgOnly||n.level==="عاجل"||n.level==="مهم") && (!q||(n.title+" "+(n.sources||[]).map(s=>s.name).join(" ")).includes(q)))
+      .sort((a,b)=>new Date(b.latest_utc)-new Date(a.latest_utc));
+    title="كل الأخبار"; sub=`${rows.length} خبر`;
+  }
+  $("#secTitle").textContent=title; $("#secSub").textContent=sub;
+  $("#list").innerHTML = rows.length ? rows.map((n,i)=>card(n,tab==="top"?i:null)).join("")
+    : `<div class="empty">${tab==="top"?"ما كو أخبار بآخر 6 ساعات.":"ما كو أخبار تطابق الفلتر. جرّب فترة أطول."}</div>`;
 }
-async function load(){
+
+async function load(manual){
+  if(loading) return; loading=true; $("#refresh").classList.add("spin");
   try{
-    const [n, m] = await Promise.all([fetch("news.json?t="+Date.now()).then(r=>r.json()), fetch("meta.json?t="+Date.now()).then(r=>r.json())]);
-    news = n; meta = m; render();
-  }catch(e){ $("#fresh").textContent = "ما كدرت أجيب الأخبار. تأكد من الإنترنت واضغط «تحديث»."; }
+    const [n,m]=await Promise.all([fetch("news.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()),fetch("meta.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json())]);
+    const firstLoad=!news.length && !seen.size;
+    fresh=new Set(firstLoad?[]:n.filter(x=>!seen.has(x.id)).map(x=>x.id));
+    n.forEach(x=>seen.add(x.id)); store.set("hobi_seen",JSON.stringify([...seen].slice(-3000)));
+    news=n; meta=m; render();
+    if(manual) toast(fresh.size?`${fresh.size} خبر جديد`:"ما كو جديد من آخر تحديث");
+  }catch(e){ $("#liveTxt").textContent="ما كدرت أجيب الأخبار. تأكد من الإنترنت"; $("#live").classList.add("stale"); if(!news.length) $("#list").innerHTML='<div class="empty">ما كدرت أجيب الأخبار. تأكد من الإنترنت واضغط زر التحديث.</div>'; }
+  finally{ loading=false; $("#refresh").classList.remove("spin"); }
 }
-function start(){ $("#gate").hidden=true; $("#app").hidden=false; load(); setInterval(load, 5*60000); setInterval(render, 60000); }
-document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{ windowMin=+b.dataset.w; document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
-$("#onlyImp").addEventListener("change", render);
-$("#refresh").addEventListener("click", load);
-$("#gateForm").addEventListener("submit", async e => { e.preventDefault();
-  const raw=$("#code").value.replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/\D/g,"");
-  if(await sha("hobi-ajel:"+raw) === ACCESS_HASH){ store.set("hobi_ajel_ok", ACCESS_HASH); start(); }
-  else $("#gateMsg").textContent = "الرمز غلط."; });
-if(!ACCESS_HASH || store.get("hobi_ajel_ok")===ACCESS_HASH) start(); else $("#gate").hidden=false;
+
+let tt; function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("on"); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove("on"),2200); }
+function textOf(n){ const s=(n.sources||[])[0]; return `${n.level==="عاجل"?"🔴 عاجل | ":""}${n.title}\n(${n.status||"غير مؤكد"}) — ${s?srcName(s.name):""}\n${s?s.url:""}`; }
+async function shareText(text,title){ if(navigator.share){ try{ await navigator.share({title,text}); return; }catch(e){ if(e.name==="AbortError") return; } } copy(text); }
+async function copy(t){ try{ await navigator.clipboard.writeText(t); toast("انتسخ"); }catch(e){ const a=document.createElement("textarea"); a.value=t; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); toast("انتسخ"); } }
+
+$("#list").addEventListener("click",e=>{
+  const sh=e.target.closest("[data-share]"), cp=e.target.closest("[data-copy]");
+  if(sh||cp){ const n=news.find(x=>x.id===(sh||cp).dataset[sh?"share":"copy"]); if(n){ sh?shareText(textOf(n),"هوبي عاجل"):copy(textOf(n)); } return; }
+  if(e.target.closest("a")) return;
+  const c=e.target.closest(".card"); if(!c) return; const id=c.dataset.id; open.has(id)?open.delete(id):open.add(id); render();
+});
+$("#list").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.classList.contains("card")) e.target.click(); });
+$$(".tabs button").forEach(b=>b.addEventListener("click",()=>{ tab=b.dataset.tab; $$(".tabs button").forEach(x=>x.setAttribute("aria-selected",String(x===b))); $("#allCtl").hidden=tab!=="all"; render(); }));
+$$(".chip[data-w]").forEach(b=>b.addEventListener("click",()=>{ windowMin=+b.dataset.w; $$(".chip[data-w]").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
+$("#urgOnly").addEventListener("click",e=>{ urgOnly=!urgOnly; e.currentTarget.setAttribute("aria-pressed",String(urgOnly)); render(); });
+$("#q").addEventListener("input",e=>{ query=e.target.value; render(); });
+$("#refresh").addEventListener("click",()=>load(true));
+$("#shareApp").addEventListener("click",()=>shareText("هوبي عاجل — أهم أخبار العراق، تتحدث كل 3 دقائق:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
+addEventListener("scroll",()=>$("#head").classList.toggle("scrolled",scrollY>4),{passive:true});
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && meta && mins(meta.updated_utc)>2) load(); });
+load(); setInterval(()=>{ if(!document.hidden) load(); },3*60000); setInterval(render,60000);
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
