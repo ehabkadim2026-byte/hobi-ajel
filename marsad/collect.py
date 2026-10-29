@@ -59,7 +59,7 @@ def parse_tme(html, source):
         if not text:
             continue
         out.append({"platform": "telegram", "source_id": source["id"], "source_name": source["name"],
-                    "url": f"https://t.me/{user}/{num}", "post_no": int(num), "title": text.split("\n")[0][:200],
+                    "url": f"https://t.me/{user}/{num}", "post_no": int(num), "title": (text.split("\n")[0] if len(text.split("\n")[0].strip(" 🔻🔴📌⭕️:")) >= 25 else " ".join(text.split()))[:200],
                     "text": text[:500], "views": views.group(1) if views else None,
                     "published_utc": dt.group(1) if dt else None, "date_confirmed": bool(dt)})
     return out
