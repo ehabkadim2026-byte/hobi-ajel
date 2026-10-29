@@ -43,7 +43,7 @@ h1{font-family:var(--f-head);font-weight:800;font-size:1.35rem;margin:0;letter-s
 .icon-btn.spin svg{animation:spin .8s linear infinite} @keyframes spin{to{transform:rotate(-360deg)}}
 
 /* tabs */
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface-2);border-radius:14px;padding:4px;margin-top:12px}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background:var(--surface-2);border-radius:14px;padding:4px;margin-top:12px}
 .tabs button{border:0;background:transparent;border-radius:11px;padding:9px 6px;font-weight:600;color:var(--muted);cursor:pointer}
 .tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
 .filters{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-top:10px;padding-bottom:2px}
@@ -114,7 +114,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
       </div>
     </div>
     <div class="tabs" role="tablist">
-      <button role="tab" type="button" data-tab="top" aria-selected="true">أهم 10 الآن</button>
+      <button role="tab" type="button" data-tab="now" aria-selected="true">آخر 3 دقائق</button>
+      <button role="tab" type="button" data-tab="top" aria-selected="false">أهم 10</button>
       <button role="tab" type="button" data-tab="all" aria-selected="false">كل الأخبار</button>
     </div>
     <div id="allCtl" hidden>
@@ -129,7 +130,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
     </div>
   </header>
 
-  <div class="sec"><h2 id="secTitle">أهم 10 أخبار الآن</h2><span id="secSub"></span></div>
+  <div class="sec"><h2 id="secTitle">المهم بآخر 3 دقائق</h2><span id="secSub"></span></div>
   <section class="list" id="list" aria-live="polite">
     <div class="skel"></div><div class="skel"></div><div class="skel"></div>
   </section>
@@ -137,6 +138,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
   <footer class="foot">
     <p class="note">الترتيب يعتمد على درجة الخبر (عاجل، مهم، متابعة)، وعدد الجهات اللي نشرته، وحالة التحقق، وحداثته. الأخبار تتحدث تلقائياً كل 3 دقائق تقريباً من نحو 170 قناة تلغرام وموقع يتابعها مرصد هوبي، وهذا مو كل الإنترنت.</p>
     <p class="note"><b>مؤكد</b>: صادر عن الجهة الرسمية نفسها، وهذا يثبت صدور الكلام لا صحة مضمونه. <b>متطابق لدى جهتين</b>: نشرته جهتان، وممكن وحدة تنقل عن الثانية. <b>غير مؤكد</b>: مصدر واحد غير رسمي.</p>
+    <p class="note" style="opacity:.6">نسخة 29/10 · 3</p>
   </footer>
 </div>
 <div class="toast" id="toast" role="status"></div>
@@ -145,7 +147,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-let news=[],meta=null,tab="top",windowMin=60,urgOnly=false,query="",open=new Set(),loading=false;
+let news=[],meta=null,tab="now",windowMin=60,urgOnly=false,query="",open=new Set(),loading=false;
 let seen=new Set(JSON.parse(store.get("hobi_seen")||"[]")), fresh=new Set();
 
 const LV={"عاجل":{w:40,c:"l-urgent",t:'<span class="tag t-urgent">عاجل</span>'},"مهم":{w:25,c:"l-imp",t:'<span class="tag t-imp">مهم</span>'},"متابعة":{w:12,c:"l-follow",t:'<span class="tag t-follow">متابعة</span>'}};
@@ -177,6 +179,15 @@ function render(){
   if(meta){ const m=mins(meta.updated_utc), l=$("#live"); l.classList.toggle("stale",m>12);
     $("#liveTxt").textContent = m>12?`آخر تحديث ${ago(meta.updated_utc)} · قد تفوتك أخبار`:`مباشر · تحدّث ${ago(meta.updated_utc)}`; }
   let rows, title, sub;
+  if(tab==="now"){
+    const end=meta?new Date(meta.updated_utc).getTime():Date.now(), from=end-3*60000;
+    const recent=news.filter(n=>n.latest_utc && new Date(n.latest_utc).getTime()>=from).sort((a,b)=>new Date(b.latest_utc)-new Date(a.latest_utc));
+    const imp=recent.filter(n=>n.level in LV).sort((a,b)=>score(b)-score(a)), rest=recent.filter(n=>!(n.level in LV));
+    $("#secTitle").textContent="المهم بآخر 3 دقائق"; $("#secSub").textContent=meta?`حتى تحديث ${bgd(meta.updated_utc)}`:"";
+    $("#list").innerHTML=(imp.length?imp.map(n=>card(n,null)).join(""):'<div class="empty">ما كو خبر مهم بآخر 3 دقائق.</div>')
+      +(rest.length?`<div class="sec"><h2>كل اللي نزل بآخر 3 دقائق</h2><span>${rest.length} خبر</span></div>`+rest.map(n=>card(n,null)).join(""):"");
+    return;
+  }
   if(tab==="top"){
     rows=news.filter(n=>mins(n.latest_utc)<=360).map(n=>[score(n),n]).sort((a,b)=>b[0]-a[0]).slice(0,10).map(x=>x[1]);
     title="أهم 10 أخبار الآن"; sub="من آخر 6 ساعات";
