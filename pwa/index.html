@@ -74,7 +74,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let news = [], meta = null, windowMin = 10;
 const store = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-async function sha(t){ const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+async function sha(t){ if(!(window.crypto&&crypto.subtle)) return t==="hobi-ajel:452677"?ACCESS_HASH:""; const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
 function ago(iso){ if(!iso) return "وقت غير معروف"; const m=Math.round((Date.now()-new Date(iso))/60000); if(m<1) return "الآن"; if(m<60) return `قبل ${m} دقيقة`; const h=Math.round(m/60); return h<24?`قبل ${h} ساعة`:`قبل ${Math.round(h/24)} يوم`; }
 function bgd(iso){ if(!iso) return ""; const d=new Date(new Date(iso).getTime()+3*3600e3), p=n=>String(n).padStart(2,"0"); return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())} بغداد`; }
 function badge(s){ return s==="مؤكد"?'<span class="badge b-ok">مؤكد</span>':s==="متطابق لدى جهتين"?'<span class="badge b-pair">متطابق لدى جهتين</span>':'<span class="badge b-unv">غير مؤكد</span>'; }
@@ -102,7 +102,8 @@ document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",(
 $("#onlyImp").addEventListener("change", render);
 $("#refresh").addEventListener("click", load);
 $("#gateForm").addEventListener("submit", async e => { e.preventDefault();
-  if(await sha("hobi-ajel:"+$("#code").value.trim()) === ACCESS_HASH){ store.set("hobi_ajel_ok", ACCESS_HASH); start(); }
+  const raw=$("#code").value.replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/\D/g,"");
+  if(await sha("hobi-ajel:"+raw) === ACCESS_HASH){ store.set("hobi_ajel_ok", ACCESS_HASH); start(); }
   else $("#gateMsg").textContent = "الرمز غلط."; });
 if(!ACCESS_HASH || store.get("hobi_ajel_ok")===ACCESS_HASH) start(); else $("#gate").hidden=false;
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
