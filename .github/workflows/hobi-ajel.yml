@@ -21,7 +21,7 @@ jobs:
       - uses: actions/cache/restore@v4
         with: {path: data/marsad.db, key: "marsad-db-${{ github.run_id }}", restore-keys: "marsad-db-"}
       - run: python3 -m marsad.cli sources
-      - run: python3 -m marsad.cli collect --limit 60
+      - run: python3 -m marsad.cli collect --limit 400
       - name: process (بدون PDF واللوحة لتسريع الجولة)
         run: python3 -c "from marsad import core; c=core.connect(); core.cluster_items(c); core.generate_alerts(c)"
       - run: python3 -m tools.export_pwa

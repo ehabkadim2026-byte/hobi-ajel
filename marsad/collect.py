@@ -65,7 +65,7 @@ def parse_tme(html, source):
     return out
 
 
-def collect_telegram(source, last_seen=None, max_pages=5):
+def collect_telegram(source, last_seen=None, max_pages=3):
     user = source["url"].rstrip("/").split("/")[-1]
     after = last_seen
     items = []

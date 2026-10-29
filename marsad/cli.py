@@ -9,9 +9,8 @@ from .notify import deliver
 from .textnorm import to_baghdad
 
 
-def collect_all(con, limit, priority_only):
+def collect_all(con, limit, priority_only, workers=6):
     """جمع خادمي مباشر (يحتاج شبكة مفتوحة). يحترم حدود الطلبات بتوقف بين المصادر، ويسجل كل فشل كنقطة عمى."""
-    import time
     from datetime import datetime, timezone
     from .collect import collect_source
     q = "SELECT * FROM sources WHERE method IN ('rss','telegram_preview') AND status NOT IN ('مستبعد')"
@@ -24,12 +23,19 @@ def collect_all(con, limit, priority_only):
         n = int(r["url"].rstrip("/").split("/")[-1])
         last[r["source_id"]] = max(last.get(r["source_id"], 0), n)
     batch = {"batch_id": datetime.now(timezone.utc).strftime("srv%Y%m%d%H%M"), "items": [], "failed": []}
-    for s in rows:
+    from concurrent.futures import ThreadPoolExecutor
+
+    def one(s):
         try:
-            batch["items"] += collect_source(s, last)
+            return s, collect_source(s, last), None
         except Exception as e:  # noqa: BLE001
-            batch["failed"].append({"source_id": s["id"], "reason": str(e)[:200]})
-        time.sleep(1.5)
+            return s, [], str(e)[:200]
+    # جمع متوازٍ بعدد عمال محدود حتى لا نُثقل على تلغرام (حد الطلبات)؛ كل فشل يُسجل نقطة عمى
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        for s, items, err in ex.map(one, rows):
+            batch["items"] += items
+            if err:
+                batch["failed"].append({"source_id": s["id"], "reason": err})
     out = core.ROOT / "data" / "inbox" / (batch["batch_id"] + ".json")
     out.write_text(json.dumps(batch, ensure_ascii=False), encoding="utf-8")
     return core.ingest_batch(con, batch)
