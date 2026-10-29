@@ -112,7 +112,9 @@ def main(hours=24):
         ntext = norm_ar(alltext)
         iraq_kw = any(w in ntext for w in IRAQ_AR) or bool(IRAQ_EN.search(alltext))
         foreign_kw = any(w in ntext for w in FOREIGN_AR)
-        about_iraq = iraq_kw or origin == "أجنبي" or (origin == "عراقي" and not foreign_kw)
+        about_iraq = iraq_kw or (origin == "عراقي" and not foreign_kw)
+        if origin == "أجنبي" and not iraq_kw:
+            continue  # الإعلام الأجنبي: ما يخص العراق فقط
         scope = ("أجنبي" if regs and all(r.startswith("أجنبي") for r in regs)
                  else "إقليمي" if regs and all(r.startswith("إقليمي") or r.startswith("أجنبي") for r in regs) else "العراق")
         latest = max((e["time"] for e in ev if e["time"]), default=None)

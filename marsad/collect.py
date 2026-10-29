@@ -129,6 +129,8 @@ def collect_source(source, state):
         items = parse_rss(http_get(source["url"]), source)
         if "news.google.com" in source["url"]:
             items = _google_news(items)
+            if source.get("category") == "تحليل أجنبي":
+                items = [i for i in items if IRAQ_RX.search(i["title"] or "")]
             if "hl=ar" in source["url"]:  # الإعلام العربي غير العراقي فقط؛ العراقي مرصود مباشرة
                 items = [i for i in items if not IRAQI_OUTLETS.search(i.get("source_name") or "")]
             return items
