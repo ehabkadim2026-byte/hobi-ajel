@@ -131,7 +131,7 @@ def collect_source(source, state):
             items = _google_news(items)
             if source.get("category") == "تحليل أجنبي":
                 items = [i for i in items if IRAQ_RX.search(i["title"] or "")]
-            if "hl=ar" in source["url"]:  # الإعلام العربي غير العراقي فقط؛ العراقي مرصود مباشرة
+            if source.get("category") == "إعلام عربي وإقليمي":  # الإعلام العربي غير العراقي فقط؛ العراقي مرصود مباشرة
                 items = [i for i in items if not IRAQI_OUTLETS.search(i.get("source_name") or "")]
             return items
         if source.get("category") == "صحافة أجنبية" and "/iraq" not in source["url"].lower() and "iraq" not in source["url"].lower():
