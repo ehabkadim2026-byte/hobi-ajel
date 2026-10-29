@@ -75,6 +75,16 @@ OPINION_RX = re.compile(r"\b(opinion|op-ed|column|commentary|editorial|view)\b",
 ANALYSIS_RX = re.compile(r"\b(analysis|explainer|explained|why|how|what .* means|inside|the future of|strategy|lessons)\b", re.I)
 
 
+AGENCY_RX = re.compile(r"\b(Reuters|Associated Press|AP News|AFP|Agence France|Bloomberg|Anadolu|Xinhua|dpa|TASS|UPI|EFE|Kyodo|ANSA|Agenzia Nova|NHK)\b", re.I)
+
+
+def views_num(v):
+    m = re.match(r"([\d.]+)\s*([KMk]?)", str(v or ""))
+    if not m:
+        return 0
+    return int(float(m.group(1)) * {"K": 1e3, "k": 1e3, "M": 1e6}.get(m.group(2), 1))
+
+
 def topic_of(norm_text, en_text):
     best, score = "عام", 0
     for name, words, rx in TOPICS:
@@ -137,7 +147,12 @@ def main(hours=24):
         if latest < iso(now - timedelta(days=1)) and not kind:
             continue
         collected = con.execute("SELECT MIN(collected_utc) FROM items WHERE cluster_id=?", (c["id"],)).fetchone()[0]
-        out.append({"id": c["id"], "title": title_ar or title, "title_orig": title if title_ar else None, "status": st, "basis": basis, "level": level, "scope": scope, "origin": origin, "about_iraq": about_iraq, "kind": kind,
+        agency = origin == "أجنبي" and (any(r.startswith("أجنبي — وكالة") for r in regs) or any(AGENCY_RX.search(e["source"] or "") for e in ev))
+        views = max([views_num(r[0]) for r in con.execute("SELECT views FROM items WHERE cluster_id=?", (c["id"],))] or [0])
+        first_ev = next((e for e in ev if e["time"]), ev[0] if ev else None)
+        out.append({"id": c["id"], "title": title_ar or title, "title_orig": title if title_ar else None, "status": st, "basis": basis, "level": level, "scope": scope, "origin": origin, "about_iraq": about_iraq, "kind": kind, "agency": agency,
+                    "n_items": c["n_items"], "views": views or None,
+                    "first_src": ({"name": first_ev["source"], "time": first_ev["time"]} if first_ev else None),
                     "topic": topic_of(ntext + " " + norm_ar(title_ar or ""), alltext),
                     "collected_utc": collected, "first_utc": d["first"], "latest_utc": latest,
                     "date_confirmed": all(e["date_confirmed"] for e in ev), "n_sources": d["n_sources"],
@@ -156,7 +171,8 @@ def main(hours=24):
                                                             "region": sum(1 for o in out if not o["about_iraq"] and o["origin"] != "أجنبي"),
                                                             "arab_on_iraq": sum(1 for o in out if o["about_iraq"] and o["origin"] == "عربي"),
                                                             "foreign_on_iraq": sum(1 for o in out if o["origin"] == "أجنبي"),
-                                                            "translated": sum(1 for o in out if o.get("title_orig")), "analysis": sum(1 for o in out if o.get("kind")),
+                                                            "translated": sum(1 for o in out if o.get("title_orig")), "analysis": sum(1 for o in out if o.get("kind")), "agencies": sum(1 for o in out if o.get("agency")),
+                                                            "repeated": sum(1 for o in out if (o["n_sources"] or 0) >= 3),
                                                             "urgent": sum(1 for o in out if o["level"] == "عاجل"), "important": sum(1 for o in out if o["level"] == "مهم")}},
                                               ensure_ascii=False), encoding="utf-8")
     print(len(out), "خبراً في pwa/news.json")

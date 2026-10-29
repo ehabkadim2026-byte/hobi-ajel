@@ -230,9 +230,17 @@ def similarity(a, b, idf):
 def cluster_items(con, window_hours=72):
     """يجمع المواد المتشابهة في خبر واحد. بين جهتين ≥0.35 وثلاث كلمات مشتركة؛ داخل الجهة ≥0.70."""
     idf, _ = _idf(con)
+    from datetime import timedelta
+    cutoff = iso(now_utc() - timedelta(hours=window_hours))
+    # نافذة زمنية فقط (لا تحميل كل الأرشيف كل جولة) + فهرس كلمات لتقليل المقارنات: يحافظ على السرعة مع تضاعف المصادر
     items = con.execute("SELECT id, source_id, title, published_utc, collected_utc, cluster_id FROM items "
-                        "ORDER BY COALESCE(published_utc, collected_utc)").fetchall()
+                        "WHERE cluster_id IS NULL OR COALESCE(published_utc, collected_utc) >= ? "
+                        "ORDER BY COALESCE(published_utc, collected_utc)", (cutoff,)).fetchall()
     toks = {r["id"]: tokens(r["title"]) for r in items}
+    inv = {}
+    for r in items:
+        for t in set(toks[r["id"]]):
+            inv.setdefault(t, set()).add(r["id"])
     assigned = {r["id"]: r["cluster_id"] for r in items if r["cluster_id"]}
     members = {}
     for iid, cid in assigned.items():
@@ -243,7 +251,14 @@ def cluster_items(con, window_hours=72):
             continue
         t_r = r["published_utc"] or r["collected_utc"]
         best, best_s = None, 0.0
-        for cid, ids in members.items():
+        cand = set()
+        for t in set(toks[r["id"]]):
+            ids_t = inv.get(t, ())
+            if len(ids_t) <= 400:  # الكلمات الشائعة جداً لا تصلح للترشيح
+                cand |= ids_t
+        cand_clusters = {assigned[o] for o in cand if o in assigned}
+        for cid in cand_clusters:
+            ids = members.get(cid, [])
             for oid in ids:
                 o = meta[oid]
                 t_o = o["published_utc"] or o["collected_utc"]
@@ -267,6 +282,21 @@ def cluster_items(con, window_hours=72):
     _refresh_clusters(con, members)
     con.commit()
     return len(members)
+
+
+def prune(con, days=8):
+    """سياسة الاحتفاظ لنسخة الهاتف: حذف المواد الأقدم من N أيام حتى تبقى القاعدة صغيرة وسريعة."""
+    from datetime import timedelta
+    cutoff = iso(now_utc() - timedelta(days=days))
+    old = [r[0] for r in con.execute("SELECT id FROM items WHERE COALESCE(published_utc, collected_utc) < ?", (cutoff,))]
+    for i in range(0, len(old), 500):
+        chunk = old[i:i + 500]
+        q = ",".join("?" * len(chunk))
+        con.execute(f"DELETE FROM item_versions WHERE item_id IN ({q})", chunk)
+        con.execute(f"DELETE FROM items WHERE id IN ({q})", chunk)
+    con.execute("DELETE FROM clusters WHERE id NOT IN (SELECT DISTINCT cluster_id FROM items WHERE cluster_id IS NOT NULL)")
+    con.commit()
+    return len(old)
 
 
 def _merge_storylines(con, members):
@@ -298,13 +328,21 @@ def _dt(s):
     return datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
+def outlet_key(name):
+    n = re.sub(r"\s*\((عبر )?Google News\)\s*$", "", name or "")
+    n = re.sub(r"\s*[—-]\s*(telegram|تلغرام|RSS|rss|عاجل|أمن|اقتصاد|سياسة|/ar/rss.*)$", "", n)
+    n = re.sub(r"\s*[—-]\s*(telegram|تلغرام|RSS)$", "", n)
+    return norm_ar(n).replace(" ", "")[:30]
+
+
 def _refresh_clusters(con, members):
     storylines = load_json("storylines.json", {"storylines": []})["storylines"]
     off = {r["id"]: r["official"] for r in con.execute("SELECT id, official FROM sources")}
     for cid, ids in members.items():
         rows = con.execute(f"SELECT * FROM items WHERE id IN ({','.join('?' * len(ids))}) "
                            "ORDER BY COALESCE(published_utc, collected_utc)", ids).fetchall()
-        srcs = sorted(set(r["source_id"] for r in rows))
+        # الجهة = اسم الوسيلة الموحّد (نفس الوسيلة عبر Google News وقناتها/موقعها تُحسب جهة واحدة)
+        srcs = sorted(set(outlet_key(r["source_name"] or r["source_id"]) for r in rows))
         times = [r["published_utc"] for r in rows if r["published_utc"]]
         origin = rows[0]
         # «مصدر رسمي أولي» فقط لجهة مُصدِرة تتكلم عن نفسها؛ الوكالة الرسمية التي تنقل عن صحيفة أجنبية أو مصدر

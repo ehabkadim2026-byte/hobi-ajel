@@ -33,7 +33,7 @@ jobs:
       - run: python3 -m marsad.cli sources
       - run: python3 -m marsad.cli collect --limit 400
       - name: process (بدون PDF واللوحة لتسريع الجولة)
-        run: python3 -c "from marsad import core; c=core.connect(); core.cluster_items(c); core.generate_alerts(c)"
+        run: python3 -c "from marsad import core; c=core.connect(); core.prune(c, 8); core.cluster_items(c, window_hours=48); core.generate_alerts(c)"
       - name: translate foreign titles (ترجمة آلية؛ فشلها لا يوقف الجولة)
         run: python3 -m tools.translate
         continue-on-error: true
