@@ -60,11 +60,11 @@ URL_RX = re.compile(r"https?://|www\.|\.com\b|\.net\b|\.org\b")
 PRE = [(r"\bKRG\b", "Kurdistan Regional Government"), (r"\bKRI\b", "Kurdistan Region"), (r"\bPMF\b", "Popular Mobilization Forces"),
        (r"\bKDP\b", "Kurdistan Democratic Party"), (r"\bPUK\b", "Patriotic Union of Kurdistan"), (r"\bShengal\b", "Sinjar"),
        (r"\bSulaimani\b|\bSulaymani\b|\bSlemani\b", "Sulaymaniyah"), (r"\bHewler\b|\bHawler\b", "Erbil"),
-       (r"\bShafaq News\b", "Shafaq"), (r"\bCBI\b", "Central Bank of Iraq"), (r"\bISIS\b|\bISIL\b|\bIslamic State\b", "Daesh"), (r"\.\.", ": ")]
+       (r"\bShafaq News\b", "Shafaq"), (r"\bCBI\b", "Central Bank of Iraq"), (r"\bISIS\b|\bISIL\b|\bIslamic State\b", "Daesh"), (r"\bPM\b", "Prime Minister"), (r"\bgraft\b", "corruption"), (r"\bMP\b", "lawmaker"), (r"\bMPs\b", "lawmakers"), (r" - [A-Z][\w .&]+$", ""), (r"\.\.", ": ")]
 # تصحيح بعد الترجمة لأسماء معروفة
 POST = [("شافاق", "شفق"), ("سوليماني", "السليمانية"), ("السليمانيه", "السليمانية"), ("الشنغال", "سنجار"), ("شنغال", "سنجار"),
         ("جمهورية كوريا الشعبية الديمقراطية", "إقليم كردستان"), ("أربيل أربيل", "أربيل"), ("داعش داعش", "داعش"), ("الشفاق", "شفق"), ("نظام المعلومات الإسلامية", "داعش"), ("دائرة الاستخبارات الإسلامية", "داعش"), ("الدولة الإسلامية", "داعش")]
-VERSION = 3
+VERSION = 4
 
 
 def pre(text):
