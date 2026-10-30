@@ -30,7 +30,14 @@ jobs:
       - name: translation model cache (Argos en→ar، مجاني)
         uses: actions/cache@v4
         with: {path: ~/argos, key: argos-en-ar-v1}
-      - run: pip install -q ctranslate2 sentencepiece
+      - run: pip install -q ctranslate2 sentencepiece pillow arabic-reshaper python-bidi
+        continue-on-error: true
+      - name: arabic font cache (بطاقات منشورات تلغرام)
+        uses: actions/cache@v4
+        with: {path: ~/fonts, key: font-noto-kufi-v1}
+      - run: |
+          mkdir -p ~/fonts
+          [ -s ~/fonts/NotoKufiArabic.ttf ] || curl -sSL --max-time 60 -o ~/fonts/NotoKufiArabic.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/notokufiarabic/NotoKufiArabic%5Bwght%5D.ttf" || true
         continue-on-error: true
       - run: python3 -m marsad.cli sources
       - run: python3 -m marsad.cli collect --limit 400
@@ -44,7 +51,7 @@ jobs:
       - name: telegram push (قناة الفريق؛ يعمل فقط بعد إضافة السر)
         run: python3 -m tools.tg_push
         continue-on-error: true
-        timeout-minutes: 2
+        timeout-minutes: 3
         env:
           MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
           MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
