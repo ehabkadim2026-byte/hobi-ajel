@@ -49,7 +49,9 @@ jobs:
         timeout-minutes: 6
       - run: python3 -m tools.export_pwa
       - name: telegram push (قناة الفريق؛ يعمل فقط بعد إضافة السر)
-        run: python3 -m tools.tg_push
+        run: |
+          python3 -m tools.tg_push
+          echo "::notice title=tg_status::$(cat pwa/tg_status.json)"
         continue-on-error: true
         timeout-minutes: 3
         env:
