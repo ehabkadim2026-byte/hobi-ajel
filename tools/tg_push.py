@@ -112,13 +112,13 @@ def post(token, chat_id, n, upd):
     DEBUG.append(f"{urllib.parse.urlparse(url).netloc}:{'img' if img else 'noimg'}")
     if img:
         try:
-            api(token, "sendPhoto", files={"photo": ("src.jpg", tg_card.brand(tg_card.fetch_jpeg(img)))}, chat_id=chat_id, caption=cap, parse_mode="HTML")
+            jpg = tg_card.news_card(tg_card.fetch_jpeg(img), n["title"], is_breaking(n), bg(n.get("latest_utc")))
+            api(token, "sendPhoto", files={"photo": ("src.jpg", jpg)}, chat_id=chat_id, caption=cap, parse_mode="HTML")
             return "source"
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"sendfail:{type(e).__name__}:{str(e)[:60]}")
     try:
-        head = "عاجل" if is_breaking(n) else "مهم"
-        jpg = tg_card.card(n["title"], head, "", CHANNEL.replace("https://", ""))
+        jpg = tg_card.news_card(None, n["title"], is_breaking(n), bg(n.get("latest_utc")))
         api(token, "sendPhoto", files={"photo": ("hobi.jpg", jpg)}, chat_id=chat_id, caption=cap, parse_mode="HTML")
         return "card"
     except Exception:  # noqa: BLE001

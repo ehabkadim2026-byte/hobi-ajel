@@ -197,3 +197,89 @@ def card(title, head, meta, footer):
 if __name__ == "__main__":
     Path("card_test.jpg").write_bytes(card("عاجل: رئيس الوزراء يوجه بفتح تحقيق عاجل في حادثة انقطاع الكهرباء عن عدة محافظات جنوبية", "🔴 عاجل".replace("🔴 ", ""),
                                            "السومرية نيوز · 14:32 بغداد · غير مؤكد", "t.me/hassawassal"))
+
+
+def _cover(im, W, H):
+    r = max(W / im.width, H / im.height)
+    im = im.resize((int(im.width * r) + 1, int(im.height * r) + 1), Image.LANCZOS)
+    x, y = (im.width - W) // 2, max(0, int((im.height - H) * 0.35))
+    return im.crop((x, y, x + W, y + H))
+
+
+def news_card(photo_jpg, title, breaking=True, time_str="", handle="t.me/hassawassal"):
+    """قالب الخبر الموحّد 1280×720 (أسلوب غرف الأخبار العربية الكبرى، بهوية «هسة وصل»):
+    صورة الخبر كاملة + تدرّج داكن سفلي + شريط أحمر جانبي + شارة «عاجل»/«خبر» + العنوان بخط عريض + تذييل الوقت والشعار."""
+    from PIL import ImageDraw as _D, ImageFilter
+    W, H, P = 1280, 720, 64
+    red, navy, gold = (204, 18, 38), (10, 24, 52), (230, 178, 60)
+    if photo_jpg:
+        bgimg = _cover(Image.open(io.BytesIO(photo_jpg)).convert("RGB"), W, H)
+    else:  # بلا صورة: خلفية كحلية متدرجة بخطوط مائلة خفيفة وشعار باهت
+        bgimg = Image.new("RGB", (W, H), navy)
+        d0 = _D.Draw(bgimg)
+        for i in range(H):
+            k = i / H
+            d0.line([(0, i), (W, i)], fill=(int(10 + 14 * k), int(24 + 18 * k), int(52 + 30 * k)))
+        for x in range(-H, W, 46):
+            d0.line([(x, H), (x + H, 0)], fill=(22, 40, 78), width=2)
+        if LOGO.exists():
+            lg = Image.open(LOGO).convert("L").resize((520, int(520 * Image.open(LOGO).height / Image.open(LOGO).width)))
+            ghost = Image.new("RGB", lg.size, (255, 255, 255))
+            mask = lg.point(lambda v: 26 if v < 200 else 0)
+            bgimg.paste(ghost, (W - lg.width - 40, 40), mask)
+    im = bgimg.copy()
+    # تدرّج داكن من المنتصف للأسفل لقراءة العنوان
+    grad = Image.new("L", (1, H))
+    for y in range(H):
+        grad.putpixel((0, y), int(max(0, (y - H * 0.30) / (H * 0.70)) ** 1.3 * 235))
+    shade = Image.new("RGB", (W, H), (6, 10, 20))
+    im.paste(shade, (0, 0), grad.resize((W, H)))
+    d = _D.Draw(im)
+    kw = {"direction": "rtl", "language": "ar"} if RAQM else {}
+    # العنوان: حتى 3 أسطر، حجم متكيّف
+    size = 58
+    fb = _font(size)
+    lines = _wrap(d, title, fb, W - 2 * P - 30)
+    while len(lines) > 3 and size > 38:
+        size -= 4
+        fb = _font(size)
+        lines = _wrap(d, title, fb, W - 2 * P - 30)
+    if len(lines) > 3:
+        lines = lines[:3]
+        lines[-1] = lines[-1] + " …"
+    lh = int(size * 1.55)
+    foot_y = H - 70
+    y0 = foot_y - 26 - lh * len(lines)
+    # شارة عاجل/خبر فوق العنوان
+    tag = "عاجل" if breaking else "خبر"
+    ft = _font(34)
+    tw = d.textlength(_shape(tag), font=ft, **kw)
+    ty = y0 - 64
+    d.rectangle([W - P - tw - 36, ty, W - P, ty + 50], fill=red if breaking else navy)
+    if not breaking:
+        d.rectangle([W - P - tw - 36, ty + 46, W - P, ty + 50], fill=gold)
+    _draw_rtl(d, W - P - 18, ty + 2, tag, ft, (255, 255, 255))
+    # شريط أحمر جانبي بطول العنوان
+    d.rectangle([W - P + 14, y0 + 6, W - P + 22, y0 + lh * len(lines) - 10], fill=red)
+    for i, ln in enumerate(lines):
+        _draw_rtl(d, W - P - 6, y0 + i * lh, ln, fb, (255, 255, 255))
+    # التذييل: خط رفيع + الوقت والقناة يميناً + الشعار يساراً
+    d.rectangle([P, foot_y, W - P, foot_y + 2], fill=(255, 255, 255))
+    fs = _font(26)
+    meta = (time_str + " بتوقيت بغداد" if time_str else "")
+    if meta:
+        _draw_rtl(d, W - P, foot_y + 16, meta, fs, (225, 230, 240))
+    d.text((P, foot_y + 18), handle, font=_font(24), fill=(200, 210, 225))
+    if LOGO.exists():
+        lg = Image.open(LOGO).convert("RGB")
+        lw = 118
+        lg = lg.resize((lw, int(lg.height * lw / lg.width)), Image.LANCZOS)
+        pad = 8
+        badge = Image.new("RGB", (lw + 2 * pad, lg.height + 2 * pad), (255, 255, 255))
+        badge.paste(lg, (pad, pad))
+        bm = Image.new("L", badge.size, 0)
+        _D.Draw(bm).rounded_rectangle([0, 0, badge.width - 1, badge.height - 1], radius=12, fill=255)
+        im.paste(badge, (P - 24, 28), bm)  # الشعار أعلى اليسار، بعيداً عن العنوان
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=90)
+    return buf.getvalue()
