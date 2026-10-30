@@ -23,6 +23,8 @@ jobs:
           path: |
             data/marsad.db
             data/translations.json
+            data/tg_sent.json
+            data/tg_chat.json
           key: "marsad-db-${{ github.run_id }}"
           restore-keys: "marsad-db-"
       - name: translation model cache (Argos en→ar، مجاني)
@@ -39,11 +41,20 @@ jobs:
         continue-on-error: true
         timeout-minutes: 6
       - run: python3 -m tools.export_pwa
+      - name: telegram push (قناة الفريق؛ يعمل فقط بعد إضافة السر)
+        run: python3 -m tools.tg_push
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
+          MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
       - uses: actions/cache/save@v4
         with:
           path: |
             data/marsad.db
             data/translations.json
+            data/tg_sent.json
+            data/tg_chat.json
           key: "marsad-db-${{ github.run_id }}"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
