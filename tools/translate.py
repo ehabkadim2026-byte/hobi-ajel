@@ -159,7 +159,7 @@ def main(limit=500, budget_s=90):
     CACHE.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
     status.update(cached=len(cache) - 1, seconds=round(time.time() - t0, 1))
     STATUS.write_text(json.dumps(status, ensure_ascii=False), encoding="utf-8")
-    print(status)
+    print(f"::notice title=translate::{json.dumps({k: v for k, v in status.items() if k != 'sample'}, ensure_ascii=False)}")
 
 
 if __name__ == "__main__":

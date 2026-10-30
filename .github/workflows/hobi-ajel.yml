@@ -59,7 +59,7 @@ jobs:
       - name: translation models (en→ar + fa→en + tr→en، مرة واحدة ثم من الكاش)
         continue-on-error: true
         timeout-minutes: 5
-        run: python3 -c "from tools.translate import ensure_model, PIVOT; ensure_model(); ensure_model('fa','en',PIVOT['fa']); ensure_model('tr','en',PIVOT['tr'])"
+        run: python3 -c "from tools.translate import ensure_model, PIVOT; ensure_model(); ensure_model('fa','en',PIVOT['fa']); ensure_model('tr','en',PIVOT['tr'])"; ls ~/argos; du -sh ~/argos
       - name: translate foreign titles (ترجمة آلية؛ فشلها لا يوقف الجولة)
         run: python3 -m tools.translate
         continue-on-error: true
