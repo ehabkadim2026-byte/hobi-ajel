@@ -25,9 +25,11 @@ jobs:
             data/translations.json
             data/tg_sent.json
             data/tg_chat.json
-            data/archive_state.json
           key: "marsad-db-${{ github.run_id }}"
           restore-keys: "marsad-db-"
+        # تحذير: لا تغيّر قائمة path أعلاه أبداً — تغييرها يغيّر نسخة الكاش فتضيع القاعدة (حدث مرتين)
+      - uses: actions/cache/restore@v4
+        with: {path: data/archive_state.json, key: "archive-state-${{ github.run_id }}", restore-keys: "archive-state-"}
       - name: restore db from independent backup if cache missed
         env: {GH_TOKEN: "${{ github.token }}"}
         run: python3 -m tools.archive restore
@@ -85,8 +87,10 @@ jobs:
             data/translations.json
             data/tg_sent.json
             data/tg_chat.json
-            data/archive_state.json
           key: "marsad-db-${{ github.run_id }}"
+      - uses: actions/cache/save@v4
+        if: always()
+        with: {path: data/archive_state.json, key: "archive-state-${{ github.run_id }}"}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: {path: pwa}
