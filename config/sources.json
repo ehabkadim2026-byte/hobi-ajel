@@ -5652,6 +5652,20 @@
    "lang": "tr",
    "official": false,
    "added_by": "فارسي/تركي 30/10"
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%22%D8%AC%D9%87%D8%A7%D8%B2%20%D8%A7%D9%84%D8%A3%D9%85%D9%86%20%D8%A7%D9%84%D9%88%D8%B7%D9%86%D9%8A%22%20OR%20%22%D9%85%D8%B1%D9%83%D8%B2%20%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%85%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%D9%8A%22%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%20when%3A1d",
+   "name": "جهاز الأمن الوطني ومركز الإعلام العراقي (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%22%D8%AC%D9%87%D8%A7%D8%B2%20%D8%A7%D9%84%D8%A3%D9%85%D9%86%20%D8%A7%D9%84%D9%88%D8%B7%D9%86%D9%8A%22%20OR%20%22%D9%85%D8%B1%D9%83%D8%B2%20%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%85%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%D9%8A%22%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%20when%3A1d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "شخصيات وجهات",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "قائمة واتساب Ehab 30/10"
   }
  ]
 }
