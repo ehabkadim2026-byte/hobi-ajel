@@ -1,0 +1,17 @@
+# مراقب مستقل لسلسلة الرصد: يفحص كل دقيقة ويعيد الإطلاق عند التوقف، ثم يطلق نفسه.
+# الرصد يطلق هذا المراقب إذا غاب، والجدولة الاحتياطية لـGitHub طبقة ثالثة.
+name: watchdog
+on:
+  workflow_dispatch: {}
+  schedule: [{cron: "*/15 * * * *"}]
+permissions: {contents: write, actions: write}
+concurrency: {group: watchdog, cancel-in-progress: false}
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {sparse-checkout: tools}
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: python3 tools/watchdog.py

@@ -137,6 +137,9 @@ jobs:
             ok=0; for a in 1 2 3; do if gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/hobi-ajel.yml/dispatches" -f ref=main; then ok=1; break; fi; sleep 5; done
             if [ "$ok" = "1" ]; then echo "::notice title=chain::dispatched"; else echo "::warning title=chain::فشل إطلاق الجولة التالية"; fi
           else echo "::notice title=chain::next round already queued ($n)"; fi
+          # المراقب المستقل: إذا غاب نطلقه (سلسلتان تحيي إحداهما الأخرى)
+          w=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/watchdog.yml/runs?per_page=5" --jq '[.workflow_runs[]|select(.status!="completed")]|length' || echo 1)
+          if [ "$w" = "0" ]; then gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/watchdog.yml/dispatches" -f ref=main && echo "::notice title=chain::watchdog dispatched" || true; fi
           # تجربة التلفزيون: تُطلق كل ~20 دقيقة إذا لم تكن جارية (سير عمل منفصل لا يبطئ الرصد)
           if [ $(( $(date +%s) / 90 % 13 )) -eq 0 ]; then
             t=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/tv-pilot.yml/runs?per_page=5" --jq '[.workflow_runs[]|select(.status!="completed")]|length' || echo 1)
