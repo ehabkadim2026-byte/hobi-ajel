@@ -87,8 +87,13 @@ def main():
                 with tempfile.TemporaryDirectory() as td:
                     v = Path(td) / "v.mp4"
                     v.write_bytes(get(c["video"], limit=60_000_000, timeout=60))
-                    # faster-whisper يفك الصوت من الفيديو مباشرة عبر PyAV (لا حاجة لـ ffmpeg على المشغّل)
-                    segs, info = model.transcribe(str(v), language="ar", beam_size=3, vad_filter=True)
+                    # فك الصوت بـ ffmpeg من حزمة imageio-ffmpeg (المشغّل بلا ffmpeg، وPyAV يتعارض مع إصدارات faster-whisper)
+                    import imageio_ffmpeg
+                    import numpy as np
+                    raw = subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-loglevel", "error", "-i", str(v), "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],
+                                         capture_output=True, check=True, timeout=120).stdout
+                    audio = np.frombuffer(raw, np.int16).astype(np.float32) / 32768.0
+                    segs, info = model.transcribe(audio, language="ar", beam_size=3, vad_filter=True)
                     seg = [{"s": round(x.start, 1), "e": round(x.end, 1), "t": x.text.strip(),
                             "low": (x.avg_logprob < -1.0) or (x.no_speech_prob > 0.6)} for x in segs]
                 low = sum(1 for x in seg if x["low"])
