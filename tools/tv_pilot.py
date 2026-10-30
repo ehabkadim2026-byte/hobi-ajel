@@ -22,7 +22,8 @@ ROOT = Path(__file__).resolve().parent.parent
 STATE = ROOT / "data" / "tv_state.json"
 OUT = ROOT / "data" / "tv.json"
 CHANNELS = [("IraqiaGTV", "قناة العراقية العامة"), ("alsumariatviraq", "السومرية"), ("alsharqiyagroup", "الشرقية"),
-            ("dijlahtvchannel", "دجلة"), ("utviraq", "UTV"), ("alrabiaatv", "الرابعة")]
+            ("dijlahtvchannel", "دجلة"), ("utviraq", "UTV"), ("alrabiaatv", "الرابعة"), ("ASIATV1", "آسيا"), ("alawlatv", "الأولى"),
+            ("rafidenchannel", "الرافدين"), ("alforat_tv", "الفرات")]
 UA = {"User-Agent": "Mozilla/5.0 (HobiAjel TV pilot)"}
 MAX_SEC, PER_RUN, EVERY_MIN = 180, 3, 20
 
@@ -61,6 +62,7 @@ def due():
 
 def main():
     st = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {"done": [], "last": 0}
+    st.pop("fail", None) if len(st.get("fail", {})) > 200 else None
     if time.time() - st.get("last", 0) < EVERY_MIN * 60 and "--force" not in sys.argv:
         print("tv: not due")
         return
@@ -85,9 +87,8 @@ def main():
                 with tempfile.TemporaryDirectory() as td:
                     v = Path(td) / "v.mp4"
                     v.write_bytes(get(c["video"], limit=60_000_000, timeout=60))
-                    a = Path(td) / "a.wav"
-                    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(v), "-ac", "1", "-ar", "16000", str(a)], check=True, timeout=120)
-                    segs, info = model.transcribe(str(a), language="ar", beam_size=3, vad_filter=True)
+                    # faster-whisper يفك الصوت من الفيديو مباشرة عبر PyAV (لا حاجة لـ ffmpeg على المشغّل)
+                    segs, info = model.transcribe(str(v), language="ar", beam_size=3, vad_filter=True)
                     seg = [{"s": round(x.start, 1), "e": round(x.end, 1), "t": x.text.strip(),
                             "low": (x.avg_logprob < -1.0) or (x.no_speech_prob > 0.6)} for x in segs]
                 low = sum(1 for x in seg if x["low"])
@@ -98,9 +99,13 @@ def main():
                               "transcribed_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                               "secs": round(time.time() - t0, 1)})
                 new += 1
+                st["done"].append(c["post"])
             except Exception as e:  # noqa: BLE001
                 errors[c["post"]] = f"{type(e).__name__}: {str(e)[:80]}"
-            st["done"].append(c["post"])
+                f = st.setdefault("fail", {})
+                f[c["post"]] = f.get(c["post"], 0) + 1
+                if f[c["post"]] >= 2:
+                    st["done"].append(c["post"])
     st["done"] = st["done"][-500:]
     st["last"] = time.time()
     cut = (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%S")
