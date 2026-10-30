@@ -25,7 +25,7 @@ CHANNELS = [("IraqiaGTV", "قناة العراقية العامة"), ("alsumaria
             ("dijlahtvchannel", "دجلة"), ("utviraq", "UTV"), ("alrabiaatv", "الرابعة"), ("ASIATV1", "آسيا"), ("alawlatv", "الأولى"),
             ("rafidenchannel", "الرافدين"), ("alforat_tv", "الفرات")]
 UA = {"User-Agent": "Mozilla/5.0 (HobiAjel TV pilot)"}
-MAX_SEC, PER_RUN, EVERY_MIN = 180, 3, 20
+MAX_SEC, PER_RUN, EVERY_MIN = 180, 3, 15
 
 
 def get(url, limit=None, timeout=25):
