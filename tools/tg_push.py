@@ -24,6 +24,7 @@ CHAT = DATA / "tg_chat.json"
 STATUS = PWA / "tg_status.json"
 APP_URL = "https://ehabkadim2026-byte.github.io/hobi-ajel/"
 MAX_PER_RUN = 15
+DEBUG = []
 CHANNEL = "https://t.me/hassawassal"
 RANK = {"عاجل": 3, "مهم": 2, "متابعة": 1}
 
@@ -101,12 +102,13 @@ def post(token, chat_id, n, upd):
     cap = fmt(n, upd)
     _, url = src(n)
     img = tg_card.find_image(url)
+    DEBUG.append(f"{urllib.parse.urlparse(url).netloc}:{'img' if img else 'noimg'}")
     if img:
         try:
             api(token, "sendPhoto", chat_id=chat_id, photo=img, caption=cap, parse_mode="HTML")
             return "source"
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as e:  # noqa: BLE001
+            DEBUG.append(f"sendfail:{type(e).__name__}")
     try:
         head = "عاجل" if rank(n) >= 3 else "مهم"
         jpg = tg_card.card(n["title"], head, "عاجل هسه وصل", CHANNEL.replace("https://", ""))
@@ -202,6 +204,7 @@ def main():
         if token:
             msg = msg.replace(token, "***")
         status["error"] = f"{type(e).__name__}: {msg}"[:200]
+    status["img_debug"] = DEBUG[-12:]
     STATUS.write_text(json.dumps(status, ensure_ascii=False), encoding="utf-8")
     print({k: v for k, v in status.items()})
 

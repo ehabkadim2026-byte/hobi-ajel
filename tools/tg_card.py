@@ -59,7 +59,8 @@ def og_image(url):
 def find_image(url):
     try:
         return tg_photo(url) if "t.me/" in (url or "") else og_image(url)
-    except Exception:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
+        print("find_image", url, type(e).__name__, str(e)[:80])
         return None
 
 
