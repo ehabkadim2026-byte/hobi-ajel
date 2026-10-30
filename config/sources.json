@@ -5673,14 +5673,15 @@
    "url": "https://broken-source.invalid/feed",
    "platform": "web",
    "method": "rss",
-   "status": "لم يُجمع بعد",
+   "status": "مستبعد",
    "frequency": "ساعي",
    "category": "اختبار",
    "region": "العراق",
    "lang": "ar",
    "official": false,
    "added_by": "اختبار القبول 30/10",
-   "priority": 1
+   "priority": 1,
+   "notes": "اختبار عزل منتهٍ 30/10: عُزل بعد 3 إخفاقات واستمر الجمع"
   }
  ]
 }
