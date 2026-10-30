@@ -198,6 +198,13 @@ def ingest_batch(con, batch, now=None):
                     (src, bid, iso(now), 1, n, per_source_new[src], None))
         con.execute("UPDATE sources SET last_success_utc=?, consecutive_failures=0, status='يعمل' WHERE id=?",
                     (iso(now), src))
+    for src in batch.get("ok", []):  # جلب ناجح بلا مواد جديدة: يُسجَّل نجاحاً حتى لا يبدو المصدر متوقفاً
+        src = norm_source_id(src)
+        if src in per_source:
+            continue
+        con.execute("INSERT INTO fetch_log(source_id,batch_id,at_utc,ok,n_items,n_new,error) VALUES(?,?,?,?,?,?,?)",
+                    (src, bid, iso(now), 1, 0, 0, None))
+        con.execute("UPDATE sources SET last_success_utc=?, consecutive_failures=0, status='يعمل' WHERE id=?", (iso(now), src))
     for f in batch.get("failed", []):
         f = dict(f, source_id=norm_source_id(f["source_id"]))
         con.execute("INSERT INTO fetch_log(source_id,batch_id,at_utc,ok,n_items,n_new,error) VALUES(?,?,?,?,?,?,?)",
@@ -298,6 +305,7 @@ def prune(con, days=8):
         con.execute(f"DELETE FROM item_versions WHERE item_id IN ({q})", chunk)
         con.execute(f"DELETE FROM items WHERE id IN ({q})", chunk)
     con.execute("DELETE FROM clusters WHERE id NOT IN (SELECT DISTINCT cluster_id FROM items WHERE cluster_id IS NOT NULL)")
+    con.execute("DELETE FROM fetch_log WHERE at_utc < ?", (iso(now_utc() - timedelta(days=2)),))
     con.commit()
     return len(old)
 

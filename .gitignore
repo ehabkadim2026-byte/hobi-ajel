@@ -3,3 +3,7 @@ __pycache__/
 data/marsad.db
 data/backups/
 exports/
+archive.json
+pwa/archive.json
+pwa/health.json
+pwa/translate_status.json

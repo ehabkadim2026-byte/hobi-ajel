@@ -9,15 +9,49 @@ from .notify import deliver
 from .textnorm import to_baghdad
 
 
+DEFAULT_PRIORITY = {"قنوات تلغرام": 1, "إعلام عربي وإقليمي": 1, "وكالات ومواقع": 1, "منصات خبرية عراقية": 2, "مواقع عراقية": 2,
+                    "صحافة أجنبية": 2, "وكالات عالمية": 2, "تحليل أجنبي": 3, "الحشد الشعبي": 1}
+
+
+def source_priorities():
+    """أولوية كل مصدر: من حقل priority في السجل، أو من فئته، مع تجاوزات config/overrides.json (تعطيل/أولوية)."""
+    cfg = json.loads((core.CONFIG / "sources.json").read_text(encoding="utf-8"))["sources"]
+    try:
+        ov = json.loads((core.CONFIG / "overrides.json").read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        ov = {}
+    pr = {}
+    for s in cfg:
+        p = s.get("priority") or (1 if s.get("method") == "telegram_preview" else DEFAULT_PRIORITY.get(s.get("category"), 2))
+        pr[s["id"]] = int(p)
+    keymap = {s["url"]: s["id"] for s in cfg}
+    for k, v in (ov.get("priority") or {}).items():
+        pr[keymap.get(k, k)] = int(v)
+    pr["_disabled"] = {keymap.get(k, k) for k in (ov.get("disabled") or [])}
+    return pr
+
+
 def collect_all(con, limit, priority_only, workers=10):
     """جمع خادمي مباشر (يحتاج شبكة مفتوحة). يحترم حدود الطلبات بتوقف بين المصادر، ويسجل كل فشل كنقطة عمى."""
     from datetime import datetime, timezone
     from .collect import collect_source
+    import time as _t
     q = "SELECT * FROM sources WHERE method IN ('rss','telegram_preview') AND status NOT IN ('مستبعد')"
     rows = [dict(r) for r in con.execute(q)]
     if priority_only:
         rows = [r for r in rows if r.get("frequency") == "ساعي"]
-    rows = rows[:limit]
+    # جدولة متفاوتة حسب الأولوية (من config/sources.json + config/overrides.json، بلا تعديل كود):
+    # أولوية 1 كل جولة، 2 كل جولتين، 3 كل 6 جولات. المصدر المتوقف (3 إخفاقات) يُعاد فحصه كل 10 جولات فقط.
+    pr = source_priorities()
+    run_no = int(_t.time() // 90)
+    every = {1: 1, 2: 2, 3: 6}
+    def due(r):
+        if r["id"] in pr.get("_disabled", set()):
+            return False
+        if (r.get("consecutive_failures") or 0) >= 3 and run_no % 10:
+            return False
+        return run_no % every.get(pr.get(r["id"], 2), 2) == 0
+    rows = [r for r in rows if due(r)][:limit]
     last = {}
     for r in con.execute("SELECT source_id, url FROM items WHERE platform='telegram'"):
         n = int(r["url"].rstrip("/").split("/")[-1])
@@ -31,11 +65,15 @@ def collect_all(con, limit, priority_only, workers=10):
         except Exception as e:  # noqa: BLE001
             return s, [], str(e)[:200]
     # جمع متوازٍ بعدد عمال محدود حتى لا نُثقل على تلغرام (حد الطلبات)؛ كل فشل يُسجل نقطة عمى
+    batch["ok"] = []
     with ThreadPoolExecutor(max_workers=workers) as ex:
         for s, items, err in ex.map(one, rows):
             batch["items"] += items
             if err:
                 batch["failed"].append({"source_id": s["id"], "reason": err})
+            else:
+                batch["ok"].append(s["id"])
+    print(f"run {run_no}: fetched {len(rows)} sources, {len(batch['failed'])} failed, {len(batch['items'])} items")
     out = core.ROOT / "data" / "inbox" / (batch["batch_id"] + ".json")
     out.write_text(json.dumps(batch, ensure_ascii=False), encoding="utf-8")
     return core.ingest_batch(con, batch)

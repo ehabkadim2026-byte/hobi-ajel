@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0c10">
+<meta name="theme-color" content="#0b0d11">
 <title>هوبي عاجل</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
@@ -11,312 +11,551 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
 <style>
 :root{
-  --bg:#0a0c10; --surface:#12151c; --surface-2:#1a1e27; --line:#232834; --ink:#f3f0ea; --ink-2:#c9c6c0; --muted:#8b909b;
-  --red:#ef4444; --red-deep:#b91c1c; --gold:#e0b04a; --gold-soft:#2c2412; --blue:#7cb8ea; --blue-soft:#13243a; --green:#5fd093; --green-soft:#10281c;
+  --bg:#0b0d11; --surface:#13161c; --surface-2:#1a1e26; --surface-3:#222733; --line:#252a35; --ink:#f2efe9; --ink-2:#c7c4be; --muted:#8a8f99;
+  --urgent:#ef4444; --urgent-soft:#3a1515; --gold:#d9a845; --gold-soft:#2b2312; --blue:#7db6e6; --blue-soft:#14243a; --green:#5fcf92; --green-soft:#10281b; --violet:#b9a3f0; --violet-soft:#221c38;
   --f-head:"Noto Kufi Arabic","IBM Plex Sans Arabic",Tahoma,sans-serif; --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
-  --nav-h:66px; color-scheme:dark;
+  --nav-h:64px; color-scheme:dark;
 }
 @media (prefers-color-scheme: light){:root{
-  --bg:#f4f2ee; --surface:#ffffff; --surface-2:#efece6; --line:#e2ded6; --ink:#14161b; --ink-2:#3b3f48; --muted:#6b707a;
-  --red:#d62828; --red-deep:#a61b1b; --gold:#a66d00; --gold-soft:#fbf0d9; --blue:#1d5f94; --blue-soft:#e3eef8; --green:#167a45; --green-soft:#e1f3e8; color-scheme:light}}
+  --bg:#f4f2ee; --surface:#ffffff; --surface-2:#f0ede7; --surface-3:#e6e2da; --line:#e2ded5; --ink:#15171c; --ink-2:#3b3f48; --muted:#6b707a;
+  --urgent:#d32626; --urgent-soft:#fde5e3; --gold:#9a6500; --gold-soft:#fbf0d8; --blue:#1d5f94; --blue-soft:#e3eef8; --green:#167a45; --green-soft:#e0f2e8; --violet:#5b3fb5; --violet-soft:#eee9fb; color-scheme:light}}
 *{box-sizing:border-box} [hidden]{display:none!important}
 html,body{margin:0} body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.65;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
-button{font:inherit;color:inherit} a{color:inherit}
-.wrap{max-width:680px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right,0px)) calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 28px) max(16px,env(safe-area-inset-left,0px))}
-.head{position:sticky;top:0;z-index:6;margin:0 -16px;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid transparent;transition:border-color .2s}
-.head.scrolled{border-bottom-color:var(--line)}
-.bar{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:center;gap:11px;min-width:0}
-.mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(145deg,var(--red),var(--red-deep));display:grid;place-items:center;flex:none;box-shadow:0 6px 18px -8px var(--red)}
-.mark i{width:11px;height:11px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.22)}
-h1{font-family:var(--f-head);font-weight:800;font-size:1.3rem;margin:0;line-height:1.2;letter-spacing:-.01em}
-.date{font-size:.8rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.icon-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;flex:none}
-.icon-btn svg{width:19px;height:19px}
-.icon-btn.spin svg{animation:spin .8s linear infinite} @keyframes spin{to{transform:rotate(-360deg)}}
-.live{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:.82rem;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;width:fit-content;max-width:100%}
-.pulse{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none;animation:pulse 2s infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 55%,transparent)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
-.live.stale{color:var(--gold)} .live.stale .pulse{background:var(--gold);animation:none}
-.live b{font-weight:600;color:var(--ink)}
-.ctl{display:grid;gap:10px;margin-top:16px}
-.list>div{display:grid;gap:10px}
-.note-box{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:12px 14px;color:var(--muted);font-size:.88rem}
+button,input,select,textarea{font:inherit;color:inherit} a{color:inherit}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 28px)}
+.narrow{max-width:720px;margin-inline:auto}
+.top{position:sticky;top:0;z-index:20;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 10px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:saturate(1.3) blur(14px);-webkit-backdrop-filter:saturate(1.3) blur(14px);border-bottom:1px solid var(--line)}
+.top-in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:none}
+.mark{width:34px;height:34px;border-radius:10px;background:var(--ink);display:grid;place-items:center;flex:none}
+.mark i{width:10px;height:10px;border-radius:50%;background:var(--urgent);box-shadow:0 0 0 3px color-mix(in srgb,var(--urgent) 30%,transparent)}
+h1{font-family:var(--f-head);font-weight:800;font-size:1.18rem;margin:0;line-height:1.2;white-space:nowrap}
+.date{font-size:.74rem;color:var(--muted);white-space:nowrap}
+.searchbox{flex:1;min-width:0;position:relative}
+.searchbox input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:9px 38px 9px 12px;color:var(--ink)}
+.searchbox svg{position:absolute;inset-inline-start:11px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted)}
+.tools{display:flex;gap:6px;flex:none}
+.ibtn{width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;position:relative}
+.ibtn svg{width:18px;height:18px}
+.ibtn.spin svg{animation:spin .8s linear infinite} @keyframes spin{to{transform:rotate(-360deg)}}
+.status{max-width:1240px;margin:8px auto 0;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;font-size:.76rem;color:var(--muted)}
+.status .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-inline-end:6px;vertical-align:1px}
+.status.stale .dot{background:var(--gold)} .status.stale .st-live{color:var(--gold);font-weight:600}
+.status b{color:var(--ink-2);font-weight:600}
+@media (max-width:640px){ .searchbox{display:none} .date{display:none} }
+@media (min-width:641px){ #bSearch{display:none} }
+.ticker{display:flex;align-items:stretch;margin-top:14px;border:1px solid color-mix(in srgb,var(--urgent) 40%,var(--line));border-radius:12px;overflow:hidden;background:var(--surface)}
+.ticker-l{flex:none;background:var(--urgent);color:#fff;font-family:var(--f-head);font-weight:800;font-size:.85rem;display:grid;place-items:center;padding:0 14px}
+.ticker-v{flex:1;overflow:hidden;position:relative}
+.ticker-t{display:flex;gap:28px;white-space:nowrap;padding:9px 14px;width:max-content;animation:tick var(--dur,60s) linear infinite}
+.ticker:hover .ticker-t{animation-play-state:paused}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(50%)}}
+.ticker-t button{border:0;background:none;cursor:pointer;font-weight:600;font-size:.9rem;color:var(--ink);padding:0}
+.ticker-t button small{color:var(--muted);font-weight:500;margin-inline-start:6px;direction:ltr;display:inline-block}
+@media (prefers-reduced-motion:reduce){.ticker-t{animation:none}.ticker-v{overflow-x:auto}}
+.sec{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:22px 2px 10px}
+.sec h2{font-family:var(--f-head);font-size:1.05rem;font-weight:700;margin:0}
+.sec span{font-size:.78rem;color:var(--muted)}
+.sec .more-l,.more-l{border:0;background:none;color:var(--blue);font-weight:600;font-size:.8rem;cursor:pointer}
+.sec.minor h2{font-size:.92rem;color:var(--muted)}
+.list{display:grid;gap:10px}
+.ctl{display:grid;gap:10px;margin-top:14px}
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:.86rem;font-weight:600;color:var(--ink-2);cursor:pointer}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 13px;font-size:.84rem;font-weight:600;color:var(--ink-2);cursor:pointer}
+.chip.small{padding:3px 11px;font-size:.78rem}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.search{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px;font:inherit;color:var(--ink)}
-.search::placeholder{color:var(--muted)}
-.sec{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:20px 2px 12px}
-.sec h2{font-family:var(--f-head);font-size:1.12rem;font-weight:700;margin:0}
-.sec span{font-size:.8rem;color:var(--muted)}
-.list{display:grid;gap:10px}
-.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:grid;grid-template-columns:52px 1fr;gap:2px 14px;cursor:pointer;transition:transform .12s}
-.card:active{transform:scale(.995)}
-.card::before{content:"";position:absolute;inset-block:14px;inset-inline-start:-1px;width:3px;border-radius:3px;background:var(--lvl,transparent)}
-.card.l-urgent{--lvl:var(--red)} .card.l-imp{--lvl:var(--gold)} .card.l-follow{--lvl:var(--blue)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+select,.inp{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:9px 12px;color:var(--ink)}
+.seg{display:flex;gap:4px;background:var(--surface-2);border-radius:13px;padding:4px;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:1 0 auto;border:0;background:transparent;border-radius:10px;padding:8px 12px;font-weight:600;font-size:.82rem;color:var(--muted);cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.note-box{background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:12px 14px;color:var(--muted);font-size:.86rem}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:16px;padding:22px 16px;color:var(--muted);text-align:center;font-size:.9rem}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:13px 14px;display:grid;grid-template-columns:50px 1fr;gap:2px 12px;cursor:pointer;text-align:start;width:100%}
+.card:hover{border-color:var(--surface-3)}
+.card::before{content:"";position:absolute;inset-block:13px;inset-inline-start:-1px;width:3px;border-radius:3px;background:var(--lvl,transparent)}
+.card.l-urgent{--lvl:var(--urgent)} .card.l-imp{--lvl:var(--gold)} .card.l-follow{--lvl:var(--blue)}
+.when{text-align:center;padding-top:1px;border-inline-end:1px solid var(--line);margin-inline-end:-2px}
+.when b{display:block;font-family:var(--f-head);font-weight:700;font-size:.98rem;line-height:1.3;direction:ltr}
+.when small{display:block;font-size:.66rem;color:var(--muted);line-height:1.5}
 .body{min-width:0}
-.when{text-align:center;padding-top:2px;border-inline-end:1px solid var(--line);margin-inline-end:-2px}
-.when b{display:block;font-family:var(--f-head);font-weight:700;font-size:1.02rem;letter-spacing:.01em;line-height:1.3;direction:ltr}
-.when small{display:block;font-size:.68rem;color:var(--muted);margin-top:2px}
-.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:20px}
-.tag{font-weight:700;font-size:.72rem;border-radius:6px;padding:1px 8px;white-space:nowrap;line-height:1.7}
-.t-urgent{background:var(--red);color:#fff} .t-imp{background:var(--gold-soft);color:var(--gold)} .t-follow{background:var(--blue-soft);color:var(--blue)}
-.t-new{background:var(--ink);color:var(--bg)} .t-mt{background:var(--surface-2);color:var(--ink-2)}
-.st{font-weight:600;font-size:.72rem;border-radius:999px;padding:1px 9px;white-space:nowrap;line-height:1.7}
+.tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.tag{font-weight:700;font-size:.7rem;border-radius:6px;padding:0 7px;white-space:nowrap;line-height:1.75}
+.t-urgent{background:var(--urgent);color:#fff} .t-imp{background:var(--gold-soft);color:var(--gold)} .t-follow{background:var(--blue-soft);color:var(--blue)}
+.t-new{background:var(--ink);color:var(--bg)} .t-mt{background:var(--surface-2);color:var(--ink-2)} .t-type{background:var(--violet-soft);color:var(--violet)}
+.t-topic{border:1px solid var(--line);color:var(--ink-2)} .t-esc{background:var(--urgent-soft);color:var(--urgent)}
+.st{font-weight:600;font-size:.7rem;border-radius:999px;padding:0 8px;white-space:nowrap;line-height:1.75}
 .s-ok{background:var(--green-soft);color:var(--green)} .s-pair{background:var(--blue-soft);color:var(--blue)} .s-unv{background:var(--surface-2);color:var(--muted)}
-.title{font-size:1.02rem;font-weight:600;line-height:1.6;margin:4px 0 2px;overflow-wrap:anywhere}
-.orig{font-size:.84rem;color:var(--muted);direction:ltr;text-align:left;line-height:1.45;margin:0 0 4px;font-style:italic;overflow-wrap:anywhere}
-.meta{font-size:.8rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 8px}
-.meta .dot::before{content:"·";margin-inline-end:8px}
-.more{grid-column:1/-1;border-top:1px solid var(--line);margin-top:10px;padding-top:12px;display:grid;gap:10px}
-.srcs{display:grid;gap:6px;margin:0;padding:0;list-style:none}
-.srcs a{display:flex;justify-content:space-between;gap:10px;text-decoration:none;color:var(--blue);font-size:.88rem;font-weight:600;background:var(--surface-2);border-radius:10px;padding:9px 12px}
-.srcs a small{color:var(--muted);font-weight:500;white-space:nowrap;direction:ltr}
-.basis{font-size:.8rem;color:var(--muted)}
-.row-btns{display:flex;gap:8px}
-.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:11px;padding:9px 16px;font-weight:600;font-size:.88rem;cursor:pointer}
-.btn.primary{background:var(--red);border-color:var(--red);color:#fff}
-.card.hero{grid-template-columns:1fr;padding:18px;background:linear-gradient(160deg,color-mix(in srgb,var(--red) 16%,var(--surface)) 0%,var(--surface) 55%);border-color:color-mix(in srgb,var(--red) 30%,var(--line))}
-.card.hero::before{display:none}
-.card.hero .title{font-family:var(--f-head);font-size:1.28rem;font-weight:700;line-height:1.55;margin:8px 0 6px}
-.kicker{font-family:var(--f-head);font-size:.74rem;font-weight:700;color:var(--red);letter-spacing:.02em}
-.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--surface-2);border-radius:13px;padding:4px}
-.seg button{border:0;background:transparent;border-radius:10px;padding:8px 4px;font-weight:600;font-size:.76rem;line-height:1.35;color:var(--muted);cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.chip.small{padding:4px 12px;font-size:.8rem}
-.t-topic{background:transparent;border:1px solid var(--line);color:var(--ink-2);font-weight:600}
-.when small+small{margin-top:0}
-.index{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
-.idx{display:grid;gap:2px;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:.82rem;color:var(--muted);font-weight:600;border-top:3px solid var(--lvl)}
-.idx b{font-family:var(--f-head);font-size:1.4rem;color:var(--ink);line-height:1.2}
-.idx.l-urgent{--lvl:var(--red)} .idx.l-imp{--lvl:var(--gold)} .idx.l-follow{--lvl:var(--blue)}
-.sec.sub h2{font-size:.95rem;color:var(--muted)}
-.nav button{font-size:.7rem;text-align:center;line-height:1.2;padding:0 2px}
+.title{font-size:1rem;font-weight:600;line-height:1.6;margin:4px 0 2px;overflow-wrap:anywhere}
+.orig{font-size:.82rem;color:var(--muted);direction:ltr;text-align:left;line-height:1.45;margin:0 0 3px;font-style:italic;overflow-wrap:anywhere}
+.meta{font-size:.76rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:1px 8px;align-items:center}
+.meta .sep::before{content:"·";margin-inline-end:8px}
+.meta a{color:var(--blue);text-decoration:none}
 .tbl{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.tr{display:grid;grid-template-columns:58px 1fr 92px;gap:10px;padding:11px 12px;border-top:1px solid var(--line);text-decoration:none;color:var(--ink);align-items:start}
-.tr:first-child{border-top:0}
-.tr.th{background:var(--surface-2);font-size:.74rem;color:var(--muted);font-weight:700;padding:8px 12px;align-items:center;line-height:1.4}
-.tt b{display:block;font-family:var(--f-head);font-size:.95rem;direction:ltr;text-align:right}
-.tt small,.ts small{display:block;font-size:.7rem;color:var(--muted)}
-.th2{font-size:.9rem;font-weight:600;line-height:1.55}
-.th2 .tag{font-size:.66rem;vertical-align:1px}
-.ts{font-size:.76rem;color:var(--blue);font-weight:600;line-height:1.4;overflow-wrap:anywhere}
-.trend-row{display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:start}
-.trend-n{font-family:var(--f-head);font-weight:800;font-size:1.3rem;color:var(--muted);text-align:center;padding-top:14px}
-.trend-b{display:grid;gap:6px}
-.bar{height:6px;border-radius:6px;background:var(--surface-2);overflow:hidden}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--gold));border-radius:6px}
-.trend-m{font-size:.76rem;color:var(--muted);padding:0 4px 6px}
-.empty{background:var(--surface);border:1px dashed var(--line);border-radius:18px;padding:26px 18px;color:var(--muted);text-align:center;font-size:.92rem}
-.skel{height:96px;border-radius:18px;background:linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 50%,var(--surface) 75%);background-size:200% 100%;animation:sh 1.2s infinite}
-@keyframes sh{to{background-position:-200% 0}}
-.foot{margin-top:28px;display:grid;gap:10px}
-.note{font-size:.78rem;color:var(--muted);line-height:1.75;margin:0}
-.nav{position:fixed;inset-inline:0;bottom:0;z-index:7;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-.nav-in{max-width:680px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);height:var(--nav-h)}
-.nav button{border:0;background:transparent;display:grid;place-items:center;align-content:center;gap:3px;color:var(--muted);font-size:.74rem;font-weight:600;cursor:pointer;position:relative}
-.nav svg{width:22px;height:22px}
+.tr{display:grid;grid-template-columns:56px 1fr 96px;gap:10px;padding:10px 12px;border-top:1px solid var(--line);color:var(--ink);align-items:start;cursor:pointer;background:none;border-inline:0;border-bottom:0;width:100%;text-align:start}
+.tbl>.tr:first-child{border-top:0}
+.tr.th{background:var(--surface-2);font-size:.72rem;color:var(--muted);font-weight:700;cursor:default;align-items:center}
+.tt b{display:block;font-family:var(--f-head);font-size:.92rem;direction:ltr;text-align:right}
+.tt small,.ts small{display:block;font-size:.68rem;color:var(--muted)}
+.th2{font-size:.88rem;font-weight:600;line-height:1.55}
+.ts{font-size:.74rem;color:var(--blue);font-weight:600;line-height:1.4;overflow-wrap:anywhere}
+.esc{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.esc button{flex:none;width:260px;text-align:start;border:1px solid color-mix(in srgb,var(--urgent) 35%,var(--line));background:var(--surface);border-radius:12px;padding:8px 12px;cursor:pointer}
+.esc b{font-size:.86rem;font-weight:600;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.esc small{font-size:.7rem;color:var(--urgent);font-weight:600;display:block}
+.tri{display:grid;gap:4px}
+.cols{display:grid;gap:4px}
+.cols .col .card:nth-child(n+7){display:none}
+@media (min-width:1024px){
+  .tri{grid-template-columns:repeat(3,1fr);gap:14px;align-items:start}
+  .cols{grid-template-columns:repeat(3,1fr);gap:14px;align-items:start}
+  .cols .col .card:nth-child(n+7){display:grid}
+  .col{border:1px solid var(--line);border-radius:18px;padding:4px 12px 12px}
+  .card{grid-template-columns:44px 1fr}
+}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;z-index:41;background:var(--bg);border:1px solid var(--line);overflow:auto;transition:transform .25s ease;inset-inline:0;bottom:0;max-height:88vh;border-radius:20px 20px 0 0;transform:translateY(105%);padding:6px 18px calc(env(safe-area-inset-bottom,0px) + 22px)}
+.drawer.on{transform:none}
+@media (min-width:1024px){.drawer{top:0;bottom:0;left:0;right:auto;width:520px;max-height:none;border-radius:0;transform:translateX(-105%)}.drawer.on{transform:none}}
+.grab{width:42px;height:4px;border-radius:4px;background:var(--surface-3);margin:6px auto 12px}
+.d-title{font-family:var(--f-head);font-size:1.18rem;font-weight:700;line-height:1.6;margin:8px 0 4px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.84rem;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:12px 0 0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.why{font-size:.82rem;color:var(--ink-2);background:var(--surface-2);border-radius:12px;padding:10px 12px;margin-top:10px}
+.tl{list-style:none;margin:10px 0 0;padding:0}
+.tl li{display:grid;grid-template-columns:14px 1fr;gap:10px;position:relative;padding-bottom:12px}
+.tl li::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--ink-2);margin-top:7px;z-index:1}
+.tl li::after{content:"";position:absolute;inset-inline-start:4px;top:16px;bottom:0;width:1px;background:var(--line)}
+.tl li:last-child::after{display:none}
+.tl a{color:var(--blue);font-weight:600;text-decoration:none;font-size:.88rem}
+.tl small{display:block;color:var(--muted);font-size:.74rem}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:11px;padding:9px 15px;font-weight:600;font-size:.86rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.tcard{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:16px;text-align:start;cursor:pointer}
+.tcard b{display:block;font-family:var(--f-head);font-size:.98rem;margin-bottom:4px}
+.tcard small{color:var(--muted);font-size:.78rem;line-height:1.6;display:block}
+.tracer,.result{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:14px}
+.tracer textarea{width:100%;min-height:96px;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;resize:vertical;color:var(--ink)}
+.result h3{font-family:var(--f-head);font-size:1rem;margin:0 0 8px}
+.conf{display:inline-block;font-weight:700;font-size:.78rem;border-radius:999px;padding:1px 10px}
+.c-h{background:var(--green-soft);color:var(--green)} .c-m{background:var(--gold-soft);color:var(--gold)} .c-l{background:var(--surface-2);color:var(--muted)}
+.src-row{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 13px;display:grid;gap:3px}
+.src-row .top2{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.src-row b{font-size:.9rem;overflow-wrap:anywhere}
+.src-row small{font-size:.74rem;color:var(--muted);overflow-wrap:anywhere}
+.stt{font-size:.72rem;font-weight:700;border-radius:999px;padding:0 9px;white-space:nowrap}
+.stt.ok{background:var(--green-soft);color:var(--green)} .stt.bad{background:var(--urgent-soft);color:var(--urgent)} .stt.warn{background:var(--gold-soft);color:var(--gold)} .stt.off{background:var(--surface-2);color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+.stat b{display:block;font-family:var(--f-head);font-size:1.25rem}
+.stat small{font-size:.72rem;color:var(--muted)}
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.set-row label{font-weight:600;font-size:.9rem}
+.set-row small{display:block;color:var(--muted);font-size:.76rem;font-weight:400}
+.sw{appearance:none;width:44px;height:26px;border-radius:999px;background:var(--surface-3);position:relative;cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:inset-inline-start .15s}
+.sw:checked{background:var(--green)} .sw:checked::after{inset-inline-start:21px}
+.foot{margin-top:28px;display:grid;gap:8px}
+.note{font-size:.76rem;color:var(--muted);line-height:1.75;margin:0}
+.nav{position:fixed;inset-inline:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);height:var(--nav-h)}
+.nav button{border:0;background:transparent;display:grid;place-items:center;align-content:center;gap:2px;color:var(--muted);font-size:.68rem;font-weight:600;cursor:pointer;position:relative;line-height:1.25;text-align:center}
+.nav svg{width:21px;height:21px}
 .nav button[aria-selected="true"]{color:var(--ink)}
-.nav button[aria-selected="true"]::after{content:"";position:absolute;top:0;width:28px;height:3px;border-radius:0 0 3px 3px;background:var(--red)}
-.badge{position:absolute;top:8px;inset-inline-start:calc(50% + 6px);min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font-size:.66rem;font-weight:700;display:grid;place-items:center;line-height:1}
-.toast{position:fixed;inset-inline:16px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 14px);max-width:420px;margin:auto;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;text-align:center;font-weight:600;font-size:.88rem;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:9}
+.nav button[aria-selected="true"]::after{content:"";position:absolute;top:0;width:26px;height:3px;border-radius:0 0 3px 3px;background:var(--ink)}
+.badge{position:absolute;top:7px;inset-inline-start:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--urgent);color:#fff;font-size:.62rem;font-weight:700;display:grid;place-items:center;line-height:1}
+.toast{position:fixed;inset-inline:16px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 12px);max-width:440px;margin:auto;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;text-align:center;font-weight:600;font-size:.86rem;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:50}
 .toast.on{opacity:1;transform:none}
-button:focus-visible,a:focus-visible,input:focus-visible,.card:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
+<header class="top" id="top">
+  <div class="top-in">
+    <div class="brand"><div class="mark" aria-hidden="true"><i></i></div><div><h1>هوبي عاجل</h1><div class="date" id="today"></div></div></div>
+    <div class="searchbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="gq" type="search" placeholder="ابحث في كل أخبار آخر 24 ساعة…" autocomplete="off"></div>
+    <div class="tools" style="margin-inline-start:auto">
+      <button class="ibtn" id="bSearch" type="button" aria-label="بحث"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+      <button class="ibtn" id="bAlerts" type="button" aria-label="التنبيهات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></button>
+      <button class="ibtn" id="bShare" type="button" aria-label="شارك التطبيق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
+      <button class="ibtn" id="bRefresh" type="button" aria-label="تحديث"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"/></svg></button>
+    </div>
+  </div>
+  <div class="status" id="status"><span class="st-live"><span class="dot"></span><span id="sLive">جارِ التحميل…</span></span><span id="sSrc"></span><span id="sDelay"></span></div>
+</header>
+
 <div class="wrap">
-  <header class="head" id="head">
-    <div class="bar">
-      <div class="brand">
-        <div class="mark" aria-hidden="true"><i></i></div>
-        <div style="min-width:0"><h1>هوبي عاجل</h1><div class="date" id="today"></div></div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="icon-btn" id="shareApp" type="button" aria-label="شارك التطبيق">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
-        </button>
-        <button class="icon-btn" id="refresh" type="button" aria-label="تحديث">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"/></svg>
-        </button>
-      </div>
-    </div>
-    <div class="live" id="live"><span class="pulse"></span><span id="liveTxt">جارِ التحميل…</span></div>
-  </header>
-
-      <div class="ctl" id="ctl" hidden>
-      <div class="seg" id="mediaSeg" role="group" aria-label="نوع الإعلام" hidden>
-        <button type="button" data-m="عربي" aria-pressed="true">الإعلام العربي</button>
-        <button type="button" data-m="أجنبي" aria-pressed="false">الإعلام الأجنبي</button>
-        <button type="button" data-m="وكالات" aria-pressed="false">الوكالات العالمية</button>
-        <button type="button" data-m="تحليل" aria-pressed="false">تحليل ومقابلات</button>
-      </div>
-      <div class="chips" id="winChips" role="group" aria-label="الفترة">
-        <button class="chip" type="button" data-w="3" aria-pressed="true">آخر 3 دقائق</button>
-        <button class="chip" type="button" data-w="360" aria-pressed="false">آخر 6 ساعات</button>
-        <button class="chip" type="button" data-w="1440" aria-pressed="false">آخر 24 ساعة</button>
-      </div>
-      <div class="chips" id="topicChips" role="group" aria-label="الموضوع"></div>
-      <input class="search" id="q" type="search" placeholder="ابحث بكلمة أو اسم…" autocomplete="off">
-    </div>
-  <section class="list" id="list" aria-live="polite"><div class="skel"></div><div class="skel"></div><div class="skel"></div></section>
-
-  <footer class="foot">
-    <p class="note"><b>العاجل</b>: جدول آخر 5 دقائق للمهم عن العراق، ثم فهرس العاجل والمهم بآخر 24 ساعة. <b>الأكثر تداولاً</b>: الأخبار اللي نشرتها أكثر الجهات خلال 24 ساعة (نشر جهات كثيرة يعني انتشار، مو تأكيد). <b>العراق</b>: كل خبر يخص العراق بأي موضوع. <b>المنطقة</b>: الشرق الأوسط والمنطقة. <b>الإعلام عن العراق</b>: ما تنشره القنوات والصحف العربية والأجنبية عن العراق، وجدول للتحليلات والمقالات والمقابلات الأجنبية عن العراق مترجمة. كل العناوين بالعربي؛ المحتوى الكردي لا يُعرض. كل قسم يعرض 10 إلى 20 خبراً على الأقل، وإذا قلّت أخبار الفترة يكمّل بأحدث ما قبلها. يتحدث كل دقيقتين تقريباً من أكثر من 200 قناة وموقع يتابعها مرصد هوبي، وهذا مو كل الإنترنت. بكل خبر يوم وتاريخ ووقت النشر ووقت الرصد بتوقيت بغداد.</p>
-    <p class="note"><b>مؤكد</b>: صادر عن الجهة الرسمية نفسها، وهذا يثبت صدور الكلام لا صحة مضمونه. <b>متطابق لدى جهتين</b>: نشرته جهتان وممكن وحدة تنقل عن الثانية. <b>غير مؤكد</b>: مصدر واحد غير رسمي. <b>ترجمة آلية</b>: عناوين الصحافة العالمية مترجمة آلياً، والعنوان الأصلي تحتها.</p>
-    <p class="note" style="opacity:.55">نسخة 29/10 · 9</p>
+  <div class="ticker" id="ticker" hidden><div class="ticker-l">عاجل</div><div class="ticker-v"><div class="ticker-t" id="tickerT"></div></div></div>
+  <main id="view"></main>
+  <footer class="foot narrow">
+    <p class="note">يرصد التطبيق كل 90 ثانية تقريباً، على خوادم GitHub وبدون ما تحتاج تخلي الصفحة مفتوحة. يرصد قنوات تلغرام عامة وخلاصات RSS ومواقع عبر Google News. هذا مو كل الإنترنت، وفيسبوك وX ما يندخلون مجاناً. كل الأوقات بتوقيت بغداد.</p>
+    <p class="note"><b>عاجل المصدر</b>: المصدر نفسه كتب «عاجل». <b>مهم بتصنيف النظام</b>: حسب الأهمية وصلة الخبر بالعراق وعدد الجهات والمصدر الرسمي. <b>متداول لم يتأكد</b>: نشرته جهات كثيرة، وكثرة النشر مو تأكيد. <b>مؤكد</b> يعني صادر عن الجهة نفسها، يثبت صدور الكلام لا صحته. <b>ترجمة آلية</b> معلّمة والأصل تحتها.</p>
+    <p class="note" style="opacity:.55">نسخة 30/10 · 10</p>
   </footer>
 </div>
 
 <nav class="nav" aria-label="الأقسام"><div class="nav-in" role="tablist">
-  <button role="tab" type="button" data-tab="urgent" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>العاجل</button>
-  <button role="tab" type="button" data-tab="trend" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>الأكثر تداولاً</button>
-  <button role="tab" type="button" data-tab="iraq" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>العراق<span class="badge" hidden></span></button>
-  <button role="tab" type="button" data-tab="region" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3z"/><path d="M9 4v13M15 7v13"/></svg>المنطقة<span class="badge" hidden></span></button>
-  <button role="tab" type="button" data-tab="media" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>الإعلام<span class="badge" hidden></span></button>
+  <button role="tab" type="button" data-v="home" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>الرئيسية</button>
+  <button role="tab" type="button" data-v="iraq" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>العراق<span class="badge" hidden></span></button>
+  <button role="tab" type="button" data-v="pmf" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>الحشد الشعبي<span class="badge" hidden></span></button>
+  <button role="tab" type="button" data-v="world" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>العالم</button>
+  <button role="tab" type="button" data-v="tools" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/></svg>الأدوات</button>
 </div></nav>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-modal="true" role="dialog"></aside>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-let news=[],meta=null,tab="urgent",win=3,topic="الكل",media="عربي",query="",open=new Set(),loading=false;
-let seen=new Set(JSON.parse(store.get("hobi_seen")||"[]")), fresh=new Set();
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let news=[],meta=null,health=[],archive=null,loading=false;
+let view="home", sub={pmf:"all",world:"region",tools:null}, win=360, topic="الكل", ctype="الكل", srcF="", query="";
+let seen=new Set(store.get("hobi_seen2",[])), fresh=new Set();
+let prefs=Object.assign({on:false,sound:true,notify:false,src:true,imp:true,esc:false,iraqOnly:true,pmf:false,topics:[],kw:""},store.get("hobi_alerts",{}));
+let alerted=store.get("hobi_alerted",{});
 const LV={"عاجل":{w:40,c:"l-urgent",t:'<span class="tag t-urgent">عاجل</span>'},"مهم":{w:25,c:"l-imp",t:'<span class="tag t-imp">مهم</span>'},"متابعة":{w:12,c:"l-follow",t:'<span class="tag t-follow">متابعة</span>'}};
 const ST={"مؤكد":["s-ok",5],"متطابق لدى جهتين":["s-pair",4]};
 const TOPICS=["الكل","سياسة","أمن","اقتصاد","خدمات","صحة","تعليم","ثقافة","مجتمع","رياضة","طقس","عام"];
+const CTYPES=["الكل","خبر","بيان رسمي","تصريح","تحليل/رأي","ادعاء منسوب"];
 const MONTHS=["كانون الثاني","شباط","آذار","نيسان","أيار","حزيران","تموز","آب","أيلول","تشرين الأول","تشرين الثاني","كانون الأول"];
 const DAYS=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
-const ms=iso=>iso?new Date(iso).getTime():0, mins=iso=>iso?(Date.now()-ms(iso))/60000:1e9;
-const bg=iso=>new Date(ms(iso)+3*3600e3), p2=n=>String(n).padStart(2,"0");
-const hm=iso=>{ if(!iso) return "--:--"; const d=bg(iso); return `${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`; };
-const day=iso=>{ const d=bg(iso); return DAYS[d.getUTCDay()]; };
-const dm=iso=>{ const d=bg(iso); return `${d.getUTCDate()}/${d.getUTCMonth()+1}`; };
-const full=iso=>iso?`${day(iso)} ${dm(iso)} · ${hm(iso)}`:"غير معروف";
-function ago(iso){ if(!iso) return ""; const m=Math.round(mins(iso)); if(m<1) return "الآن"; if(m<60) return `قبل ${m} د`; return `قبل ${Math.floor(m/60)} س`; }
-function todayStr(){ const d=new Date(Date.now()+3*3600e3); return `${DAYS[d.getUTCDay()]}، ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; }
-const srcName=s=>String(s).replace(/ — (telegram|تلغرام|RSS)$/i,"").replace(/ \(عبر Google News\)$/,"");
-const score=n=>(LV[n.level]?.w||0)+Math.min(n.n_sources||1,6)*4+(ST[n.status]?.[1]||0)-mins(n.latest_utc)/10;
+const ms=i=>i?new Date(i).getTime():0, mins=i=>i?(Date.now()-ms(i))/60000:1e9, p2=n=>String(n).padStart(2,"0");
+const bg=i=>new Date(ms(i)+3*3600e3);
+const hm=i=>{if(!i)return"--:--";const d=bg(i);return`${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`};
+const day=i=>i?DAYS[bg(i).getUTCDay()]:"", dm=i=>{if(!i)return"";const d=bg(i);return`${d.getUTCDate()}/${d.getUTCMonth()+1}`};
+const full=i=>i?`${day(i)} ${dm(i)} · ${hm(i)}`:"غير متوفر";
+function ago(i){if(!i)return"";const m=Math.round(mins(i));if(m<1)return"الآن";if(m<60)return`قبل ${m} د`;return`قبل ${Math.floor(m/60)} س`}
+const srcName=s=>String(s||"").replace(/ — (telegram|تلغرام|RSS)$/i,"").replace(/ \(عبر Google News\)$/,"");
+const score=n=>(LV[n.level]?.w||0)+Math.min(n.n_sources||1,6)*4+(ST[n.status]?.[1]||0)+(n.about_iraq?8:0)-mins(n.latest_utc)/10;
 const byNew=(a,b)=>ms(b.latest_utc)-ms(a.latest_utc);
+const fmtDelay=m=>m==null?"":m<1?"أقل من دقيقة":m<60?`${Math.round(m)} د`:`${Math.round(m/60)} س`;
+const isUrg=n=>n.source_flag||n.level==="عاجل";
 
-function card(n,hero){
-  const lv=LV[n.level], st=ST[n.status]?.[0]||"s-unv", isOpen=open.has(n.id), srcs=n.sources||[];
-  const first=srcs.length?srcName(srcs[0].name):"";
-  const tags=`${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${lv?lv.t:""}<span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}<span class="st ${st}">${esc(n.status||"غير مؤكد")}</span>`;
-  const more=isOpen?`<div class="more">
-      <ul class="srcs">${srcs.slice(0,6).map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(srcName(s.name))}<small>${esc(full(s.time))}</small></a></li>`).join("")}</ul>
-      <div class="basis">${esc(n.basis||"")}${n.first_src?` · أول من نشر: ${esc(srcName(n.first_src.name))} (${esc(full(n.first_src.time))})`:""}${n.n_items>1?` · ${n.n_items} مادة`:""}${n.views?` · ${n.views.toLocaleString("ar-IQ")} مشاهدة على تلغرام`:""}</div>
-      <div class="row-btns"><button class="btn primary" type="button" data-share="${esc(n.id)}">إرسال للفريق</button><button class="btn" type="button" data-copy="${esc(n.id)}">نسخ</button></div></div>`:"";
-  const metaL=`<div class="meta"><span>${esc(first)}${n.n_sources>2?` و${n.n_sources-1} جهات`:n.n_sources===2?" وجهة أخرى":""}</span><span class="dot">رُصد ${esc(full(n.collected_utc))}</span></div>`;
-  const orig=n.title_orig?`<p class="orig">${esc(n.title_orig)}</p>`:"";
-  if(hero) return `<article class="card hero ${lv?lv.c:""}" data-id="${esc(n.id)}" tabindex="0"><div class="kicker">الأبرز الآن · ${esc(full(n.latest_utc))}</div><div class="tags" style="margin-top:8px">${tags}</div><h3 class="title">${esc(n.title)}</h3>${orig}${metaL}${more}</article>`;
-  return `<article class="card ${lv?lv.c:""}" data-id="${esc(n.id)}" tabindex="0">
+function tagsOf(n){
+  return `${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${n.source_flag?'<span class="tag t-urgent">عاجل المصدر</span>':(LV[n.level]?LV[n.level].t:"")}${n.escalating?'<span class="tag t-esc">متصاعد</span>':""}<span class="tag t-type">${esc(n.ctype||"خبر")}</span><span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}<span class="st ${ST[n.status]?.[0]||"s-unv"}">${esc(n.status||"غير مؤكد")}</span>`;
+}
+function card(n){
+  const s=(n.sources||[])[0]||{};
+  return `<div role="button" tabindex="0" class="card ${isUrg(n)?"l-urgent":LV[n.level]?LV[n.level].c:""}" data-id="${esc(n.id)}">
     <div class="when"><b>${esc(hm(n.latest_utc))}</b><small>${esc(day(n.latest_utc))}</small><small>${esc(dm(n.latest_utc))}</small></div>
-    <div class="body"><div class="tags">${tags}</div><h3 class="title">${esc(n.title)}</h3>${orig}${metaL}</div>${more}</article>`;
+    <div class="body"><div class="tags">${tagsOf(n)}</div><h3 class="title">${esc(n.title)}</h3>${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p>`:""}
+    <div class="meta"><span>${esc(srcName(s.name))}${n.n_sources>2?` و${n.n_sources-1} جهات`:n.n_sources===2?" وجهة أخرى":""}</span><span class="sep">رُصد ${esc(hm(n.collected_utc))}</span>${s.url?`<a class="sep" href="${esc(s.url)}" target="_blank" rel="noopener" data-stop>الأصل ↗</a>`:""}</div></div></div>`;
 }
-const block=(title,sub,rows,heroFirst)=>`<div class="sec"><h2>${esc(title)}</h2><span>${esc(sub)}</span></div>`+(rows.length?rows.map((n,i)=>card(n,heroFirst&&i===0)).join(""):'<div class="empty">ما كو أخبار بهذا القسم لحد الآن.</div>');
+const block=(t,subt,rows,more)=>`<div class="sec"><h2>${esc(t)}</h2>${more?`<button class="more-l" type="button" data-go="${more}">${esc(subt)} ←</button>`:`<span>${esc(subt)}</span>`}</div>`+(rows.length?`<div class="list">${rows.map(card).join("")}</div>`:'<div class="empty">ما كو أخبار بهذا القسم لحد الآن.</div>');
 
-// يطبّق نافذة الوقت مع حد أدنى 10 أخبار: إذا قلّت، يكمّل بأحدث ما قبلها حتى 20
-function windowed(pool){
-  const inWin=pool.filter(n=>mins(n.latest_utc)<=win).sort(byNew);
-  if(inWin.length>=10||win>=1440) return [inWin,[]];
-  const rest=pool.filter(n=>mins(n.latest_utc)>win).sort(byNew).slice(0,20-inWin.length);
-  return [inWin,rest];
-}
-function filtered(pool){
-  const q=query.trim().toLowerCase();
-  return pool.filter(n=>(topic==="الكل"||n.topic===topic)&&(!q||(n.title+" "+(n.title_orig||"")+" "+(n.sources||[]).map(s=>s.name).join(" ")).toLowerCase().includes(q)));
-}
 const WIN_LABEL={3:"آخر 3 دقائق",360:"آخر 6 ساعات",1440:"آخر 24 ساعة"};
+function filterBar(pool){
+  const srcs=[...new Set(pool.flatMap(n=>(n.sources||[]).map(s=>srcName(s.name))))].filter(Boolean).sort((a,b)=>a.localeCompare(b,"ar")).slice(0,300);
+  return `<div class="ctl">
+    <div class="chips">${[3,360,1440].map(w=>`<button class="chip" type="button" data-w="${w}" aria-pressed="${win===w}">${WIN_LABEL[w]}</button>`).join("")}</div>
+    <div class="chips">${TOPICS.map(t=>`<button class="chip small" type="button" data-t="${t}" aria-pressed="${topic===t}">${t}</button>`).join("")}</div>
+    <div class="row2"><select id="fType" aria-label="نوع المادة">${CTYPES.map(t=>`<option value="${t}" ${t===ctype?"selected":""}>${t==="الكل"?"كل الأنواع":t}</option>`).join("")}</select>
+    <select id="fSrc" aria-label="المصدر"><option value="">كل المصادر</option>${srcs.map(s=>`<option ${s===srcF?"selected":""}>${esc(s)}</option>`).join("")}</select></div>
+    <input class="inp" id="fq" type="search" placeholder="ابحث بكلمة أو اسم…" value="${esc(query)}">
+  </div>`;
+}
+function applyF(pool){
+  const q=query.trim().toLowerCase();
+  return pool.filter(n=>(topic==="الكل"||n.topic===topic)&&(ctype==="الكل"||n.ctype===ctype)&&(!srcF||(n.sources||[]).some(s=>srcName(s.name)===srcF))
+    &&(!q||(n.title+" "+(n.title_orig||"")+" "+(n.sources||[]).map(s=>s.name).join(" ")).toLowerCase().includes(q)));
+}
+function windowed(pool){
+  const inW=pool.filter(n=>mins(n.latest_utc)<=win).sort(byNew);
+  if(inW.length>=10||win>=1440) return {inW,rest:[]};
+  return {inW,rest:pool.filter(n=>mins(n.latest_utc)>win).sort(byNew).slice(0,20-inW.length)};
+}
+function listView(title,pool,head=""){
+  const f=applyF(pool), {inW,rest}=windowed(f);
+  let h=head+filterBar(pool)+`<div class="sec"><h2>${esc(title)}</h2><span>${esc(WIN_LABEL[win])} · ${inW.length} خبر</span></div>`;
+  if(inW.length) h+=`<div class="list">${inW.slice(0,300).map(card).join("")}</div>`;
+  else if(rest.length) h+=`<div class="note-box">ما نزل خبر بـ${WIN_LABEL[win]}. هذي أحدث الأخبار:</div>`;
+  else h+='<div class="empty">ما كو أخبار تطابق التصفية.</div>';
+  if(rest.length) h+=(inW.length?`<div class="sec minor"><h2>أحدث ما قبلها</h2><span>لإكمال ${inW.length+rest.length} خبر</span></div>`:"")+`<div class="list" style="margin-top:10px">${rest.map(card).join("")}</div>`;
+  return h;
+}
+const segBar=(k,opts)=>`<div class="seg" data-seg="${k}" style="margin-top:16px">${opts.map(([v,l])=>`<button type="button" data-s="${v}" aria-pressed="${sub[k]===v}">${l}</button>`).join("")}</div>`;
 
-function render(){
-  $("#today").textContent=todayStr();
+function vHome(all){
+  const h6=all.filter(n=>mins(n.latest_utc)<=360);
+  const escal=all.filter(n=>n.escalating).sort((a,b)=>score(b)-score(a)).slice(0,10);
+  const five=all.filter(n=>n.about_iraq&&(n.level in LV||n.source_flag)&&mins(n.latest_utc)<=5).sort((a,b)=>score(b)-score(a));
+  const sf=h6.filter(n=>n.source_flag).sort(byNew).slice(0,8);
+  const imp=h6.filter(n=>!n.source_flag&&(n.level==="عاجل"||n.level==="مهم")).sort((a,b)=>score(b)-score(a)).slice(0,8);
+  const tr=h6.filter(n=>n.trending_unconfirmed&&!n.source_flag).sort((a,b)=>b.n_sources-a.n_sources).slice(0,8);
+  let h="";
+  if(escal.length) h+=`<div class="sec"><h2>أحداث متصاعدة</h2><span>تكاثرت تغطيتها بآخر ساعة</span></div><div class="esc">${escal.map(n=>`<button type="button" data-id="${esc(n.id)}"><small>${n.n_items} مادة · ${n.n_sources} جهات</small><b>${esc(n.title)}</b></button>`).join("")}</div>`;
+  h+=`<div class="sec"><h2>آخر 5 دقائق · المهم عن العراق</h2><span>${five.length} خبر</span></div>`+(five.length?`<div class="tbl"><div class="tr th"><span>الوقت</span><span>الخبر</span><span>المصدر</span></div>${five.map(n=>{const s=(n.sources||[])[0]||{};return`<button type="button" class="tr" data-id="${esc(n.id)}"><span class="tt"><b>${esc(hm(n.latest_utc))}</b><small>${esc(ago(n.latest_utc))}</small></span><span class="th2">${n.source_flag?'<span class="tag t-urgent">عاجل</span> ':LV[n.level]?LV[n.level].t+" ":""}${esc(n.title)}</span><span class="ts">${esc(srcName(s.name))}<small>${n.n_sources>1?n.n_sources+" جهات":"جهة واحدة"}</small></span></button>`}).join("")}</div>`:'<div class="note-box">ما نشرت المصادر المرصودة خبراً مهماً عن العراق بآخر 5 دقائق.</div>');
+  h+=`<div class="tri"><div>${block("عاجل نشره المصدر","آخر 6 ساعات",sf)}</div><div>${block("مهم صنّفه النظام","آخر 6 ساعات",imp)}</div><div>${block("متداول لم يتأكد بعد","3 جهات أو أكثر",tr)}</div></div>`;
+  const cI=all.filter(n=>n.about_iraq&&!n.pmf).sort(byNew).slice(0,12), cP=all.filter(n=>n.pmf).sort(byNew).slice(0,12), cW=all.filter(n=>!n.about_iraq||n.origin!=="عراقي").sort(byNew).slice(0,12);
+  h+=`<div class="cols" style="margin-top:10px"><div class="col">${block("العراق","الكل",cI,"iraq")}</div><div class="col">${block("الحشد الشعبي","الكل",cP,"pmf")}</div><div class="col">${block("المنطقة والعالم","الكل",cW,"world")}</div></div>`;
+  return h;
+}
+function vPmf(all){
+  const P=all.filter(n=>n.pmf), k=sub.pmf;
+  const pool=k==="all"?P:P.filter(n=>n.pmf_kind===({official:"بيان رسمي",iraq:"عراقي",intl:"دولي",analysis:"تحليل"})[k]);
+  const head=segBar("pmf",[["all","الكل"],["official","البيانات الرسمية"],["iraq","الأخبار العراقية"],["intl","التغطية الإقليمية والدولية"],["analysis","التقارير والتحليلات"]])
+    +`<p class="note" style="margin-top:10px">التغطية معروضة بغض النظر عن موقف المصدر. الاتهام ينسب لقائله ويظهر كـ«ادعاء منسوب»، مو حقيقة مثبتة.</p>`;
+  return listView("الحشد الشعبي",pool,head);
+}
+function vWorld(all){
+  const k=sub.world;
+  const head=segBar("world",[["region","المنطقة"],["arab","الإعلام العربي عن العراق"],["foreign","الإعلام الأجنبي عن العراق"],["agency","الوكالات العالمية"],["analysis","تحليل ومقابلات"],["trend","الأكثر تداولاً"]]);
+  if(k==="analysis") return head+analysisTable();
+  if(k==="trend") return head+trendList(all);
+  const pool=k==="region"?all.filter(n=>!n.about_iraq&&n.origin!=="أجنبي"):k==="arab"?all.filter(n=>n.about_iraq&&n.origin==="عربي"):k==="agency"?all.filter(n=>n.agency):all.filter(n=>n.origin==="أجنبي");
+  return listView({region:"الشرق الأوسط والمنطقة",arab:"الإعلام العربي عن العراق",foreign:"الإعلام الأجنبي عن العراق",agency:"الوكالات العالمية عن العراق"}[k],pool,head);
+}
+function analysisTable(){
+  const rows=news.filter(n=>n.kind&&n.origin==="أجنبي").sort(byNew).slice(0,40);
+  return `<div class="sec"><h2>تحليلات ومقابلات أجنبية عن العراق</h2><span>آخر 7 أيام · ${rows.length}</span></div>`+(rows.length?`<div class="tbl"><div class="tr th"><span>التاريخ</span><span>العنوان</span><span>الوسيلة</span></div>${rows.map(n=>{const s=(n.sources||[])[0]||{};return`<button type="button" class="tr" data-id="${esc(n.id)}"><span class="tt"><b>${esc(dm(n.latest_utc))}</b><small>${esc(day(n.latest_utc))}</small></span><span class="th2"><span class="tag t-type">${esc(n.kind)}</span> ${esc(n.title)}${n.title_orig?`<small class="orig" style="display:block;margin-top:3px">${esc(n.title_orig)}</small>`:""}</span><span class="ts">${esc(srcName(s.name))}</span></button>`}).join("")}</div>`:'<div class="note-box">ما كو تحليلات مرصودة حالياً.</div>');
+}
+function trendList(all){
+  const rows=all.filter(n=>(n.n_sources||1)>=2&&n.origin!=="أجنبي").sort((a,b)=>(b.n_sources-a.n_sources)||((b.n_items||0)-(a.n_items||0))).slice(0,20);
+  return `<div class="sec"><h2>الأكثر تكراراً خلال 24 ساعة</h2><span>عدد الجهات = انتشار، مو تأكيد</span></div>`+(rows.length?`<div class="list">${rows.map(card).join("")}</div>`:'<div class="empty">ما كو</div>');
+}
+const back=`<button class="btn" type="button" data-tool="" style="margin-top:16px">→ الأدوات</button>`;
+function vTools(){
+  const k=sub.tools;
+  if(k==="tracer") return vTracer();
+  if(k==="sources") return vSources();
+  if(k==="alerts") return vAlerts();
+  return `<div class="narrow"><div class="sec"><h2>الأدوات</h2></div><div class="tgrid">
+    <button class="tcard" type="button" data-tool="tracer"><b>تتبّع أصل الخبر</b><small>الصق نص خبر أو عبارة أو رابط، ويطلعلك أقدم نشر بالمصادر المفحوصة ويه خط زمني.</small></button>
+    <button class="tcard" type="button" data-tool="sources"><b>إدارة المصادر</b><small>${health.length} مصدر، تشوف حالة كل واحد وآخر نجاح وآخر محاولة والأخطاء، وتكدر تعطّل أو تغيّر الأولوية.</small></button>
+    <button class="tcard" type="button" data-tool="alerts"><b>إعدادات التنبيه</b><small>حسب الموضوع والمصدر والأهمية، ويه صوت اختياري.</small></button>
+    <button class="tcard" type="button" data-go="world" data-sub="trend"><b>الأكثر تداولاً</b><small>الأخبار اللي نشرتها أكثر الجهات بآخر 24 ساعة.</small></button>
+  </div></div>`;
+}
+
+let traceQ="", traceRes="";
+function vTracer(){
+  return `<div class="narrow">${back}<div class="tracer"><h2 style="font-family:var(--f-head);font-size:1.1rem;margin:0 0 6px">تتبّع أصل الخبر</h2>
+    <p class="note" style="margin:0 0 10px">الصق نص الخبر، أو عبارة مقتبسة منه، أو رابطه. البحث يصير بأرشيف آخر 72 ساعة لكل المصادر المرصودة.</p>
+    <textarea id="trQ" placeholder="مثال: الحكومة العراقية تقرر تعطيل الدوام الرسمي…">${esc(traceQ)}</textarea>
+    <div class="btns"><button class="btn primary" id="trGo" type="button">ابحث عن الأصل</button></div></div><div id="trOut">${traceRes}</div></div>`;
+}
+const AR_N=s=>String(s||"").replace(/[ً-ْـ]/g,"").replace(/[إأآا]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).toLowerCase();
+const STOP=new Set("في من على الى إلى عن مع هذا هذه ذلك التي الذي ان أن او أو و ثم كما قد لا ما بعد قبل خلال حول بين عند كل وقال وقالت قال اليوم امس the a an of to in on and for with from by at is are was were".split(" ").map(AR_N));
+const toks=s=>AR_N(s).replace(/[^\p{L}\p{N}\s]/gu," ").split(/\s+/).map(w=>w.replace(/^(وال|بال|فال|كال|لل|ال)(?=..)/,"")).filter(w=>w.length>1&&!STOP.has(w));
+const RELAY=/(نقلا عن|نقلاً عن|بحسب|وفقا ل|وفقاً ل|حسب ما|according to|citing|reported by|told reuters|told afp)/i;
+async function runTrace(){
+  const el=$("#trQ"); if(el) traceQ=el.value.trim(); if(!traceQ) return;
+  $("#trOut").innerHTML='<div class="note-box" style="margin-top:14px">جارِ تحميل الأرشيف والبحث…</div>';
+  try{ if(!archive) archive=await fetch("archive.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()); }
+  catch(e){ $("#trOut").innerHTML='<div class="note-box" style="margin-top:14px">ما كدرت أحمّل الأرشيف. تأكد من الإنترنت.</div>'; return; }
+  const items=archive.items||[];
+  let q=traceQ;
+  if(/^https?:\/\//.test(q)){ const byUrl=items.find(i=>i.u&&(i.u===q||q.startsWith(i.u)||i.u.startsWith(q))); if(byUrl) q=byUrl.o||byUrl.t; }
+  const qt=[...new Set(toks(q))];
+  if(qt.length<2){ traceRes='<div class="note-box" style="margin-top:14px">النص قصير، أو الرابط مو موجود بالأرشيف. اكتب عبارة أوضح من الخبر.</div>'; $("#trOut").innerHTML=traceRes; return; }
+  const df={}; items.forEach(i=>new Set(toks((i.o||i.t)+" "+(i.x||""))).forEach(w=>{df[w]=(df[w]||0)+1}));
+  const N=items.length||1, idf=w=>Math.log(1+N/((df[w]||0)+1));
+  const qW=qt.reduce((a,w)=>a+idf(w),0), qn=AR_N(q).replace(/\s+/g," ").slice(0,60);
+  const scored=items.map(i=>{const txt=(i.o||i.t)+" "+(i.x||""), it=new Set(toks(txt)); let s=0,hit=0; qt.forEach(w=>{if(it.has(w)){s+=idf(w);hit++}});
+    const exact=qn.length>=12&&AR_N(txt).replace(/\s+/g," ").includes(qn); return {i,sc:s/qW+(exact?0.5:0),hit,exact}})
+    .filter(r=>r.sc>=0.45&&r.hit>=Math.min(3,qt.length)).sort((a,b)=>b.sc-a.sc).slice(0,40);
+  const scope=`<p class="note" style="margin-top:10px"><b>نطاق البحث:</b> ${N.toLocaleString("ar-IQ")} مادة من ${archive.sources_checked} مصدر شغّال، من ${esc(full(archive.from))} لحد ${esc(full(archive.to))}. ${archive.sources_failed?.length?`مصادر ما انفحصت لأنها متوقفة هسه: ${esc(archive.sources_failed.slice(0,10).map(srcName).join("، "))}${archive.sources_failed.length>10?"…":""}.`:""} فيسبوك وX والمصادر غير المرصودة خارج النطاق، فأقدم نشر هنا مو بالضرورة أول نشر بالعالم.</p>`;
+  if(!scored.length){ traceRes=`<div class="result"><h3>ما لكيت مطابقة كافية</h3><p class="note">ما لكيت أدلة كافية لتحديد أول ناشر ضمن المصادر المفحوصة، وما راح أخمّن.</p>${scope}${extLinks(q)}</div>`; $("#trOut").innerHTML=traceRes; return; }
+  const withT=scored.filter(r=>r.i.p), ordered=withT.slice().sort((a,b)=>ms(a.i.p)-ms(b.i.p));
+  const earliest=ordered[0]||null, e=earliest?.i, exactTime=e&&e.q==="exact";
+  const relay=e&&RELAY.test((e.o||e.t)+" "+(e.x||""));
+  const second=ordered[1], gap=second&&e?(ms(second.i.p)-ms(e.p))/60000:null;
+  let conf="منخفضة",cc="c-l",why=[];
+  if(e){ why.push(earliest.sc>=0.8?"تطابق قوي بالنص":"تطابق جزئي بالنص"); why.push(exactTime?"وقت نشر دقيق من المصدر":"المصدر يعرض التاريخ بدون ساعة دقيقة");
+    if(e.f)why.push("المصدر جهة رسمية"); if(relay)why.push("المادة تنقل عن جهة ثانية، فهي مو الأصل");
+    if(gap!=null)why.push(gap>=10?`يسبق المطابقة التالية بـ${fmtDelay(gap)}`:"النشر متقارب جداً بين المصادر"); else why.push("مطابقة وحدة بس");
+    const pts=(earliest.sc>=0.8?1:0)+(exactTime?1:0)+(relay?0:1)+((gap==null||gap>=10)?1:0)+(e.f?1:0);
+    if(pts>=4&&ordered.length>=2){conf="عالية";cc="c-h"}else if(pts>=3){conf="متوسطة";cc="c-m"} }
+  traceRes=`<div class="result"><h3>أقدم نشر عُثر عليه ضمن المصادر المفحوصة</h3>${e?`
+    <dl class="kv"><dt>المصدر</dt><dd>${esc(srcName(e.s))}</dd>
+    <dt>الرابط</dt><dd><a href="${esc(e.u)}" target="_blank" rel="noopener" style="color:var(--blue)">فتح الأصل ↗</a></dd>
+    <dt>وقت النشر</dt><dd>${exactTime?esc(full(e.p))+" (بغداد، UTC+3)":esc(day(e.p)+" "+dm(e.p))+" · الساعة غير مؤكدة"}</dd>
+    <dt>وقت رصد التطبيق</dt><dd>${esc(full(e.c))} <small style="color:var(--muted);font-weight:400">(مو بديل عن وقت النشر)</small></dd>
+    <dt>أصلية أم ناقلة؟</dt><dd>${relay?"تنقل عن جهة أخرى (بيها «نقلاً عن/بحسب»)":"ما بيها إحالة ظاهرة لمصدر ثاني"}</dd>
+    <dt>درجة الثقة</dt><dd><span class="conf ${cc}">${conf}</span></dd></dl>
+    <p class="why">${esc(why.join(" · "))}</p>
+    <p class="note" style="margin-top:8px"><b>مقتطف المطابقة:</b> «${esc((e.o||e.t).slice(0,160))}»</p>`:'<p class="note">المطابقات الموجودة بدون وقت نشر، فما أكدر أحدد الأقدم.</p>'}
+    <div class="sec minor"><h2>الخط الزمني (${scored.length} مطابقة)</h2><span>حسب وقت النشر المعلن</span></div>
+    <ol class="tl">${ordered.map(r=>`<li><div><a href="${esc(r.i.u)}" target="_blank" rel="noopener">${esc(srcName(r.i.s))} ↗</a>${r.i.f?' <span class="tag t-follow">رسمي</span>':""}${r.exact?' <span class="tag t-type">تطابق حرفي</span>':""}<small>نُشر ${r.i.q==="exact"?esc(full(r.i.p)):esc(dm(r.i.p))+" (بدون ساعة)"} · رُصد ${esc(hm(r.i.c))}</small><small>${esc((r.i.o||r.i.t).slice(0,120))}</small></div></li>`).join("")}</ol>
+    ${scored.length>withT.length?`<p class="note">${scored.length-withT.length} مطابقة بدون وقت نشر، فما دخلت بالترتيب.</p>`:""}
+    ${scope}${extLinks(q)}</div>`;
+  $("#trOut").innerHTML=traceRes;
+}
+function extLinks(q){ const s=encodeURIComponent('"'+q.slice(0,90)+'"');
+  return `<p class="note" style="margin-top:8px"><b>بحث يدوي خارج المنصة</b> (ما يندخل بالنتيجة أعلاه): <a style="color:var(--blue)" target="_blank" rel="noopener" href="https://news.google.com/search?q=${s}&hl=ar&gl=IQ">Google News</a> · <a style="color:var(--blue)" target="_blank" rel="noopener" href="https://x.com/search?q=${s}&f=live">X</a> · <a style="color:var(--blue)" target="_blank" rel="noopener" href="https://www.facebook.com/search/posts/?q=${s}">فيسبوك</a></p>`; }
+
+let srcState="all", srcQ="";
+function vSources(){
+  const isBad=h=>h.state==="متوقف"||h.state==="فشل مؤقت";
+  const ok=health.filter(h=>h.enabled&&h.state==="يعمل").length, bad=health.filter(h=>h.enabled&&isBad(h)).length, off=health.filter(h=>!h.enabled).length, idle=health.length-ok-bad-off;
+  const q=srcQ.trim().toLowerCase();
+  const rows=health.filter(h=>(srcState==="all"||(srcState==="ok"&&h.enabled&&h.state==="يعمل")||(srcState==="bad"&&h.enabled&&isBad(h))||(srcState==="off"&&!h.enabled)||(srcState==="idle"&&h.enabled&&h.state!=="يعمل"&&!isBad(h)))
+    &&(!q||(h.name+" "+h.url+" "+(h.category||"")+" "+h.region).toLowerCase().includes(q)));
+  const cls=h=>!h.enabled?"off":h.state==="يعمل"?"ok":isBad(h)?"bad":"warn";
+  return `<div class="narrow">${back}<div class="sec"><h2>إدارة المصادر</h2><span>${health.length} مصدر</span></div>
+   <div class="stats"><div class="stat"><b>${ok}</b><small>يعمل</small></div><div class="stat"><b>${bad}</b><small>فشل/متوقف</small></div><div class="stat"><b>${idle}</b><small>بلا جلب بعد</small></div><div class="stat"><b>${off}</b><small>معطّل</small></div></div>
+   <div class="note-box" style="margin-top:12px">لتعطيل مصدر أو تغيير أولويته بدون كود: انسخ معرّفه من هنا، وافتح <a style="color:var(--blue)" target="_blank" rel="noopener" href="https://github.com/ehabkadim2026-byte/hobi-ajel/edit/main/config/overrides.json">ملف التجاوزات على GitHub</a>. حطه بـ<code>disabled</code> حتى توكفه، أو بـ<code>priority</code> ويه رقم: 1 كل جولة (~90 ثانية)، 2 كل جولتين، 3 كل 6 جولات. يتطبق بالجولة الجاية.</div>
+   <div class="ctl"><div class="chips">${[["all","الكل"],["ok","يعمل"],["bad","فشل/متوقف"],["idle","بلا جلب"],["off","معطّل"]].map(([v,l])=>`<button class="chip" type="button" data-ss="${v}" aria-pressed="${srcState===v}">${l}</button>`).join("")}</div>
+   <input class="inp" id="srcq" type="search" placeholder="ابحث باسم المصدر أو الرابط…" value="${esc(srcQ)}"></div>
+   <div class="list" style="margin-top:12px">${rows.slice(0,400).map(h=>`<div class="src-row"><div class="top2"><b>${esc(h.name)}</b><span class="stt ${cls(h)}">${esc(h.state)}</span></div>
+     <small>${esc(h.type)} · ${esc(h.category||"—")} · ${esc(h.region||"—")} · ${esc(h.lang||"—")} · أولوية ${h.priority}${h.items_24h?` · ${h.items_24h} مادة/24س`:""}</small>
+     <small>آخر نجاح: ${h.last_success?esc(full(h.last_success)):"—"} · آخر محاولة: ${h.last_attempt?esc(full(h.last_attempt)):"—"}</small>
+     ${h.error&&cls(h)!=="ok"?`<small style="color:var(--urgent)">الخطأ: ${esc(String(h.error).slice(0,140))}</small>`:""}
+     <small><a href="${esc(h.url)}" target="_blank" rel="noopener" style="color:var(--blue)">الرابط ↗</a> · <button class="more-l" type="button" data-copyid="${esc(h.url)}" style="padding:0">نسخ المعرّف</button></small></div>`).join("")||'<div class="empty">ما كو</div>'}</div></div>`;
+}
+
+function vAlerts(){
+  const sw=(k,l,d)=>`<div class="set-row"><label for="p_${k}">${l}${d?`<small>${d}</small>`:""}</label><input class="sw" type="checkbox" id="p_${k}" data-p="${k}" ${prefs[k]?"checked":""}></div>`;
+  return `<div class="narrow">${back}<div class="sec"><h2>إعدادات التنبيه</h2></div>
+   <div class="note-box">التنبيه يشتغل ويه التطبيق مفتوح أو مصغّر بالخلفية. التنبيه الفوري والتطبيق مسكّر يحتاج خادم إشعارات، وهذا غير متوفر بالنسخة المجانية. كل حدث ينبّه مرة وحدة، وترجع تنبيه بس إذا تطور: ارتفع مستواه، أو زادت جهاته اثنين أو أكثر.</div>
+   <div style="margin-top:8px">${sw("on","تفعيل التنبيهات")}${sw("sound","صوت التنبيه")}${sw("notify","إشعار المتصفح","يطلب إذن المتصفح")}${sw("src","عاجل نشره المصدر")}${sw("imp","مهم صنّفه النظام")}${sw("esc","الأحداث المتصاعدة")}${sw("iraqOnly","العراق فقط")}${sw("pmf","أخبار الحشد الشعبي دائماً")}</div>
+   <div class="sec minor"><h2>المواضيع</h2><span>بدون اختيار = الكل</span></div>
+   <div class="chips" style="flex-wrap:wrap">${TOPICS.slice(1).map(t=>`<button class="chip small" type="button" data-pt="${t}" aria-pressed="${prefs.topics.includes(t)}">${t}</button>`).join("")}</div>
+   <div class="sec minor"><h2>كلمات أو مصادر</h2><span>افصل بفاصلة</span></div>
+   <input class="inp" id="p_kw" placeholder="مثال: البصرة، الدولار، شفق" value="${esc(prefs.kw)}">
+   <div class="btns"><button class="btn" id="pTest" type="button">جرّب التنبيه</button></div></div>`;
+}
+function matchAlert(n){
+  if(!prefs.on) return false;
+  const lvl=(prefs.src&&n.source_flag)||(prefs.imp&&(n.level==="عاجل"||n.level==="مهم"))||(prefs.esc&&n.escalating)||(prefs.pmf&&n.pmf);
+  if(!lvl) return false; if(prefs.iraqOnly&&!n.about_iraq&&!(prefs.pmf&&n.pmf)) return false;
+  if(prefs.topics.length&&!prefs.topics.includes(n.topic)) return false;
+  const kws=prefs.kw.split(/[,،]/).map(s=>s.trim()).filter(Boolean);
+  if(kws.length&&!kws.some(k=>(n.title+" "+(n.sources||[]).map(s=>s.name).join(" ")).includes(k))) return false;
+  return mins(n.collected_utc)<=30;
+}
+let actx; function beep(){ if(!prefs.sound) return; try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); const o=actx.createOscillator(),g=actx.createGain(); o.type="sine"; o.frequency.value=880; g.gain.setValueAtTime(.0001,actx.currentTime); g.gain.exponentialRampToValueAtTime(.25,actx.currentTime+.02); g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+.45); o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime+.5);}catch(e){} }
+const rk=n=>n.source_flag?3:({"عاجل":3,"مهم":2,"متابعة":1}[n.level]||0);
+function runAlerts(initial){
+  const hits=news.filter(n=>{ if(!matchAlert(n)) return false; const a=alerted[n.id]; if(!a) return true; return rk(n)>a.r||(n.n_sources||1)>=a.n+2; });
+  hits.forEach(n=>{alerted[n.id]={r:rk(n),n:n.n_sources||1,t:Date.now()}});
+  const cut=Date.now()-2*86400e3; for(const k in alerted) if(alerted[k].t<cut) delete alerted[k];
+  store.set("hobi_alerted",alerted);
+  if(initial||!hits.length) return;
+  const top=hits.sort((a,b)=>score(b)-score(a))[0];
+  toast(`🔔 ${top.title.slice(0,80)}${hits.length>1?` (+${hits.length-1})`:""}`); beep();
+  if(prefs.notify&&"Notification" in window&&Notification.permission==="granted"){ try{ new Notification("هوبي عاجل",{body:top.title,icon:"icons/icon-192.png",tag:top.id}); }catch(e){} }
+}
+
+function openDrawer(id){
+  const n=news.find(x=>x.id===id); if(!n) return;
+  const hmap={}; health.forEach(h=>{hmap[srcName(h.name)]=h});
+  const s0=(n.sources||[])[0]||{}, h0=hmap[srcName(s0.name)];
+  const why=[...(n.why||[])]; if(n.source_flag) why.unshift("المصدر نفسه وسم الخبر «عاجل»"); if(n.trending_unconfirmed) why.push("متداول لدى جهات كثيرة بدون تأكيد مستقل"); if(n.about_iraq) why.push("يخص العراق");
+  $("#drawer").innerHTML=`<div class="grab"></div><div class="tags">${tagsOf(n)}</div><h2 class="d-title">${esc(n.title)}</h2>${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p><p class="note">العنوان العربي ترجمة آلية للعنوان الأصلي.</p>`:""}
+    ${why.length?`<div class="why"><b>سبب التصنيف:</b> ${esc(why.join(" · "))}</div>`:""}
+    <dl class="kv"><dt>وقت النشر (المصدر)</dt><dd>${esc(full(n.latest_utc))}${n.date_confirmed?"":" · تقريبي"}</dd>
+    <dt>أول نشر بالحدث</dt><dd>${n.first_src?esc(srcName(n.first_src.name))+" · "+esc(full(n.first_src.time)):"—"}</dd>
+    <dt>وقت اكتشاف التطبيق</dt><dd>${esc(full(n.collected_utc))}</dd>
+    ${n.detect_delay_min!=null?`<dt>تأخر الاكتشاف</dt><dd>${esc(fmtDelay(n.detect_delay_min))}</dd>`:""}
+    <dt>تعديل المادة</dt><dd>${n.edited?"المصدر عدّل المادة بعد نشرها":"ما رصدنا تعديل"}</dd>
+    <dt>آخر جلب ناجح للمصدر</dt><dd>${h0&&h0.last_success?esc(full(h0.last_success)):"—"}</dd>
+    <dt>الجهات / المواد</dt><dd>${n.n_sources} جهة · ${n.n_items||n.n_sources} مادة${n.views?` · ${n.views.toLocaleString("ar-IQ")} مشاهدة`:""}</dd>
+    <dt>التحقق</dt><dd>${esc(n.basis||n.status)}</dd></dl>
+    <div class="sec minor"><h2>خط التحديثات والمصادر</h2><span>${(n.timeline||[]).length} مادة</span></div>
+    <ol class="tl">${(n.timeline||[]).map(t=>`<li><div><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(srcName(t.source))} ↗</a><small>نُشر ${esc(full(t.pub))} · رُصد ${esc(hm(t.seen))}</small></div></li>`).join("")}</ol>
+    <div class="btns">${s0.url?`<a class="btn primary" href="${esc(s0.url)}" target="_blank" rel="noopener">فتح الأصل ↗</a>`:""}<button class="btn" type="button" data-share="${esc(n.id)}">إرسال للفريق</button><button class="btn" type="button" data-copy="${esc(n.id)}">نسخ</button><button class="btn" type="button" data-trace="${esc(n.id)}">تتبّع أصل الخبر</button><button class="btn" type="button" data-close>إغلاق</button></div>`;
+  $("#drawer").classList.add("on"); $("#scrim").classList.add("on"); $("#drawer").scrollTop=0;
+}
+function closeDrawer(){ $("#drawer").classList.remove("on"); $("#scrim").classList.remove("on"); }
+
+function render(keepScroll){
+  $("#today").textContent=(()=>{const d=new Date(Date.now()+3*3600e3);return`${DAYS[d.getUTCDay()]}، ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`})();
   const all=news.filter(n=>mins(n.latest_utc)<=1440);
-  if(meta){ const m=mins(meta.updated_utc); $("#live").classList.toggle("stale",m>8);
-    $("#liveTxt").innerHTML = m>8?`آخر تحديث ${esc(ago(meta.updated_utc))} · قد تفوتك أخبار`:`<b>مباشر</b> · آخر رصد ${esc(hm(meta.updated_utc))} · ${all.length} خبر بآخر 24 ساعة`; }
-  $("#ctl").hidden=tab==="urgent"||tab==="trend"; $("#mediaSeg").hidden=tab!=="media";
-  $("#winChips").hidden=tab==="media"&&media==="تحليل";
-  const pools={
-    iraq: all.filter(n=>n.about_iraq),
-    region: all.filter(n=>!n.about_iraq&&n.origin!=="أجنبي"),
-    media: media==="وكالات"?all.filter(n=>n.agency):all.filter(n=>n.about_iraq&&n.origin===(media==="عربي"?"عربي":"أجنبي")),
-  };
-  ["iraq","region","media"].forEach(k=>{ const el=$(`.nav [data-tab=${k}] .badge`); const c=pools[k].filter(n=>mins(n.latest_utc)<=3).length; if(el){el.hidden=!c; el.textContent=c>99?"99+":c;} });
-  let html="";
-  if(tab==="urgent"){
-    const kind=u=>/t\.me\//.test(u||"")?"تلغرام":/news\.google/.test(u||"")?"صحيفة/وكالة":/facebook|x\.com|twitter|instagram|tiktok|youtube/.test(u||"")?"تواصل":"موقع/وكالة";
-    const five=all.filter(n=>n.about_iraq&&(n.level in LV)&&mins(n.latest_utc)<=5).sort((a,b)=>score(b)-score(a));
-    html+=`<div class="sec"><h2>آخر 5 دقائق · المهم عن العراق</h2><span>${five.length} خبر</span></div>`
-      +(five.length?`<div class="tbl" role="table"><div class="tr th" role="row"><span>الوقت</span><span>الخبر</span><span>المصدر</span></div>${five.map(n=>{const s=(n.sources||[])[0]||{};return `<a class="tr" role="row" href="${esc(s.url||"#")}" target="_blank" rel="noopener"><span class="tt"><b>${esc(hm(n.latest_utc))}</b><small>${esc(ago(n.latest_utc))}</small></span><span class="th2">${LV[n.level]?LV[n.level].t:""} ${esc(n.title)}</span><span class="ts">${esc(srcName(s.name||""))}<small>${esc(kind(s.url))}${n.n_sources>1?` · ${n.n_sources} جهات`:""}</small></span></a>`}).join("")}</div>`
-      :'<div class="note-box">ما نشرت القنوات والوكالات والمواقع المرصودة خبراً مهماً عن العراق بآخر 5 دقائق.</div>');
-    const urg=all.filter(n=>n.level==="عاجل").sort(byNew), imp=all.filter(n=>n.level==="مهم").sort(byNew);
-    let fol=[]; if(urg.length+imp.length<10) fol=all.filter(n=>n.level==="متابعة").sort(byNew).slice(0,20-urg.length-imp.length);
-    html+=`<div class="index">${[["عاجل",urg,"l-urgent"],["مهم",imp,"l-imp"],["متابعة",fol,"l-follow"]].map(([k,a,c])=>`<a href="#g-${c}" class="idx ${c}"><b>${a.length}</b>${k}</a>`).join("")}</div>`
-      + `<div id="g-l-urgent">${block("العاجل","آخر 24 ساعة · العراق والمنطقة",urg,true)}</div>`
-      + `<div id="g-l-imp">${block("المهم",`${imp.length} خبر`,imp)}</div>`
-      + (fol.length?`<div id="g-l-follow">${block("للمتابعة","لإكمال القائمة",fol)}</div>`:"");
-  } else if(tab==="trend"){
-    const rows=all.filter(n=>(n.n_sources||1)>=2&&n.origin!=="أجنبي").sort((a,b)=>(b.n_sources-a.n_sources)||((b.n_items||0)-(a.n_items||0))||byNew(a,b)).slice(0,20);
-    const mx=Math.max(1,...rows.map(n=>n.n_sources||1));
-    html=`<div class="sec"><h2>الأكثر تكراراً خلال 24 ساعة</h2><span>حسب عدد الجهات اللي نشرت الخبر</span></div>`
-      +(rows.length?rows.map((n,i)=>`<div class="trend-row"><div class="trend-n">${i+1}</div><div class="trend-b">${card(n)}<div class="bar"><i style="width:${Math.round(100*(n.n_sources||1)/mx)}%"></i></div><div class="trend-m">نشرته ${n.n_sources} جهات · ${n.n_items||n.n_sources} مادة${n.first_src?` · أول من نشر: ${esc(srcName(n.first_src.name))} ${esc(hm(n.first_src.time))}`:""}</div></div></div>`).join("")
-        :'<div class="note-box">ما كو خبر تكرر لدى أكثر من جهة بآخر 24 ساعة لحد الآن.</div>');
-  } else if(tab==="media"&&media==="تحليل"){
-    const rows=filtered(news.filter(n=>n.kind&&n.origin==="أجنبي")).sort(byNew).slice(0,40);
-    html=`<div class="sec"><h2>تحليلات ومقابلات أجنبية عن العراق</h2><span>آخر 7 أيام · ${rows.length} مادة · مترجمة</span></div>`
-      +(rows.length?`<div class="tbl" role="table"><div class="tr th" role="row"><span>التاريخ</span><span>العنوان</span><span>الوسيلة</span></div>${rows.map(n=>{const s=(n.sources||[])[0]||{};return `<a class="tr" role="row" href="${esc(s.url||"#")}" target="_blank" rel="noopener"><span class="tt"><b>${esc(dm(n.latest_utc))}</b><small>${esc(day(n.latest_utc))} ${esc(hm(n.latest_utc))}</small></span><span class="th2"><span class="tag t-follow">${esc(n.kind)}</span> ${esc(n.title)}${n.title_orig?`<small class="orig" style="display:block;margin-top:4px">${esc(n.title_orig)}</small>`:""}</span><span class="ts">${esc(srcName(s.name||""))}<small>رُصد ${esc(hm(n.collected_utc))}</small></span></a>`}).join("")}</div>`
-      :'<div class="note-box">ما كو تحليلات أو مقابلات أجنبية عن العراق مرصودة حالياً.</div>');
-  } else {
-    const pool=filtered(pools[tab]);
-    const [inWin,rest]=windowed(pool);
-    const T={iraq:"أخبار العراق",region:"الشرق الأوسط والمنطقة",media:media==="عربي"?"الإعلام العربي عن العراق":media==="وكالات"?"الوكالات العالمية عن العراق":"الإعلام الأجنبي عن العراق"}[tab];
-    const subT=`${WIN_LABEL[win]} · ${inWin.length} خبر${topic!=="الكل"?" · "+topic:""}`;
-    html=((!inWin.length&&rest.length)?`<div class="sec"><h2>${esc(T)}</h2><span>${esc(subT)}</span></div><div class="note-box">ما نزل خبر جديد ب${WIN_LABEL[win]}. هذي أحدث الأخبار:</div>`:block(T,subT,inWin))
-      +(rest.length&&inWin.length?`<div class="sec sub"><h2>أحدث ما قبلها</h2><span>لإكمال ${inWin.length+rest.length} خبر</span></div>`:"")+rest.map(n=>card(n)).join("");
-  }
-  $("#list").innerHTML=html;
+  if(meta){ const m=mins(meta.updated_utc); $("#status").classList.toggle("stale",m>6);
+    $("#sLive").textContent=m>6?`آخر تحديث ${ago(meta.updated_utc)}، الرصد متأخر`:`مباشر · آخر رصد ${hm(meta.updated_utc)}`;
+    $("#sSrc").innerHTML=`<b>${meta.sources_ok}</b> مصدر يعمل من ${meta.sources_total||"—"} · <b>${all.length}</b> خبر/24س`;
+    const d=meta.detect_delay; $("#sDelay").innerHTML=d?`تأخر الاكتشاف الوسيط <b>${fmtDelay(d.median_min)}</b>`:""; }
+  const tk=all.filter(n=>isUrg(n)&&n.about_iraq&&mins(n.latest_utc)<=180).sort(byNew).slice(0,14);
+  $("#ticker").hidden=!tk.length;
+  if(tk.length){ const html=tk.map(n=>`<button type="button" data-id="${esc(n.id)}">${esc(n.title)}<small>${esc(hm(n.latest_utc))}</small></button>`).join(""); $("#tickerT").innerHTML=html+html; $("#tickerT").style.setProperty("--dur",Math.max(30,tk.length*9)+"s"); }
+  [["iraq",all.filter(n=>n.about_iraq&&mins(n.latest_utc)<=3)],["pmf",all.filter(n=>n.pmf&&mins(n.latest_utc)<=30)]].forEach(([k,a])=>{const b=$(`.nav [data-v=${k}] .badge`); b.hidden=!a.length; b.textContent=a.length>99?"99+":a.length;});
+  if(view==="tools"&&keepScroll&&(sub.tools==="tracer"||sub.tools==="alerts")) return; // لا نمسح نموذج المستخدم أثناء التحديث التلقائي
+  let h="";
+  if(view==="home") h=vHome(all);
+  else if(view==="iraq") h=listView("أخبار العراق",all.filter(n=>n.about_iraq));
+  else if(view==="pmf") h=vPmf(all);
+  else if(view==="world") h=vWorld(all);
+  else if(view==="tools") h=vTools();
+  else if(view==="search") h=listView(`نتائج البحث`,all);
+  const y=scrollY; $("#view").innerHTML=h; if(keepScroll) scrollTo(0,y);
 }
 
 async function load(manual){
-  if(loading) return; loading=true; $("#refresh").classList.add("spin");
+  if(loading) return; loading=true; $("#bRefresh").classList.add("spin");
   try{
-    const [n,m]=await Promise.all([fetch("news.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()),fetch("meta.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json())]);
-    const firstLoad=!news.length&&!seen.size;
-    fresh=new Set(firstLoad?[]:n.filter(x=>!seen.has(x.id)).map(x=>x.id));
-    n.forEach(x=>seen.add(x.id)); store.set("hobi_seen",JSON.stringify([...seen].slice(-5000)));
-    news=n; meta=m; render();
+    const t=Date.now(), get=u=>fetch(u+"?t="+t,{cache:"no-store"}).then(r=>{if(!r.ok)throw 0;return r.json()});
+    const [n,m,hl]=await Promise.all([get("news.json"),get("meta.json"),get("health.json").catch(()=>health)]);
+    const first=!news.length;
+    fresh=new Set(first&&!seen.size?[]:n.filter(x=>!seen.has(x.id)).map(x=>x.id));
+    n.forEach(x=>seen.add(x.id)); store.set("hobi_seen2",[...seen].slice(-6000));
+    news=n; meta=m; health=hl||[];
+    render(!first);
+    runAlerts(first);
     if(manual) toast(fresh.size?`${fresh.size} خبر جديد`:"ما كو جديد من آخر تحديث");
-  }catch(e){ $("#liveTxt").textContent="ما كدرت أجيب الأخبار، تأكد من الإنترنت"; $("#live").classList.add("stale"); if(!news.length) $("#list").innerHTML='<div class="empty">ما كدرت أجيب الأخبار. تأكد من الإنترنت واضغط زر التحديث.</div>'; }
-  finally{ loading=false; $("#refresh").classList.remove("spin"); }
+  }catch(e){ $("#sLive").textContent="ما كدرت أجيب الأخبار، تأكد من الإنترنت"; $("#status").classList.add("stale"); if(!news.length) $("#view").innerHTML='<div class="empty" style="margin-top:20px">ما كدرت أجيب الأخبار. تأكد من الإنترنت واضغط زر التحديث.</div>'; }
+  finally{ loading=false; $("#bRefresh").classList.remove("spin"); }
 }
-let tt; function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("on"); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove("on"),2200); }
-function textOf(n){ const s=(n.sources||[])[0]; return `${n.level==="عاجل"?"🔴 عاجل | ":""}${n.title}${n.title_orig?`\n(${n.title_orig})`:""}\n${n.status||"غير مؤكد"} — ${s?srcName(s.name):""} — ${full(n.latest_utc)} بغداد\n${s?s.url:""}`; }
+
+let tt; function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.add("on"); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove("on"),2600); }
+function textOf(n){ const s=(n.sources||[])[0]||{}; return `${isUrg(n)?"🔴 عاجل | ":""}${n.title}${n.title_orig?`\n(${n.title_orig})`:""}\n${n.ctype||"خبر"} · ${n.status||"غير مؤكد"} — ${srcName(s.name)} — ${full(n.latest_utc)} بغداد\n${s.url||""}`; }
 async function shareText(text,title){ if(navigator.share){ try{ await navigator.share({title,text}); return; }catch(e){ if(e.name==="AbortError") return; } } copy(text); }
 async function copy(t){ try{ await navigator.clipboard.writeText(t); toast("انتسخ"); }catch(e){ const a=document.createElement("textarea"); a.value=t; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); toast("انتسخ"); } }
+function setNav(v){ $$(".nav button").forEach(x=>x.setAttribute("aria-selected",String(x.dataset.v===v))); }
+function go(v,s){ view=v; if(s) sub[v]=s; setNav(v); render(); scrollTo({top:0}); }
+function openTool(k){ view="tools"; sub.tools=k||null; setNav("tools"); render(); scrollTo({top:0}); }
 
-$("#list").addEventListener("click",e=>{
-  const sh=e.target.closest("[data-share]"), cp=e.target.closest("[data-copy]");
+document.addEventListener("click",e=>{
+  const t=e.target;
+  if(t.closest("[data-stop]")) return;
+  const nb=t.closest(".nav button"); if(nb){ if(nb.dataset.v==="tools") sub.tools=null; go(nb.dataset.v); return; }
+  const idb=t.closest("[data-id]"); if(idb){ openDrawer(idb.dataset.id); return; }
+  const gob=t.closest("[data-go]"); if(gob){ closeDrawer(); go(gob.dataset.go,gob.dataset.sub); return; }
+  const tool=t.closest("[data-tool]"); if(tool){ openTool(tool.dataset.tool); return; }
+  const sg=t.closest("[data-seg] button"); if(sg){ sub[sg.parentElement.dataset.seg]=sg.dataset.s; render(); return; }
+  const w=t.closest("[data-w]"); if(w){ win=+w.dataset.w; render(true); return; }
+  const tp=t.closest("[data-t]"); if(tp){ topic=tp.dataset.t; render(true); return; }
+  const ss=t.closest("[data-ss]"); if(ss){ srcState=ss.dataset.ss; render(true); return; }
+  const pt=t.closest("[data-pt]"); if(pt){ const v=pt.dataset.pt; prefs.topics=prefs.topics.includes(v)?prefs.topics.filter(x=>x!==v):[...prefs.topics,v]; store.set("hobi_alerts",prefs); pt.setAttribute("aria-pressed",String(prefs.topics.includes(v))); return; }
+  const ci=t.closest("[data-copyid]"); if(ci){ copy(ci.dataset.copyid); return; }
+  const sh=t.closest("[data-share]"), cp=t.closest("[data-copy]");
   if(sh||cp){ const n=news.find(x=>x.id===(sh||cp).dataset[sh?"share":"copy"]); if(n) sh?shareText(textOf(n),"هوبي عاجل"):copy(textOf(n)); return; }
-  const ix=e.target.closest(".idx"); if(ix){ e.preventDefault(); const t=document.querySelector(ix.getAttribute("href")); if(t) scrollTo({top:t.getBoundingClientRect().top+scrollY-170,behavior:"smooth"}); return; }
-  if(e.target.closest("a")) return;
-  const c=e.target.closest(".card"); if(!c) return; const id=c.dataset.id; open.has(id)?open.delete(id):open.add(id); render();
+  const tr=t.closest("[data-trace]"); if(tr){ const n=news.find(x=>x.id===tr.dataset.trace); closeDrawer(); traceQ=n?(n.title_orig||n.title):""; traceRes=""; openTool("tracer"); setTimeout(runTrace,30); return; }
+  if(t.closest("[data-close]")||t.id==="scrim"){ closeDrawer(); return; }
+  if(t.closest("#trGo")){ runTrace(); return; }
+  if(t.closest("#pTest")){ toast("🔔 هذا تنبيه تجريبي"); beep(); return; }
 });
-$("#list").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.classList.contains("card")) e.target.click(); });
-$$(".nav button").forEach(b=>b.addEventListener("click",()=>{ tab=b.dataset.tab; $$(".nav button").forEach(x=>x.setAttribute("aria-selected",String(x===b))); render(); scrollTo({top:0,behavior:"smooth"}); }));
-$$("#winChips .chip").forEach(b=>b.addEventListener("click",()=>{ win=+b.dataset.w; $$("#winChips .chip").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
-$$("#mediaSeg button").forEach(b=>b.addEventListener("click",()=>{ media=b.dataset.m; $$("#mediaSeg button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
-$("#topicChips").innerHTML=TOPICS.map(t=>`<button class="chip small" type="button" data-t="${t}" aria-pressed="${t==="الكل"}">${t}</button>`).join("");
-$$("#topicChips .chip").forEach(b=>b.addEventListener("click",()=>{ topic=b.dataset.t; $$("#topicChips .chip").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); render(); }));
-$("#q").addEventListener("input",e=>{ query=e.target.value; render(); });
-$("#refresh").addEventListener("click",()=>load(true));
-$("#shareApp").addEventListener("click",()=>shareText("هوبي عاجل — أخبار العراق والمنطقة والإعلام العربي والأجنبي عن العراق، تتحدث كل دقيقتين:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
-addEventListener("scroll",()=>$("#head").classList.toggle("scrolled",scrollY>4),{passive:true});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); if(e.key==="Enter"&&e.target.classList?.contains("card")) openDrawer(e.target.dataset.id); });
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.id==="fType"){ ctype=t.value; render(true); }
+  if(t.id==="fSrc"){ srcF=t.value; render(true); }
+  if(t.dataset.p){ prefs[t.dataset.p]=t.checked; store.set("hobi_alerts",prefs);
+    if(t.dataset.p==="notify"&&t.checked&&"Notification" in window&&Notification.permission!=="granted") Notification.requestPermission();
+    if(t.dataset.p==="sound"&&t.checked) beep(); }
+});
+let qT; const refocus=id=>{ const el=$("#"+id); if(el){el.focus(); el.setSelectionRange(el.value.length,el.value.length);} };
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.id==="fq"){ query=t.value; clearTimeout(qT); qT=setTimeout(()=>{ render(true); refocus("fq"); },300); }
+  if(t.id==="srcq"){ srcQ=t.value; clearTimeout(qT); qT=setTimeout(()=>{ render(true); refocus("srcq"); },300); }
+  if(t.id==="p_kw"){ prefs.kw=t.value; store.set("hobi_alerts",prefs); }
+  if(t.id==="gq"){ query=t.value; clearTimeout(qT); qT=setTimeout(()=>{ view=query.trim()?"search":"home"; setNav(view); render(); refocus("gq"); },350); }
+});
+$("#bSearch").addEventListener("click",()=>{ view="search"; setNav("search"); render(); setTimeout(()=>refocus("fq"),50); });
+$("#bAlerts").addEventListener("click",()=>openTool("alerts"));
+$("#bRefresh").addEventListener("click",()=>load(true));
+$("#bShare").addEventListener("click",()=>shareText("هوبي عاجل — منصة رصد أخبار العراق والحشد الشعبي والمنطقة، تتحدث كل 90 ثانية:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&meta&&mins(meta.updated_utc)>1.5) load(); });
-load(); setInterval(()=>{ if(!document.hidden) load(); },2*60000); setInterval(render,60000);
+load(); setInterval(()=>{ if(!document.hidden||prefs.on) load(); },90000); setInterval(()=>render(true),60000);
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
