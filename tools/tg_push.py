@@ -23,7 +23,7 @@ SENT = DATA / "tg_sent.json"
 CHAT = DATA / "tg_chat.json"
 STATUS = PWA / "tg_status.json"
 APP_URL = "https://ehabkadim2026-byte.github.io/hobi-ajel/"
-MAX_PER_RUN = 10
+MAX_PER_RUN = 15
 CHANNEL = "https://t.me/hassawassal"
 RANK = {"عاجل": 3, "مهم": 2, "متابعة": 1}
 
@@ -70,19 +70,13 @@ def rank(n):
 
 
 def worthy(n, now):
-    """العراق والحشد فقط. عاجل المصدر أو عاجل النظام يُرسل فوراً؛ المهم يحتاج جهة رسمية أو جهتين."""
-    if not (n.get("about_iraq") or n.get("pmf")):
-        return False
+    """مرآة لما يظهر بالتطبيق كعاجل/مهم: العراق والحشد بكل مستويات عاجل ومهم، والمنطقة إذا المصدر نفسه وسمه عاجل."""
     seen = n.get("collected_utc")
-    if not seen or datetime.fromisoformat(seen.replace("Z", "+00:00")) < now - timedelta(minutes=20):
+    if not seen or datetime.fromisoformat(seen.replace("Z", "+00:00")) < now - timedelta(minutes=12):
         return False
-    ns = n.get("n_sources") or 1
-    official = n.get("status") == "مؤكد"
-    if n.get("source_flag") or n.get("level") == "عاجل":
-        return True
-    if n.get("level") == "مهم" and (official or ns >= 2 or n.get("pmf")):
-        return True
-    return False
+    if n.get("about_iraq") or n.get("pmf"):
+        return bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم")
+    return bool(n.get("source_flag")) and n.get("origin") != "أجنبي"
 
 
 def meta_line(n):
@@ -96,21 +90,9 @@ def meta_line(n):
 
 
 def fmt(n, update=False):
-    """نص المنشور (HTML، أقل من 1024 حرفاً ليصلح تعليقاً على الصورة)."""
-    _, url = src(n)
-    head = "🔴 عاجل" if rank(n) >= 3 else "🟠 مهم"
-    if update:
-        head = "🔁 تحديث | " + head
-    title = n["title"][:600]
-    lines = [f"{head}", f"<b>{H.escape(title)}</b>"]
-    if n.get("title_orig"):
-        lines.append(f"<i>{H.escape(n['title_orig'][:220])}</i> — ترجمة آلية")
-    lines.append("")
-    lines.append(H.escape(meta_line(n)))
-    if url:
-        lines.append(f'🔗 <a href="{H.escape(url, quote=True)}">المصدر</a>')
-    lines.append(f'📡 <a href="{CHANNEL}">عاجل هسه وصل</a> | {CHANNEL.replace("https://", "")}')
-    return "\n".join(lines)
+    """الخبر فقط، وأسفله رابط القناة — بلا تفاصيل رصد."""
+    mark = "🔴 " if rank(n) >= 3 else ""
+    return f"{mark}<b>{H.escape(n['title'][:800])}</b>\n\n📡 {CHANNEL}"
 
 
 def post(token, chat_id, n, upd):
@@ -127,7 +109,7 @@ def post(token, chat_id, n, upd):
             pass
     try:
         head = "عاجل" if rank(n) >= 3 else "مهم"
-        jpg = tg_card.card(n["title"], head, meta_line(n), CHANNEL.replace("https://", ""))
+        jpg = tg_card.card(n["title"], head, "عاجل هسه وصل", CHANNEL.replace("https://", ""))
         api(token, "sendPhoto", files={"photo": ("hobi.jpg", jpg)}, chat_id=chat_id, caption=cap, parse_mode="HTML")
         return "card"
     except Exception:  # noqa: BLE001
@@ -191,8 +173,6 @@ def main():
             prev = sent.get(n["id"])
             if prev is None:
                 out.append((n, False))
-            elif rank(n) > prev["r"] or (n.get("n_sources") or 1) >= prev["n"] + 2:
-                out.append((n, True))
         status["candidates"] = len(out)
         if first_run:  # أول تشغيل: لا نغرق القناة بالقديم؛ نرسل رسالة ترحيب ونعلّم الموجود كمُرسل
             for n, _ in out:
