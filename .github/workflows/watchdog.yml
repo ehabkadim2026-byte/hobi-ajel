@@ -9,9 +9,15 @@ concurrency: {group: watchdog, cancel-in-progress: false}
 jobs:
   watch:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with: {sparse-checkout: "tools\nconfig"}
+      - name: successor first (المراقب التالي يُحجز من البداية)
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/watchdog.yml/runs?per_page=5" --jq '[.workflow_runs[]|select(.status=="queued" or .status=="pending" or .status=="waiting" or .status=="requested")]|length' || echo 0)
+          [ "$n" = "0" ] && gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/watchdog.yml/dispatches" -f ref=main || true
       - env: {GH_TOKEN: "${{ github.token }}"}
+        timeout-minutes: 9
         run: python3 tools/watchdog.py

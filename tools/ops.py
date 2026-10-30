@@ -37,19 +37,32 @@ def load(p, d):
 
 
 def gh_json(path):
-    r = subprocess.run(["gh", "api", path], capture_output=True, text=True)
+    try:
+        r = subprocess.run(["gh", "api", path], capture_output=True, text=True, timeout=40)
+    except subprocess.TimeoutExpired:
+        return None
     return json.loads(r.stdout) if r.returncode == 0 else None
 
 
 def incidents_get():
     with tempfile.TemporaryDirectory() as td:
-        r = subprocess.run(["gh", "release", "download", "ops", "-p", "ops-incidents.json", "-D", td, "--clobber"], capture_output=True)
+        try:
+            r = subprocess.run(["gh", "release", "download", "ops", "-p", "ops-incidents.json", "-D", td, "--clobber"], capture_output=True, timeout=40)
+        except subprocess.TimeoutExpired:
+            return []
         if r.returncode:
             return []
         return load(Path(td) / "ops-incidents.json", [])
 
 
 def incident(kind, cause, action, result):
+    try:
+        _incident(kind, cause, action, result)
+    except Exception as e:  # noqa: BLE001
+        print("::warning title=incident log failed::", type(e).__name__)
+
+
+def _incident(kind, cause, action, result):
     rec = {"at": iso(now_utc()), "by": "الجولة", "kind": kind, "cause": cause, "action": action, "result": result}
     print(f"::warning title=incident::{json.dumps(rec, ensure_ascii=False)}")
     with tempfile.TemporaryDirectory() as td:

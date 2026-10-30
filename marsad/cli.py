@@ -90,23 +90,45 @@ def collect_all(con, limit, priority_only, workers=10):
     gap_min = (datetime.now(timezone.utc) - datetime.fromisoformat(lastrun.replace("Z", "+00:00"))).total_seconds() / 60 if lastrun else 0
     _c.CATCHUP_PAGES = 10 if (gap_min > 10 or force_full) else 3
     # مهلة كلية للجمع: مصدر بطيء أو معلق لا يوقف الجولة؛ ما لم يكتمل يُسجل فشلاً مؤقتاً ويُجرب بالجولة الجاية
-    from concurrent.futures import as_completed, TimeoutError as FTimeout
+    # خيوط daemon: عند انتهاء المهلة نكمل فوراً ولا ينتظر البرنامج المصادر المعلّقة عند الخروج (كان يطيل الجولة دقائق)
+    import queue as _q
+    import threading
+    jobs, results = _q.Queue(), _q.Queue()
+    for s in rows:
+        jobs.put(s)
+
+    def worker():
+        while True:
+            try:
+                s = jobs.get_nowait()
+            except _q.Empty:
+                return
+            results.put(one(s))
+    for _ in range(workers):
+        threading.Thread(target=worker, daemon=True).start()
     deadline = 50 if gap_min <= 10 else 120
-    ex = ThreadPoolExecutor(max_workers=workers)
-    futs = {ex.submit(one, s): s for s in rows}
-    try:
-        for fu in as_completed(futs, timeout=deadline):
-            s, items, err = fu.result()
-            batch["items"] += items
-            if err:
-                batch["failed"].append({"source_id": s["id"], "reason": err})
-            else:
-                batch["ok"].append(s["id"])
-    except FTimeout:
-        for fu, s in futs.items():
-            if not fu.done():
-                batch["failed"].append({"source_id": s["id"], "reason": f"مهلة الجولة ({deadline} ث) — عُزل مؤقتاً"})
-    ex.shutdown(wait=False, cancel_futures=True)
+    end = _t.time() + deadline
+    done_ids = set()
+    while len(done_ids) < len(rows) and _t.time() < end:
+        try:
+            s, items, err = results.get(timeout=max(0.1, end - _t.time()))
+        except _q.Empty:
+            break
+        done_ids.add(s["id"])
+        batch["items"] += items
+        if err:
+            batch["failed"].append({"source_id": s["id"], "reason": err})
+        else:
+            batch["ok"].append(s["id"])
+    unstarted = set()
+    while True:  # ما لم يبدأ أصلاً يُترك للجولة الجاية بلا احتسابه فشلاً
+        try:
+            unstarted.add(jobs.get_nowait()["id"])
+        except _q.Empty:
+            break
+    for s in rows:
+        if s["id"] not in done_ids and s["id"] not in unstarted:
+            batch["failed"].append({"source_id": s["id"], "reason": f"مهلة الجولة ({deadline} ث) — عُزل مؤقتاً"})
     batch["gap_min"] = round(gap_min, 1)
     print(f"run {run_no}: fetched {len(rows)} sources, {len(batch['failed'])} failed, {len(batch['items'])} items")
     print(f"::notice title=collect::{json.dumps({'sources': len(rows), 'failed': len(batch['failed']), 'items': len(batch['items']), 'gap_min': batch['gap_min'], 'catchup_pages': _c.CATCHUP_PAGES, 'timeouts': sum(1 for f in batch['failed'] if 'مهلة' in f['reason']), 'backfilled_older_than_5m': sum(1 for it in batch['items'] if it.get('published_utc') and str(it['published_utc']) > (lastrun or '') and str(it['published_utc']) < (datetime.now(timezone.utc) - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ'))}, ensure_ascii=False)}")

@@ -22,7 +22,7 @@ STALE_MIN, STUCK_MIN, ROUNDS, EVERY_S = 4, 12, 5, 60
 
 
 def gh(*a, check=True):
-    r = subprocess.run(["gh", *a], capture_output=True, text=True)
+    r = subprocess.run(["gh", *a], capture_output=True, text=True, timeout=40)
     if check and r.returncode:
         raise RuntimeError(r.stderr.strip()[:200])
     return r.stdout
@@ -42,21 +42,32 @@ def runs(wf, n=10):
 
 def dispatch(wf):
     for _ in range(3):
-        if subprocess.run(["gh", "api", "-X", "POST", f"repos/{REPO}/actions/workflows/{wf}/dispatches", "-f", "ref=main"],
-                          capture_output=True).returncode == 0:
+        try:
+            rc = subprocess.run(["gh", "api", "-X", "POST", f"repos/{REPO}/actions/workflows/{wf}/dispatches", "-f", "ref=main"],
+                                capture_output=True, timeout=40).returncode
+        except subprocess.TimeoutExpired:
+            rc = 1
+        if rc == 0:
             return True
         time.sleep(5)
     return False
 
 
 def log_incident(kind, cause, action, result):
+    try:
+        _log_incident(kind, cause, action, result)
+    except Exception as e:  # noqa: BLE001 — السجل لا يجوز أن يوقف المراقب
+        print("::warning title=incident log failed::", type(e).__name__)
+
+
+def _log_incident(kind, cause, action, result):
     """يضيف الحادث إلى ops-incidents.json على إصدار ops (آخر 300)."""
     rec = {"at": now().strftime("%Y-%m-%dT%H:%M:%SZ"), "by": "watchdog", "kind": kind, "cause": cause, "action": action, "result": result}
     print(f"::warning title=incident::{json.dumps(rec, ensure_ascii=False)}")
     with tempfile.TemporaryDirectory() as td:
         p = Path(td) / "ops-incidents.json"
         if subprocess.run(["gh", "release", "view", "ops"], capture_output=True).returncode:
-            subprocess.run(["gh", "release", "create", "ops", "--title", "سجل العمليات", "--notes", "حوادث المراقب والإصلاح الذاتي", "--prerelease"], capture_output=True)
+            subprocess.run(["gh", "release", "create", "ops", "--title", "سجل العمليات", "--notes", "حوادث المراقب والإصلاح الذاتي", "--prerelease"], capture_output=True, timeout=60)
         subprocess.run(["gh", "release", "download", "ops", "-p", p.name, "-D", td, "--clobber"], capture_output=True)
         try:
             data = json.loads(p.read_text(encoding="utf-8"))

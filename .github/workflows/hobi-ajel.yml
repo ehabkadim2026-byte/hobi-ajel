@@ -16,6 +16,12 @@ jobs:
     environment: {name: github-pages}
     steps:
       - run: echo "START=$(date +%s)" >> "$GITHUB_ENV"
+      - name: successor first (الجولة التالية تُحجز من البداية، فتستمر السلسلة حتى لو تعطلت هذه الجولة أو طالت)
+        if: github.event_name != 'schedule' || true
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/hobi-ajel.yml/runs?per_page=10" --jq '[.workflow_runs[]|select(.status=="queued" or .status=="pending" or .status=="waiting" or .status=="requested")]|length' || echo 0)
+          if [ "$n" = "0" ]; then for a in 1 2 3; do gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/hobi-ajel.yml/dispatches" -f ref=main && { echo "::notice title=chain::successor reserved"; break; }; sleep 3; done; else echo "::notice title=chain::successor already pending ($n)"; fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
