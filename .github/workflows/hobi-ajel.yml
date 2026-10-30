@@ -48,6 +48,15 @@ jobs:
         continue-on-error: true
         timeout-minutes: 6
       - run: python3 -m tools.export_pwa
+      - name: new sources check
+        continue-on-error: true
+        run: |
+          python3 -c "
+          import json
+          new={x['id'] for x in json.load(open('config/sources.json'))['sources'] if x.get('added_by')=='توسعة 30/10'}
+          h=[x for x in json.load(open('pwa/health.json')) if x['id'] in new]
+          print('::notice title=new_sources::'+json.dumps({x['name'][:30]:[x.get('state'),x.get('items_24h'),(x.get('error') or '')[:30]] for x in h},ensure_ascii=False))
+          "
       - name: telegram push (قناة الفريق؛ يعمل فقط بعد إضافة السر)
         run: |
           python3 -m tools.tg_push
