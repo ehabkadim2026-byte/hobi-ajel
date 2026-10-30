@@ -90,10 +90,15 @@ def meta_line(n):
     return " · ".join(x for x in meta if x)
 
 
+def is_breaking(n):
+    """عاجل: وسمه المصدر عاجل، أو صنّفه النظام عاجل، أو تكرر نشره لدى 3 جهات فأكثر."""
+    return rank(n) >= 3 or (n.get("n_sources") or 1) >= 3
+
+
 def fmt(n, update=False):
-    """الخبر فقط، وأسفله رابط القناة — بلا تفاصيل رصد."""
-    mark = "🔴 " if rank(n) >= 3 else ""
-    return f"{mark}<b>{H.escape(n['title'][:800])}</b>\n\n📡 {CHANNEL}"
+    """الخبر فقط، وأسفله دعوة القناة — بلا تفاصيل رصد."""
+    mark = "🔴 عاجل | " if is_breaking(n) else ""
+    return f"<b>{mark}{H.escape(n['title'][:800])}</b>\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
 
 
 def post(token, chat_id, n, upd):
@@ -105,13 +110,13 @@ def post(token, chat_id, n, upd):
     DEBUG.append(f"{urllib.parse.urlparse(url).netloc}:{'img' if img else 'noimg'}")
     if img:
         try:
-            api(token, "sendPhoto", files={"photo": ("src.jpg", tg_card.fetch_jpeg(img))}, chat_id=chat_id, caption=cap, parse_mode="HTML")
+            api(token, "sendPhoto", files={"photo": ("src.jpg", tg_card.brand(tg_card.fetch_jpeg(img)))}, chat_id=chat_id, caption=cap, parse_mode="HTML")
             return "source"
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"sendfail:{type(e).__name__}:{str(e)[:60]}")
     try:
-        head = "عاجل" if rank(n) >= 3 else "مهم"
-        jpg = tg_card.card(n["title"], head, "عاجل هسه وصل", CHANNEL.replace("https://", ""))
+        head = "عاجل" if is_breaking(n) else "مهم"
+        jpg = tg_card.card(n["title"], head, "", CHANNEL.replace("https://", ""))
         api(token, "sendPhoto", files={"photo": ("hobi.jpg", jpg)}, chat_id=chat_id, caption=cap, parse_mode="HTML")
         return "card"
     except Exception:  # noqa: BLE001
@@ -170,15 +175,16 @@ def main():
         first_run = not sent.get("_init")
         out = []
         for n in sorted(news, key=lambda n: n.get("collected_utc") or ""):
-            if not worthy(n, now):
-                continue
             prev = sent.get(n["id"])
             if prev is None:
-                out.append((n, False))
+                if worthy(n, now):
+                    out.append((n, False))
+            elif is_breaking(n) and not prev.get("b", prev.get("r", 0) >= 3 or prev.get("n", 1) >= 3):
+                # خبر نُشر سابقاً ثم تكرر لدى 3 جهات فأكثر: يُعاد مرة واحدة بوسم عاجل
+                lu = n.get("latest_utc")
+                if lu and datetime.fromisoformat(lu.replace("Z", "+00:00")) >= now - timedelta(minutes=15):
+                    out.append((n, True))
         status["candidates"] = len(out)
-        from collections import Counter
-        fresh = [n for n in news if n.get("collected_utc") and datetime.fromisoformat(n["collected_utc"].replace("Z", "+00:00")) >= now - timedelta(minutes=12)]
-        status["fresh12"] = dict(Counter(f"{'IQ' if (n.get('about_iraq') or n.get('pmf')) else n.get('origin')}|{n.get('level')}|{'F' if n.get('source_flag') else ''}" for n in fresh))
         if first_run:  # أول تشغيل: لا نغرق القناة بالقديم؛ نرسل رسالة ترحيب ونعلّم الموجود كمُرسل
             for n, _ in out:
                 sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp()}
@@ -189,7 +195,7 @@ def main():
         for n, upd in out[-MAX_PER_RUN:]:
             kind = post(token, chat_id, n, upd)
             status["images"][kind] = status["images"].get(kind, 0) + 1
-            sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp()}
+            sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "b": is_breaking(n)}
             status["sent_now"] += 1
             SENT.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
         # موجز 8 صباحاً بغداد، مرة واحدة يومياً

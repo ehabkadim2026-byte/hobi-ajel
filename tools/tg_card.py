@@ -76,6 +76,32 @@ def fetch_jpeg(img_url):
     return buf.getvalue()
 
 
+LOGO = ROOT / "assets" / "logo_hassawassal.png"
+
+
+def brand(jpg_bytes):
+    """يضيف شعار «هسه وصل» على الصورة (شارة بيضاء أسفل اليسار)."""
+    from PIL import ImageDraw as _D
+    im = Image.open(io.BytesIO(jpg_bytes)).convert("RGB")
+    if LOGO.exists():
+        W, H = im.size
+        lg = Image.open(LOGO).convert("RGB")
+        lw = max(110, int(min(W, H) * 0.20))
+        lh = int(lg.height * lw / lg.width)
+        lg = lg.resize((lw, lh), Image.LANCZOS)
+        pad, m = int(lw * 0.10), int(min(W, H) * 0.03)
+        bw, bh = lw + 2 * pad, lh + 2 * pad
+        x0, y0 = m, H - bh - m
+        mask = Image.new("L", (bw, bh), 0)
+        _D.Draw(mask).rounded_rectangle([0, 0, bw - 1, bh - 1], radius=int(pad * 1.4), fill=255)
+        badge = Image.new("RGB", (bw, bh), (255, 255, 255))
+        badge.paste(lg, (pad, pad))
+        im.paste(badge, (x0, y0), mask)
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=88)
+    return buf.getvalue()
+
+
 def _font(size):
     for p in FONT_CANDIDATES:
         if p.exists():
@@ -156,17 +182,16 @@ def card(title, head, meta, footer):
     if len(lines) > 6:
         lines = lines[:6]
         lines[-1] += " …"
-    y = 175
+    y = 165
     for ln in lines:
         _draw_rtl(d, W - P, y, ln, fb, (245, 247, 250))
         y += int(size * 1.6)
     # التذييل
-    d.line([(P, H - 120), (W - P, H - 120)], fill=(60, 70, 92), width=2)
-    _draw_rtl(d, W - P, H - 100, meta, fs, (170, 180, 200))
-    d.text((P, H - 100), footer, font=_font(30), fill=(120, 190, 255))
+    fw = d.textlength(footer, font=fs)
+    d.text((W - P - fw, H - 80), footer, font=fs, fill=(120, 190, 255))
     buf = io.BytesIO()
-    im.save(buf, "JPEG", quality=88)
-    return buf.getvalue()
+    im.save(buf, "JPEG", quality=90)
+    return brand(buf.getvalue())
 
 
 if __name__ == "__main__":
