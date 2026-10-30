@@ -88,6 +88,12 @@ select,.inp{width:100%;border:1px solid var(--line);background:var(--surface);bo
 .t-topic{border:1px solid var(--line);color:var(--ink-2)} .t-esc{background:var(--urgent-soft);color:var(--urgent)}
 .st{font-weight:600;font-size:.7rem;border-radius:999px;padding:0 8px;white-space:nowrap;line-height:1.75}
 .s-ok{background:var(--green-soft);color:var(--green)} .s-pair{background:var(--blue-soft);color:var(--blue)} .s-unv{background:var(--surface-2);color:var(--muted)}
+.s-off{background:var(--blue-soft);color:var(--blue)} .s-disp{background:var(--gold-soft);color:var(--gold)} .s-false{background:var(--urgent-soft);color:var(--urgent)}
+.t-man{background:var(--gold-soft);color:var(--gold)} .t-prov{background:var(--surface-2);color:var(--ink-2)} .t-prov.direct{background:var(--green-soft);color:var(--green)}
+.wrow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;width:100%;text-align:start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;color:var(--ink)}
+.wrow b{font-size:.95rem} .wrow small{color:var(--muted);font-size:.74rem;grid-column:1/-1;line-height:1.5} .wrow .n{font-weight:800;font-size:1.05rem}
+.acc{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:.8rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px} .acc dt{font-weight:700} .acc dd{margin:0;color:var(--ink-2)} .acc a{color:var(--blue)}
+.idbox{font-family:ui-monospace,monospace;font-size:.75rem;background:var(--surface-2);border-radius:8px;padding:6px 8px;overflow-wrap:anywhere}
 .title{font-size:1rem;font-weight:600;line-height:1.6;margin:4px 0 2px;overflow-wrap:anywhere}
 .orig{font-size:.82rem;color:var(--muted);direction:ltr;text-align:left;line-height:1.45;margin:0 0 3px;font-style:italic;overflow-wrap:anywhere}
 .meta{font-size:.76rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:1px 8px;align-items:center}
@@ -163,7 +169,7 @@ select,.inp{width:100%;border:1px solid var(--line);background:var(--surface);bo
 .foot{margin-top:28px;display:grid;gap:8px}
 .note{font-size:.76rem;color:var(--muted);line-height:1.75;margin:0}
 .nav{position:fixed;inset-inline:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-.nav-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);height:var(--nav-h)}
+.nav-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);height:var(--nav-h)}
 .nav button{border:0;background:transparent;display:grid;place-items:center;align-content:center;gap:2px;color:var(--muted);font-size:.68rem;font-weight:600;cursor:pointer;position:relative;line-height:1.25;text-align:center}
 .nav svg{width:21px;height:21px}
 .nav button[aria-selected="true"]{color:var(--ink)}
@@ -204,6 +210,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   <button role="tab" type="button" data-v="home" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>الرئيسية</button>
   <button role="tab" type="button" data-v="iraq" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>العراق<span class="badge" hidden></span></button>
   <button role="tab" type="button" data-v="pmf" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>الحشد الشعبي<span class="badge" hidden></span></button>
+  <button role="tab" type="button" data-v="watch" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>المتابعة<span class="badge" hidden></span></button>
   <button role="tab" type="button" data-v="world" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>العالم</button>
   <button role="tab" type="button" data-v="tools" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/></svg>الأدوات</button>
 </div></nav>
@@ -216,13 +223,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-let news=[],meta=null,health=[],archive=null,loading=false;
-let view="home", sub={pmf:"all",world:"region",tools:null}, win=360, topic="الكل", ctype="الكل", srcF="", query="";
+let news=[],meta=null,health=[],archive=null,loading=false,watch=null,storage=null;
+let view="home", sub={pmf:"all",world:"region",tools:null,watch:null}, win=360, topic="الكل", ctype="الكل", srcF="", query="";
 let seen=new Set(store.get("hobi_seen2",[])), fresh=new Set();
 let prefs=Object.assign({on:false,sound:true,notify:false,src:true,imp:true,esc:false,iraqOnly:true,pmf:false,topics:[],kw:""},store.get("hobi_alerts",{}));
 let alerted=store.get("hobi_alerted",{});
 const LV={"عاجل":{w:40,c:"l-urgent",t:'<span class="tag t-urgent">عاجل</span>'},"مهم":{w:25,c:"l-imp",t:'<span class="tag t-imp">مهم</span>'},"متابعة":{w:12,c:"l-follow",t:'<span class="tag t-follow">متابعة</span>'}};
 const ST={"مؤكد":["s-ok",5],"متطابق لدى جهتين":["s-pair",4]};
+const VS={"غير متحقق":"s-unv","منسوب لمصدر رسمي":"s-off","مؤيد بمصادر مستقلة":"s-ok","متنازع عليه":"s-disp","ثبت عدم صحته":"s-false"};
+const provTag=p=>p?`<span class="tag t-prov ${p==="رصد مباشر"?"direct":""}">${esc(p)}</span>`:"";
 const TOPICS=["الكل","سياسة","أمن","اقتصاد","خدمات","صحة","تعليم","ثقافة","مجتمع","رياضة","طقس","عام"];
 const CTYPES=["الكل","خبر","بيان رسمي","تصريح","تحليل/رأي","ادعاء منسوب"];
 const MONTHS=["كانون الثاني","شباط","آذار","نيسان","أيار","حزيران","تموز","آب","أيلول","تشرين الأول","تشرين الثاني","كانون الأول"];
@@ -240,7 +249,7 @@ const fmtDelay=m=>m==null?"":m<1?"أقل من دقيقة":m<60?`${Math.round(m)}
 const isUrg=n=>n.source_flag||n.level==="عاجل";
 
 function tagsOf(n){
-  return `${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${n.source_flag?'<span class="tag t-urgent">عاجل المصدر</span>':(LV[n.level]?LV[n.level].t:"")}${n.escalating?'<span class="tag t-esc">متصاعد</span>':""}<span class="tag t-type">${esc(n.ctype||"خبر")}</span><span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}<span class="st ${ST[n.status]?.[0]||"s-unv"}">${esc(n.status||"غير مؤكد")}</span>`;
+  return `${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${n.source_flag?'<span class="tag t-urgent">عاجل المصدر</span>':(LV[n.level]?LV[n.level].t:"")}${n.escalating?'<span class="tag t-esc">متصاعد</span>':""}<span class="tag t-type">${esc(n.ctype||"خبر")}</span><span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}${n.manual?'<span class="tag t-man">إدخال يدوي</span>':""}${n.pmf_class&&view==="pmf"?`<span class="tag t-follow">${esc(n.pmf_class)}</span>`:""}${view==="watch"&&sub.watch?provTag(((n.watch||[]).find(w=>w.id===sub.watch)||{}).prov):""}<span class="st ${VS[n.vstatus]||ST[n.status]?.[0]||"s-unv"}">${esc(n.vstatus||n.status||"غير متحقق")}</span>`;
 }
 function card(n){
   const s=(n.sources||[])[0]||{};
@@ -300,10 +309,29 @@ function vHome(all){
 }
 function vPmf(all){
   const P=all.filter(n=>n.pmf), k=sub.pmf;
-  const pool=k==="all"?P:P.filter(n=>n.pmf_kind===({official:"بيان رسمي",iraq:"عراقي",intl:"دولي",analysis:"تحليل"})[k]);
-  const head=segBar("pmf",[["all","الكل"],["official","البيانات الرسمية"],["iraq","الأخبار العراقية"],["intl","التغطية الإقليمية والدولية"],["analysis","التقارير والتحليلات"]])
+  const CL={dec:"قرار",official:"بيان رسمي",stmt:"تصريح",news:"خبر",analysis:"تحليل"};
+  const pool=k==="all"?P:k==="intl"?P.filter(n=>n.pmf_kind==="دولي"):P.filter(n=>n.pmf_class===CL[k]);
+  const head=segBar("pmf",[["all","الكل"],["dec","القرارات"],["official","البيانات الرسمية"],["stmt","التصريحات"],["news","الأخبار"],["analysis","التحليلات"],["intl","التغطية الإقليمية والدولية"]])
     +`<p class="note" style="margin-top:10px">التغطية معروضة بغض النظر عن موقف المصدر. الاتهام ينسب لقائله ويظهر كـ«ادعاء منسوب»، مو حقيقة مثبتة.</p>`;
   return listView("الحشد الشعبي",pool,head);
+}
+function vWatch(all){
+  if(!watch) return '<div class="empty" style="margin-top:20px">قوائم المتابعة ما تحمّلت بعد.</div>';
+  const L=watch.lists||[], cur=L.find(x=>x.id===sub.watch);
+  if(cur){
+    const pool=all.filter(n=>(n.watch||[]).some(w=>w.id===cur.id));
+    const acc=(cur.accounts||[]).map(a=>`<dt>${esc(a.k)}</dt><dd>${a.url?`<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.url.replace(/^https?:\/\/(www\.)?/,"").slice(0,40))} ↗</a> · `:""}${esc(a.how)}${a.state?` · الحالة: ${esc(a.state)}`:""}${a.last?` · آخر جلب ${esc(hm(a.last))}`:""}</dd>`).join("");
+    const pv=Object.entries(cur.prov||{}).map(([k,v])=>`${k}: ${v}`).join(" · ");
+    const head=`<button class="btn" type="button" data-wsel="" style="margin-top:16px">→ كل القوائم</button>
+      <div class="sec"><h2>${esc(cur.name)}</h2><span>${esc(cur.role||(cur.kind==="topic"?"قضية":""))}</span></div>
+      ${cur.kind!=="topic"?`<dl class="acc">${acc}<dt>التحقق من الحسابات</dt><dd>${esc(cur.verification||"—")} (ثقة ${esc(cur.confidence||"—")})</dd></dl>
+      <p class="note" style="margin-top:8px">«رصد مباشر» = من حساب الجهة نفسها المرصود. «نقل عن مصدر» = وسيلة إعلام نقلت عنها، مو رصد لحسابها. «إدخال يدوي» = أرسله محرر عبر البوت. فيسبوك وX ما نرصدهم مباشرة.${pv?` آخر 24 ساعة: ${esc(pv)}.`:""}</p>`:
+      `<p class="note" style="margin-top:8px">الكلمات المطابقة: ${esc((cur.terms||[]).join("، "))}…</p>`}`;
+    return listView("أخبار "+cur.name,pool,head);
+  }
+  const grp=(k,t)=>{const rows=L.filter(x=>x.kind===k).sort((a,b)=>b.n-a.n); return rows.length?`<div class="sec"><h2>${t}</h2><span>${rows.length}</span></div><div class="list">${rows.map(x=>`<button type="button" class="wrow" data-wsel="${esc(x.id)}"><b>${esc(x.name)}</b><span class="n">${x.n}</span><small>${esc(x.role||"")}${x.urgent?` · ${x.urgent} عاجل`:""}${x.prov&&x.prov["رصد مباشر"]?` · ${x.prov["رصد مباشر"]} رصد مباشر`:""}${x.latest?` · آخر خبر ${esc(ago(x.latest))}`:""}</small></button>`).join("")}</div>`:""};
+  return `<div class="narrow"><p class="note" style="margin-top:16px">الأرقام = أحداث آخر 24 ساعة بالمصادر المرصودة (الحدث يُحسب مرة وحدة مهما تكررت نسخه). التنبيهات توصل المحررين بالخاص عبر البوت.</p>${grp("person","الشخصيات")}${grp("institution","الجهات")}${grp("topic","القضايا")}
+   <div class="note-box" style="margin-top:14px">لإضافة شخصية أو قضية: عدّل <a style="color:var(--blue)" target="_blank" rel="noopener" href="https://github.com/ehabkadim2026-byte/hobi-ajel/edit/main/config/follow.json">ملف المتابعة</a> (الاسم، الكتابات المختلفة، الحسابات الرسمية).</div></div>`;
 }
 function vWorld(all){
   const k=sub.world;
@@ -452,8 +480,14 @@ function openDrawer(id){
   const why=[...(n.why||[])]; if(n.source_flag) why.unshift("المصدر نفسه وسم الخبر «عاجل»"); if(n.trending_unconfirmed) why.push("متداول لدى جهات كثيرة بدون تأكيد مستقل"); if(n.about_iraq) why.push("يخص العراق");
   $("#drawer").innerHTML=`<div class="grab"></div><div class="tags">${tagsOf(n)}</div><h2 class="d-title">${esc(n.title)}</h2>${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p><p class="note">العنوان العربي ترجمة آلية للعنوان الأصلي.</p>`:""}
     ${why.length?`<div class="why"><b>سبب التصنيف:</b> ${esc(why.join(" · "))}</div>`:""}
-    <dl class="kv"><dt>وقت النشر (المصدر)</dt><dd>${esc(full(n.latest_utc))}${n.date_confirmed?"":" · تقريبي"}</dd>
-    <dt>أول نشر بالحدث</dt><dd>${n.first_src?esc(srcName(n.first_src.name))+" · "+esc(full(n.first_src.time)):"—"}</dd>
+    <div class="why"><b>حالة التحقق: <span class="st ${VS[n.vstatus]||"s-unv"}">${esc(n.vstatus||"غير متحقق")}</span></b> ${esc(n.vwhy||"")}${n.cited?` · يستند إلى: «${esc(n.cited)}»`:""}${n.independent?` · مصادر مستقلة: ${n.independent}`:""}</div>
+    ${n.origin_rec?`<div class="sec minor"><h2>أقدم نشر رصدته المنظومة</h2><span>مو بالضرورة أول نشر بالإنترنت</span></div>
+    <dl class="kv"><dt>المصدر</dt><dd>${n.origin_rec.url?`<a href="${esc(n.origin_rec.url)}" target="_blank" rel="noopener" style="color:var(--blue)">${esc(srcName(n.origin_rec.source))} ↗</a>`:esc(srcName(n.origin_rec.source))}${n.origin_rec.manual?' <span class="tag t-man">إدخال يدوي</span>':""}</dd>
+    <dt>وقت نشر المصدر</dt><dd>${n.origin_rec.pub?esc(full(n.origin_rec.pub)):"غير معلن"}</dd>
+    <dt>وقت التقاط النظام</dt><dd>${esc(full(n.origin_rec.seen))}</dd>
+    <dt>يستند إلى</dt><dd>${esc(n.origin_rec.cited||"لا إحالة ظاهرة لمصدر آخر")}</dd></dl>`:""}
+    ${(n.watch||[]).length&&watch?`<p class="note"><b>قوائم المتابعة:</b> ${(n.watch||[]).map(w=>{const l=(watch.lists||[]).find(x=>x.id===w.id);return esc(l?l.name:w.id)+(w.prov?` (${esc(w.prov)})`:"")}).join("، ")}</p>`:""}
+    <dl class="kv"><dt>وقت النشر (آخر تحديث)</dt><dd>${esc(full(n.latest_utc))}${n.date_confirmed?"":" · تقريبي"}</dd>
     <dt>وقت اكتشاف التطبيق</dt><dd>${esc(full(n.collected_utc))}</dd>
     ${n.detect_delay_min!=null?`<dt>تأخر الاكتشاف</dt><dd>${esc(fmtDelay(n.detect_delay_min))}</dd>`:""}
     <dt>تعديل المادة</dt><dd>${n.edited?"المصدر عدّل المادة بعد نشرها":"ما رصدنا تعديل"}</dd>
@@ -461,8 +495,9 @@ function openDrawer(id){
     <dt>الجهات / المواد</dt><dd>${n.n_sources} جهة · ${n.n_items||n.n_sources} مادة${n.views?` · ${n.views.toLocaleString("ar-IQ")} مشاهدة`:""}</dd>
     <dt>التحقق</dt><dd>${esc(n.basis||n.status)}</dd></dl>
     <div class="sec minor"><h2>خط التحديثات والمصادر</h2><span>${(n.timeline||[]).length} مادة</span></div>
-    <ol class="tl">${(n.timeline||[]).map(t=>`<li><div><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(srcName(t.source))} ↗</a><small>نُشر ${esc(full(t.pub))} · رُصد ${esc(hm(t.seen))}</small></div></li>`).join("")}</ol>
-    <div class="btns">${s0.url?`<a class="btn primary" href="${esc(s0.url)}" target="_blank" rel="noopener">فتح الأصل ↗</a>`:""}<button class="btn" type="button" data-share="${esc(n.id)}">إرسال للفريق</button><button class="btn" type="button" data-copy="${esc(n.id)}">نسخ</button><button class="btn" type="button" data-trace="${esc(n.id)}">تتبّع أصل الخبر</button><button class="btn" type="button" data-close>إغلاق</button></div>`;
+    <ol class="tl">${(n.timeline||[]).map(t=>`<li><div><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(srcName(t.source))} ↗</a><small>نُشر ${esc(full(t.pub))} · رُصد ${esc(hm(t.seen))}${t.cited?` · يستند إلى «${esc(t.cited)}»`:""}${t.manual?" · إدخال يدوي":""}</small></div></li>`).join("")}</ol>
+    <p class="note" style="margin-top:10px">رقم الحدث (لحكم المحرر عبر البوت: <code>/حكم الرقم كاذب|متنازع|مستقل|رسمي</code>)</p><div class="idbox">${esc(n.id)}</div>
+    <div class="btns">${s0.url?`<a class="btn primary" href="${esc(s0.url)}" target="_blank" rel="noopener">فتح الأصل ↗</a>`:""}<button class="btn" type="button" data-share="${esc(n.id)}">إرسال للفريق</button><button class="btn" type="button" data-copy="${esc(n.id)}">نسخ</button><button class="btn" type="button" data-trace="${esc(n.id)}">تتبّع أصل الخبر</button><button class="btn" type="button" data-copyid="/حكم ${esc(n.id)} ">نسخ أمر الحكم</button><button class="btn" type="button" data-close>إغلاق</button></div>`;
   $("#drawer").classList.add("on"); $("#scrim").classList.add("on"); $("#drawer").scrollTop=0;
 }
 function closeDrawer(){ $("#drawer").classList.remove("on"); $("#scrim").classList.remove("on"); }
@@ -477,13 +512,14 @@ function render(keepScroll){
   const tk=all.filter(n=>isUrg(n)&&n.about_iraq&&mins(n.latest_utc)<=180).sort(byNew).slice(0,14);
   $("#ticker").hidden=!tk.length;
   if(tk.length){ const html=tk.map(n=>`<button type="button" data-id="${esc(n.id)}">${esc(n.title)}<small>${esc(hm(n.latest_utc))}</small></button>`).join(""); $("#tickerT").innerHTML=html+html; $("#tickerT").style.setProperty("--dur",Math.max(30,tk.length*9)+"s"); }
-  [["iraq",all.filter(n=>n.about_iraq&&mins(n.latest_utc)<=3)],["pmf",all.filter(n=>n.pmf&&mins(n.latest_utc)<=30)]].forEach(([k,a])=>{const b=$(`.nav [data-v=${k}] .badge`); b.hidden=!a.length; b.textContent=a.length>99?"99+":a.length;});
+  [["iraq",all.filter(n=>n.about_iraq&&mins(n.latest_utc)<=3)],["pmf",all.filter(n=>n.pmf&&mins(n.latest_utc)<=30)],["watch",all.filter(n=>(n.watch||[]).some(w=>w.prov==="رصد مباشر"||w.prov==="إدخال يدوي")&&mins(n.latest_utc)<=30)]].forEach(([k,a])=>{const b=$(`.nav [data-v=${k}] .badge`); b.hidden=!a.length; b.textContent=a.length>99?"99+":a.length;});
   if(view==="tools"&&keepScroll&&(sub.tools==="tracer"||sub.tools==="alerts")) return; // لا نمسح نموذج المستخدم أثناء التحديث التلقائي
   let h="";
   if(view==="home") h=vHome(all);
   else if(view==="iraq") h=listView("أخبار العراق",all.filter(n=>n.about_iraq));
   else if(view==="pmf") h=vPmf(all);
   else if(view==="world") h=vWorld(all);
+  else if(view==="watch") h=vWatch(all);
   else if(view==="tools") h=vTools();
   else if(view==="search") h=listView(`نتائج البحث`,all);
   const y=scrollY; $("#view").innerHTML=h; if(keepScroll) scrollTo(0,y);
@@ -493,7 +529,8 @@ async function load(manual){
   if(loading) return; loading=true; $("#bRefresh").classList.add("spin");
   try{
     const t=Date.now(), get=u=>fetch(u+"?t="+t,{cache:"no-store"}).then(r=>{if(!r.ok)throw 0;return r.json()});
-    const [n,m,hl]=await Promise.all([get("news.json"),get("meta.json"),get("health.json").catch(()=>health)]);
+    const [n,m,hl,wt,sg]=await Promise.all([get("news.json"),get("meta.json"),get("health.json").catch(()=>health),get("watch.json").catch(()=>watch),get("storage.json").catch(()=>storage)]);
+    watch=wt; storage=sg;
     const first=!news.length;
     fresh=new Set(first&&!seen.size?[]:n.filter(x=>!seen.has(x.id)).map(x=>x.id));
     n.forEach(x=>seen.add(x.id)); store.set("hobi_seen2",[...seen].slice(-6000));
@@ -516,10 +553,11 @@ function openTool(k){ view="tools"; sub.tools=k||null; setNav("tools"); render()
 document.addEventListener("click",e=>{
   const t=e.target;
   if(t.closest("[data-stop]")) return;
-  const nb=t.closest(".nav button"); if(nb){ if(nb.dataset.v==="tools") sub.tools=null; go(nb.dataset.v); return; }
+  const nb=t.closest(".nav button"); if(nb){ if(nb.dataset.v==="tools") sub.tools=null; if(nb.dataset.v==="watch") sub.watch=null; go(nb.dataset.v); return; }
   const idb=t.closest("[data-id]"); if(idb){ openDrawer(idb.dataset.id); return; }
   const gob=t.closest("[data-go]"); if(gob){ closeDrawer(); go(gob.dataset.go,gob.dataset.sub); return; }
   const tool=t.closest("[data-tool]"); if(tool){ openTool(tool.dataset.tool); return; }
+  const ws=t.closest("[data-wsel]"); if(ws){ sub.watch=ws.dataset.wsel||null; render(); scrollTo({top:0}); return; }
   const sg=t.closest("[data-seg] button"); if(sg){ sub[sg.parentElement.dataset.seg]=sg.dataset.s; render(); return; }
   const w=t.closest("[data-w]"); if(w){ win=+w.dataset.w; render(true); return; }
   const tp=t.closest("[data-t]"); if(tp){ topic=tp.dataset.t; render(true); return; }
