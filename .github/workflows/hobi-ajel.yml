@@ -33,6 +33,8 @@ jobs:
         with: {path: data/archive_state.json, key: "archive-state-${{ github.run_id }}", restore-keys: "archive-state-"}
       - uses: actions/cache/restore@v4
         with: {path: pwa/reports, key: "reports-${{ github.run_id }}", restore-keys: "reports-"}
+      - uses: actions/cache/restore@v4
+        with: {path: "data/ops_state.json\ndata/discovery_state.json", key: "ops-state-${{ github.run_id }}", restore-keys: "ops-state-"}
       - name: restore db from independent backup if cache missed
         env: {GH_TOKEN: "${{ github.token }}"}
         run: python3 -m tools.archive restore
@@ -49,6 +51,8 @@ jobs:
           [ -s ~/fonts/NotoKufiArabic.ttf ] || curl -sSL --max-time 60 -o ~/fonts/NotoKufiArabic.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/notokufiarabic/NotoKufiArabic%5Bwght%5D.ttf" || true
         continue-on-error: true
       - run: python3 -m marsad.cli sources
+      - name: discovered sources (محرك الاكتشاف + مراجعة المحرر)
+        run: if [ -f config/discovered.json ]; then python3 -m marsad.cli sources config/discovered.json; fi
       - run: python3 -m marsad.cli collect --limit 450
       - name: telegram editors inbox (إدخال يدوي + أحكام التحقق)
         run: python3 -m tools.tg_inbox
@@ -84,6 +88,15 @@ jobs:
         continue-on-error: true
         timeout-minutes: 2
         run: python3 -m tools.metrics
+      - name: source discovery (كل 6 ساعات، وقرارات المحرر كل جولة)
+        continue-on-error: true
+        timeout-minutes: 4
+        run: python3 -m tools.discover
+      - name: ops center (تدفق الأخبار + العزل + فحص 6 ساعات)
+        continue-on-error: true
+        timeout-minutes: 2
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: python3 -m tools.ops
       - name: morning report (7 صباحاً بغداد)
         continue-on-error: true
         timeout-minutes: 3
@@ -123,6 +136,9 @@ jobs:
       - uses: actions/cache/save@v4
         if: always()
         with: {path: pwa/reports, key: "reports-${{ github.run_id }}"}
+      - uses: actions/cache/save@v4
+        if: always()
+        with: {path: "data/ops_state.json\ndata/discovery_state.json", key: "ops-state-${{ github.run_id }}"}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: {path: pwa}

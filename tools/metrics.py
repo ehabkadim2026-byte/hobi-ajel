@@ -99,7 +99,7 @@ def main():
     health = load(PWA / "health.json", [])
     meta = load(PWA / "meta.json", {})
     storage = load(PWA / "storage.json", {})
-    cfg = load(ROOT / "config" / "sources.json", {"sources": []})["sources"]
+    cfg = load(ROOT / "config" / "sources.json", {"sources": []})["sources"] + load(ROOT / "config" / "discovered.json", {"sources": []})["sources"]
     enabled = [h for h in health if h["enabled"]]
     states = Counter(h["state"] for h in enabled)
     working = [h for h in enabled if h["state"] == "يعمل"]

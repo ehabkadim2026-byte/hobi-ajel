@@ -48,10 +48,28 @@ def collect_all(con, limit, priority_only, workers=10):
     def due(r):
         if r["id"] in pr.get("_disabled", set()):
             return False
-        if (r.get("consecutive_failures") or 0) >= 3 and run_no % 10:
+        # Circuit Breaker بتراجع أُسّي: مصدر كثير الأعطال يُعزل ويُجرَّب بفواصل متزايدة (نصف مفتوح)، حتى لا يهدر وقت الجولة
+        f = r.get("consecutive_failures") or 0
+        if f >= 10 and run_no % 160:
+            return False
+        if f >= 6 and run_no % 40:
+            return False
+        if f >= 3 and run_no % 10:
             return False
         return run_no % every.get(pr.get(r["id"], 2), 2) == 0
-    rows = [r for r in rows if due(r)][:limit]
+    # إصلاح ذاتي: إذا رصد مركز العمليات «الجولات تعمل والجمع متوقف»، تجمع هذه الجولة كل المصادر مرة واحدة
+    ops_p = core.ROOT / "data" / "ops_state.json"
+    try:
+        ops = json.loads(ops_p.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        ops = {}
+    force_full = bool(ops.get("force_full"))
+    if force_full:
+        ops["force_full"] = False
+        ops_p.write_text(json.dumps(ops, ensure_ascii=False), encoding="utf-8")
+        rows = [r for r in rows if r["id"] not in pr.get("_disabled", set())][:max(limit, 600)]
+    else:
+        rows = [r for r in rows if due(r)][:limit]
     last = {}
     for r in con.execute("SELECT source_id, url FROM items WHERE platform='telegram'"):
         n = int(r["url"].rstrip("/").split("/")[-1])
@@ -66,14 +84,32 @@ def collect_all(con, limit, priority_only, workers=10):
             return s, [], str(e)[:200]
     # جمع متوازٍ بعدد عمال محدود حتى لا نُثقل على تلغرام (حد الطلبات)؛ كل فشل يُسجل نقطة عمى
     batch["ok"] = []
-    with ThreadPoolExecutor(max_workers=workers) as ex:
-        for s, items, err in ex.map(one, rows):
+    # استرجاع الفائت: إذا مضى على آخر جمع ناجح أكثر من 10 دقائق (انقطاع)، نقرأ صفحات تلغرام أكثر لاسترجاع ما فات
+    from . import collect as _c
+    lastrun = con.execute("SELECT MAX(collected_utc) FROM items").fetchone()[0]
+    gap_min = (datetime.now(timezone.utc) - datetime.fromisoformat(lastrun.replace("Z", "+00:00"))).total_seconds() / 60 if lastrun else 0
+    _c.CATCHUP_PAGES = 10 if (gap_min > 10 or force_full) else 3
+    # مهلة كلية للجمع: مصدر بطيء أو معلق لا يوقف الجولة؛ ما لم يكتمل يُسجل فشلاً مؤقتاً ويُجرب بالجولة الجاية
+    from concurrent.futures import as_completed, TimeoutError as FTimeout
+    deadline = 50 if gap_min <= 10 else 120
+    ex = ThreadPoolExecutor(max_workers=workers)
+    futs = {ex.submit(one, s): s for s in rows}
+    try:
+        for fu in as_completed(futs, timeout=deadline):
+            s, items, err = fu.result()
             batch["items"] += items
             if err:
                 batch["failed"].append({"source_id": s["id"], "reason": err})
             else:
                 batch["ok"].append(s["id"])
+    except FTimeout:
+        for fu, s in futs.items():
+            if not fu.done():
+                batch["failed"].append({"source_id": s["id"], "reason": f"مهلة الجولة ({deadline} ث) — عُزل مؤقتاً"})
+    ex.shutdown(wait=False, cancel_futures=True)
+    batch["gap_min"] = round(gap_min, 1)
     print(f"run {run_no}: fetched {len(rows)} sources, {len(batch['failed'])} failed, {len(batch['items'])} items")
+    print(f"::notice title=collect::{json.dumps({'sources': len(rows), 'failed': len(batch['failed']), 'items': len(batch['items']), 'gap_min': batch['gap_min'], 'catchup_pages': _c.CATCHUP_PAGES, 'timeouts': sum(1 for f in batch['failed'] if 'مهلة' in f['reason'])}, ensure_ascii=False)}")
     out = core.ROOT / "data" / "inbox" / (batch["batch_id"] + ".json")
     out.write_text(json.dumps(batch, ensure_ascii=False), encoding="utf-8")
     return core.ingest_batch(con, batch)

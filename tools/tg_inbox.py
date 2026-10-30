@@ -66,6 +66,15 @@ def main():
             if text.startswith("/start") or text.startswith("/help") or text == "مساعدة":
                 api(token, "sendMessage", chat_id=cid, text=HELP)
                 continue
+            if text.startswith("/مصدر"):
+                parts = text.split()
+                if len(parts) >= 3 and parts[1] in ("قبول", "رفض"):
+                    sent.setdefault("_src_decisions", {})[parts[2]] = parts[1]
+                    msg = f"✅ سُجّل «{parts[1]}» للمصدر {parts[2]}. يُطبق خلال دقيقتين."
+                else:
+                    msg = "الصيغة: /مصدر قبول <المفتاح> أو /مصدر رفض <المفتاح> (المفتاح من مركز العمليات بالتطبيق)"
+                api(token, "sendMessage", chat_id=cid, text=msg)
+                continue
             if text.startswith("/حكم") or text.startswith("/verdict"):
                 parts = text.split(maxsplit=3)
                 if len(parts) >= 3 and (parts[2] in VERDICTS or parts[2] == "إلغاء"):
