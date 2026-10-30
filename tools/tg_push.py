@@ -105,10 +105,10 @@ def post(token, chat_id, n, upd):
     DEBUG.append(f"{urllib.parse.urlparse(url).netloc}:{'img' if img else 'noimg'}")
     if img:
         try:
-            api(token, "sendPhoto", chat_id=chat_id, photo=img, caption=cap, parse_mode="HTML")
+            api(token, "sendPhoto", files={"photo": ("src.jpg", tg_card.fetch_jpeg(img))}, chat_id=chat_id, caption=cap, parse_mode="HTML")
             return "source"
         except Exception as e:  # noqa: BLE001
-            DEBUG.append(f"sendfail:{type(e).__name__}")
+            DEBUG.append(f"sendfail:{type(e).__name__}:{str(e)[:60]}")
     try:
         head = "عاجل" if rank(n) >= 3 else "مهم"
         jpg = tg_card.card(n["title"], head, "عاجل هسه وصل", CHANNEL.replace("https://", ""))

@@ -64,6 +64,18 @@ def find_image(url):
         return None
 
 
+def fetch_jpeg(img_url):
+    """ننزّل الصورة بأنفسنا ونرفعها (تلغرام لا يقبل روابط CDN مباشرة)."""
+    req = urllib.request.Request(img_url, headers=UA)
+    with urllib.request.urlopen(req, timeout=10) as r:
+        raw = r.read(8_000_000)
+    im = Image.open(io.BytesIO(raw)).convert("RGB")
+    im.thumbnail((1600, 1600))
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=88)
+    return buf.getvalue()
+
+
 def _font(size):
     for p in FONT_CANDIDATES:
         if p.exists():
