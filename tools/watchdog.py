@@ -67,7 +67,18 @@ def log_incident(kind, cause, action, result):
         subprocess.run(["gh", "release", "upload", "ops", str(p), "--clobber"], capture_output=True)
 
 
+def test_hold():
+    """اختبار قبول: نافذة توقف متعمد (config/chain_test.json) يتوقف فيها الرصد ولا يتدخل المراقب، ثم يجب أن يعيده بعدها."""
+    try:
+        t = json.loads(Path(__file__).resolve().parent.parent.joinpath("config", "chain_test.json").read_text(encoding="utf-8"))
+        return now() < ts(t["pause_until"])
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def check():
+    if test_hold():
+        return "test-hold"
     rs = runs(MAIN)
     active = [r for r in rs if r["status"] in ("queued", "pending", "waiting", "requested", "in_progress")]
     for r in active:

@@ -33,7 +33,7 @@ def source_priorities():
 
 def collect_all(con, limit, priority_only, workers=10):
     """جمع خادمي مباشر (يحتاج شبكة مفتوحة). يحترم حدود الطلبات بتوقف بين المصادر، ويسجل كل فشل كنقطة عمى."""
-    from datetime import datetime, timezone
+    from datetime import datetime, timezone, timedelta
     from .collect import collect_source
     import time as _t
     q = "SELECT * FROM sources WHERE method IN ('rss','telegram_preview') AND status NOT IN ('مستبعد')"
@@ -109,7 +109,7 @@ def collect_all(con, limit, priority_only, workers=10):
     ex.shutdown(wait=False, cancel_futures=True)
     batch["gap_min"] = round(gap_min, 1)
     print(f"run {run_no}: fetched {len(rows)} sources, {len(batch['failed'])} failed, {len(batch['items'])} items")
-    print(f"::notice title=collect::{json.dumps({'sources': len(rows), 'failed': len(batch['failed']), 'items': len(batch['items']), 'gap_min': batch['gap_min'], 'catchup_pages': _c.CATCHUP_PAGES, 'timeouts': sum(1 for f in batch['failed'] if 'مهلة' in f['reason'])}, ensure_ascii=False)}")
+    print(f"::notice title=collect::{json.dumps({'sources': len(rows), 'failed': len(batch['failed']), 'items': len(batch['items']), 'gap_min': batch['gap_min'], 'catchup_pages': _c.CATCHUP_PAGES, 'timeouts': sum(1 for f in batch['failed'] if 'مهلة' in f['reason']), 'backfilled_older_than_5m': sum(1 for it in batch['items'] if it.get('published_utc') and str(it['published_utc']) > (lastrun or '') and str(it['published_utc']) < (datetime.now(timezone.utc) - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ'))}, ensure_ascii=False)}")
     out = core.ROOT / "data" / "inbox" / (batch["batch_id"] + ".json")
     out.write_text(json.dumps(batch, ensure_ascii=False), encoding="utf-8")
     return core.ingest_batch(con, batch)

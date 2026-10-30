@@ -149,6 +149,9 @@ jobs:
         run: |
           wait=$(( 85 - ($(date +%s) - START) )); if [ "$wait" -gt 0 ]; then sleep "$wait"; fi
           n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/hobi-ajel.yml/runs?per_page=10" --jq '[.workflow_runs[]|select(.status=="queued" or .status=="pending" or .status=="waiting" or .status=="requested")]|length')
+          if python3 -c "import json,sys,datetime as d; t=json.load(open('config/chain_test.json')); sys.exit(0 if d.datetime.now(d.timezone.utc)<d.datetime.fromisoformat(t['pause_until'].replace('Z','+00:00')) else 1)" 2>/dev/null; then
+            echo "::notice title=chain::اختبار قبول: توقف متعمد — لن تُطلق الجولة التالية"; n=skip
+          fi
           if [ "$n" = "0" ]; then
             ok=0; for a in 1 2 3; do if gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/hobi-ajel.yml/dispatches" -f ref=main; then ok=1; break; fi; sleep 5; done
             if [ "$ok" = "1" ]; then echo "::notice title=chain::dispatched"; else echo "::warning title=chain::فشل إطلاق الجولة التالية"; fi
