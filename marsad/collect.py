@@ -53,6 +53,18 @@ def parse_rss(xml_text, source):
     try:
         root = ET.fromstring(xml_text)
         getters = [(lambda tag, it=it: (it.findtext(tag) or "").strip()) for it in root.iter("item")]
+        if not getters:  # Atom (يوتيوب، Blogger)
+            A = "{http://www.w3.org/2005/Atom}"
+            def atom(tag, e):
+                if tag == "link":
+                    l = e.find(A + "link")
+                    return (l.get("href") if l is not None else "") or ""
+                if tag == "pubDate":
+                    return (e.findtext(A + "published") or e.findtext(A + "updated") or "").strip()
+                if tag == "description":
+                    return (e.findtext(A + "summary") or e.findtext("{http://search.yahoo.com/mrss/}group/{http://search.yahoo.com/mrss/}description") or "").strip()
+                return (e.findtext(A + tag) or "").strip()
+            getters = [(lambda tag, e=e: atom(tag, e)) for e in root.iter(A + "entry")]
     except ET.ParseError:
         getters = list(_rss_items_loose(xml_text))
     out = []
