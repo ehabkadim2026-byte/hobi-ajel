@@ -1,8 +1,7 @@
 # تجربة التلفزيون المحدودة: تفريغ مقاطع قصيرة من قنوات تلغرام الرسمية للقنوات العراقية.
-# سير عمل منفصل حتى لا يبطئ دورة الرصد. يُطلق بعد كل جولة رصد، ويعمل فعلياً كل ~20 دقيقة فقط.
+# سير عمل منفصل حتى لا يبطئ دورة الرصد. تطلقه جولة الرصد كل ~20 دقيقة.
 name: tv-pilot
 on:
-  workflow_run: {workflows: [hobi-ajel], types: [completed]}
   workflow_dispatch: {}
 permissions: {contents: write}
 concurrency: {group: tv-pilot, cancel-in-progress: false}
