@@ -25,7 +25,8 @@ CHANNELS = [("IraqiaGTV", "قناة العراقية العامة"), ("alsumaria
             ("dijlahtvchannel", "دجلة"), ("utviraq", "UTV"), ("alrabiaatv", "الرابعة"), ("ASIATV1", "آسيا"), ("alawlatv", "الأولى"),
             ("rafidenchannel", "الرافدين"), ("alforat_tv", "الفرات")]
 UA = {"User-Agent": "Mozilla/5.0 (HobiAjel TV pilot)"}
-MAX_SEC, PER_RUN, EVERY_MIN = 180, 3, 15
+MAX_SEC, PER_RUN, EVERY_MIN = 300, 3, 15
+SEEN = {"videos": 0, "no_public_file": 0}
 
 
 def get(url, limit=None, timeout=25):
@@ -45,6 +46,10 @@ def find_clips(ch):
         post = re.search(r'data-post="([^"]+)"', block)
         vid = re.search(r'<video[^>]+src="([^"]+)"', block)
         d = re.search(r'message_video_duration[^>]*>([\d:]+)<', block)
+        if d:
+            SEEN["videos"] += 1
+            if not vid:
+                SEEN["no_public_file"] += 1  # فيديو كبير: تلغرام لا يعطي ملفاً عاماً ("افتح التطبيق للمشاهدة")
         t = re.search(r'<time[^>]+datetime="([^"]+)"', block)
         txt = re.search(r'tgme_widget_message_text[^>]*>(.*?)</div>', block, re.S)
         if not (post and vid and d):
@@ -117,10 +122,10 @@ def main():
     clips = [c for c in clips if (c.get("posted") or c["transcribed_utc"]) >= cut][-60:]
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({"updated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "channels": [n for _, n in CHANNELS],
-                               "limits": "مقاطع ≤3 دقائق تنشرها القنوات على تلغرام فقط؛ لا بث مباشر؛ تفريغ آلي بلا نسب لمتحدث.",
+                               "limits": "مقاطع ≤5 دقائق تنشرها القنوات على تلغرام فقط؛ لا بث مباشر؛ تفريغ آلي بلا نسب لمتحدث.",
                                "clips": clips}, ensure_ascii=False), encoding="utf-8")
     STATE.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
-    print(f"::notice title=tv_pilot::{json.dumps({'candidates': len(cand), 'new': new, 'total': len(clips), 'errors': errors, 'secs': [c.get('secs') for c in clips[-new:]] if new else []}, ensure_ascii=False)}")
+    print(f"::notice title=tv_pilot::{json.dumps({'candidates': len(cand), 'seen': SEEN, 'new': new, 'total': len(clips), 'errors': errors, 'secs': [c.get('secs') for c in clips[-new:]] if new else []}, ensure_ascii=False)}")
 
 
 if __name__ == "__main__":
