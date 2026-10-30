@@ -111,14 +111,29 @@ def topic_of(norm_text, en_text):
     return best
 
 
-def delay_stats(out, now):
-    """تأخر الاكتشاف = وقت رصد التطبيق − وقت النشر المعلن، لأخبار آخر 3 ساعات ذات وقت نشر مؤكد (تلغرام/RSS بتوقيت دقيق)."""
-    cut = iso(now - timedelta(hours=3))
-    xs = sorted(o["detect_delay_min"] for o in out if o.get("detect_delay_min") is not None and o.get("date_confirmed")
-                and (o.get("collected_utc") or "") >= cut and o["detect_delay_min"] < 24 * 60)
-    if not xs:
-        return None
-    return {"median_min": xs[len(xs) // 2], "p90_min": xs[int(len(xs) * 0.9)], "n": len(xs)}
+def delay_stats(con, now):
+    """تأخر الاكتشاف = وقت رصد التطبيق − وقت النشر المعلن، لمواد آخر 3 ساعات ذات وقت نشر دقيق.
+    تُستبعد مواد «الجلب الأول» لمصدر جديد (نُشرت قبل رصدها بأكثر من 6 ساعات) لأنها ليست تأخراً حقيقياً."""
+    rows = con.execute("SELECT i.published_utc, i.collected_utc, i.url, s.method FROM items i LEFT JOIN sources s ON s.id=i.source_id "
+                       "WHERE i.collected_utc >= ? AND i.time_precision='exact' AND i.published_utc IS NOT NULL", (iso(now - timedelta(hours=3)),)).fetchall()
+    groups = {"تلغرام": [], "RSS": [], "Google News": []}
+    for r in rows:
+        try:
+            m = (datetime.fromisoformat(r["collected_utc"].replace("Z", "+00:00")) - datetime.fromisoformat(r["published_utc"].replace("Z", "+00:00"))).total_seconds() / 60
+        except (ValueError, AttributeError):
+            continue
+        if m < -5 or m > 360:
+            continue
+        g = "تلغرام" if r["method"] == "telegram_preview" else "Google News" if "news.google.com" in (r["url"] or "") else "RSS"
+        groups[g].append(max(m, 0))
+    def st(xs):
+        xs = sorted(xs)
+        return {"median_min": round(xs[len(xs) // 2], 1), "p90_min": round(xs[int(len(xs) * 0.9)], 1), "n": len(xs)} if xs else None
+    allx = [x for v in groups.values() for x in v]
+    res = st(allx) or {}
+    if res:
+        res["by_type"] = {k: st(v) for k, v in groups.items() if v}
+    return res or None
 
 
 def main(hours=24):
@@ -266,7 +281,7 @@ def main(hours=24):
                                                   "sources_failed": [h["name"] for h in hrows if h["enabled"] and h["state"] in ("متوقف", "فشل مؤقت")][:60],
                                                   "items": arch}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     (pwa / "meta.json").write_text(json.dumps({"updated_utc": iso(now), "stories": len(out), "sources_ok": len(ok), "sources_total": len(hrows),
-                                               "detect_delay": delay_stats(out, now),
+                                               "detect_delay": delay_stats(con, now),
                                                "sections": {"iraq": sum(1 for o in out if o["about_iraq"]),
                                                             "region": sum(1 for o in out if not o["about_iraq"] and o["origin"] != "أجنبي"),
                                                             "arab_on_iraq": sum(1 for o in out if o["about_iraq"] and o["origin"] == "عربي"),

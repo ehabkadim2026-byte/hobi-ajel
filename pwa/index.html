@@ -473,7 +473,7 @@ function render(keepScroll){
   if(meta){ const m=mins(meta.updated_utc); $("#status").classList.toggle("stale",m>6);
     $("#sLive").textContent=m>6?`آخر تحديث ${ago(meta.updated_utc)}، الرصد متأخر`:`مباشر · آخر رصد ${hm(meta.updated_utc)}`;
     $("#sSrc").innerHTML=`<b>${meta.sources_ok}</b> مصدر يعمل من ${meta.sources_total||"—"} · <b>${all.length}</b> خبر/24س`;
-    const d=meta.detect_delay; $("#sDelay").innerHTML=d?`تأخر الاكتشاف الوسيط <b>${fmtDelay(d.median_min)}</b>`:""; }
+    const d=meta.detect_delay, tg=d&&d.by_type&&d.by_type["تلغرام"]; $("#sDelay").innerHTML=d?`تأخر الاكتشاف الوسيط: ${tg?`تلغرام <b>${fmtDelay(tg.median_min)}</b> · `:""}الكل <b>${fmtDelay(d.median_min)}</b>`:""; }
   const tk=all.filter(n=>isUrg(n)&&n.about_iraq&&mins(n.latest_utc)<=180).sort(byNew).slice(0,14);
   $("#ticker").hidden=!tk.length;
   if(tk.length){ const html=tk.map(n=>`<button type="button" data-id="${esc(n.id)}">${esc(n.title)}<small>${esc(hm(n.latest_utc))}</small></button>`).join(""); $("#tickerT").innerHTML=html+html; $("#tickerT").style.setProperty("--dur",Math.max(30,tk.length*9)+"s"); }
