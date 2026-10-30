@@ -5,7 +5,7 @@
   2) مواقع تظهر كناشرين في نتائج Google News عن العراق (<source url>) — نبحث لها عن خلاصة RSS معلنة.
 التقييم قبل أي إضافة (درجة 0–100):
   النشاط (منشورات 24 ساعة) 25 · الصلة بالعراق 30 · الأصالة (ليست نسخاً لما عندنا) 25 · السرعة (سبقت مصادرنا) 10 · العربية 10
-القبول التلقائي: ≥ 60 + صلة ≥ 50% + نشاط ≥ 5/يوم + غير مستبعد + غير مكرر. 35–59 ← قائمة مراجعة بشرية. أقل ← رفض.
+القبول التلقائي: ≥ 65 + صلة ≥ 50% + نشاط ≥ 10/يوم + أصالة ≥ 50% + غير مستبعد + غير مكرر. 35–59 ← قائمة مراجعة بشرية. أقل ← رفض.
 المستبعد دائماً: إعلام الجهات المصنّفة إرهابية أمريكياً (قرار ثابت)، والمحتوى الكردي فقط، والحسابات الشخصية غير الإعلامية.
 الإضافات تُكتب في config/discovered.json (لا يُلمس السجل الأصلي) وتُرفع للمستودع، ويمكن التراجع بحذف السطر.
 المراجعة: المحرر يرسل للبوت «/مصدر قبول <المفتاح>» أو «/مصدر رفض <المفتاح>».
@@ -31,6 +31,7 @@ DISC = ROOT / "config" / "discovered.json"
 PWA = ROOT / "pwa"
 EVERY_H = 6
 EXCLUDE = re.compile(r"(نجباء|النجباء|كتائب حزب الله|عصائب|العصائب|قناة العهد|alahad|حركة حقوق|المنار|almanar|الأقصى|aqsa|تسنيم|tasnim|وكالة فارس|farsnews|nujaba|kataib|asaib|rojnews|pkk|بي كي كي)", re.I)
+NON_NEWS_TOPIC = re.compile(r"(وظائف|توظيف|تسويق|تدريب|افلام|أفلام|مسلسل|اغاني|أغاني|متجر|عروض|اعلانات|إعلانات|تعليم|كورسات|رياضة|بث مباشر للمباريات|crypto|كريبتو|تداول|shop|store|movies)", re.I)
 NOT_NEWS = re.compile(r"(bot$|^joinchat$|^addlist$|^share$|^iv$|^proxy$|^s$|^c$|^\+)", re.I)
 IRAQ_WORDS = [norm_ar(w) for w in ["العراق", "عراقي", "بغداد", "البصرة", "الموصل", "اربيل", "كركوك", "النجف", "كربلاء", "الانبار", "ديالى", "نينوى",
                                     "ذي قار", "ميسان", "واسط", "بابل", "صلاح الدين", "السليمانية", "دهوك", "الحشد", "مجلس النواب", "الزيدي", "الدينار"]]
@@ -118,6 +119,10 @@ def eval_telegram(con, user):
         reasons.append("محتوى كردي غالب")
     if not posts:
         reasons.append("لا معاينة عامة/لا منشورات")
+    if NON_NEWS_TOPIC.search(title + " " + desc):
+        reasons.append("ليس مصدراً إخبارياً (وظائف/تسويق/ترفيه)")
+    if rel < 0.3:
+        reasons.append(f"صلة ضعيفة بالعراق ({rel:.0%})")
     sc = score(len(recent), rel, orig, lead, arabic)
     return {"key": "tg:" + user, "type": "تلغرام", "url": f"https://t.me/{user}", "name": title, "desc": desc, "n24": len(recent),
             "iraq": round(rel, 2), "original": round(orig, 2), "lead_min": round(lead, 1) if lead is not None else None,
@@ -161,6 +166,8 @@ def eval_site(con, home, name):
     rel = iraq_ratio(texts)
     orig, lead = originality(con, items)
     reasons = ["جهة مستبعدة (قرار ثابت)"] if EXCLUDE.search(name + " " + home) else []
+    if rel < 0.3:
+        reasons.append(f"صلة ضعيفة بالعراق ({rel:.0%})")
     return {**base, "n24": len(recent), "iraq": round(rel, 2), "original": round(orig, 2), "lead_min": round(lead, 1) if lead is not None else None,
             "arabic": round(arabic, 2), "score": score(len(recent), rel, orig, lead, arabic), "excluded": reasons}
 
@@ -224,6 +231,10 @@ def main(force=False):
     st = load(STATE, {"last": 0, "seen": {}, "review": {}, "added": [], "runs": []})
     disc = load(DISC, {"_note": "مصادر أضافها محرك الاكتشاف أو المحرر من قائمة المراجعة. احذف أي سطر للتراجع.", "sources": []})
     added_now = apply_decisions(st, disc)
+    for k, c in list(st["review"].items()):  # إعادة تطبيق معايير الرفض على قائمة المراجعة القائمة
+        if NON_NEWS_TOPIC.search((c.get("name") or "") + " " + (c.get("desc") or "")) or (c.get("iraq") or 0) < 0.3:
+            st["review"].pop(k)
+            st["seen"][k] = {"t": time.time(), "decision": "رفض", "why": "إعادة تقييم: ليس إخبارياً أو صلة ضعيفة"}
     due = force or time.time() - st.get("last", 0) >= EVERY_H * 3600
     report = {"ran": False}
     if due:
@@ -263,7 +274,7 @@ def main(force=False):
         for c in evaluated:
             c["at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             ok_tech = c["type"] == "تلغرام" or c.get("feed")
-            if not c.get("excluded") and ok_tech and c["score"] >= 60 and c.get("iraq", 0) >= 0.5 and c.get("n24", 0) >= 5:
+            if not c.get("excluded") and ok_tech and c["score"] >= 65 and c.get("iraq", 0) >= 0.5 and c.get("n24", 0) >= 10 and c.get("original", 0) >= 0.5:
                 s = to_source(c)
                 if all(x["id"] != s["id"] for x in disc["sources"]):
                     disc["sources"].append(s)
