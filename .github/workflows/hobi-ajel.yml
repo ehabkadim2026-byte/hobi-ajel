@@ -6,7 +6,7 @@ name: hobi-ajel
 on:
   schedule: [{cron: "*/10 * * * *"}]
   workflow_dispatch: {}
-permissions: {contents: read, pages: write, id-token: write, actions: write}
+permissions: {contents: write, pages: write, id-token: write, actions: write}
 concurrency: {group: hobi-ajel, cancel-in-progress: false}
 jobs:
   collect-and-publish:
@@ -25,8 +25,12 @@ jobs:
             data/translations.json
             data/tg_sent.json
             data/tg_chat.json
+            data/archive_state.json
           key: "marsad-db-${{ github.run_id }}"
           restore-keys: "marsad-db-"
+      - name: restore db from independent backup if cache missed
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: python3 -m tools.archive restore
       - name: translation model cache (Argos en→ar، مجاني)
         uses: actions/cache@v4
         with: {path: ~/argos, key: argos-en-ar-v1}
@@ -48,6 +52,14 @@ jobs:
         continue-on-error: true
         timeout-minutes: 6
       - run: python3 -m tools.export_pwa
+      - name: archive (لقطة كل 30 دقيقة + أرشيف يومي + اختبار استعادة + أرقام السعة)
+        continue-on-error: true
+        timeout-minutes: 4
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          python3 -m tools.archive snapshot
+          python3 -m tools.archive daily
+          python3 -m tools.archive stats
       - name: new sources check
         continue-on-error: true
         run: |
@@ -73,6 +85,7 @@ jobs:
             data/translations.json
             data/tg_sent.json
             data/tg_chat.json
+            data/archive_state.json
           key: "marsad-db-${{ github.run_id }}"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
