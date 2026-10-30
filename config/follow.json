@@ -1,0 +1,798 @@
+{
+ "_note": "قوائم المتابعة: شخصيات وجهات وقضايا. تُطابق على مستوى الحدث (لا لكل نسخة) وفقط على الأخبار المتعلقة بالعراق. terms_ar تُطابق بعد توحيد الهمزات والتاء المربوطة. أضف/احذف بحرية. الحسابات: رابط رسمي مؤكد أو null؛ لا نرصد فيسبوك مباشرة (لا وصول رسمي مجاني) — انظر docs/FACEBOOK.md.",
+ "follow": [
+  {
+   "id": "pm-ali-al-zaidi",
+   "kind": "person",
+   "name": "علي فالح الزيدي",
+   "name_en": "Ali Faleh al-Zaidi",
+   "role": "رئيس مجلس الوزراء العراقي (نالت حكومته الثقة 14 أيار 2026، واستُكملت الوزارات الشاغرة في تشرين الأول 2026) — يُتابع عبر مكتبه الإعلامي",
+   "terms_ar": [
+    "علي فالح الزيدي",
+    "الزيدي",
+    "علي الزيدي",
+    "علي فالح",
+    "المكتب الإعلامي لرئيس الوزراء",
+    "المكتب الاعلامي لرئيس الوزراء",
+    "رئيس الوزراء علي الزيدي",
+    "رئيس الوزراء العراقي",
+    "رئيس مجلس الوزراء العراقي"
+   ],
+   "terms_en": [
+    "Ali al-Zaidi",
+    "Ali Al Zaidi",
+    "Ali Faleh Al Zaidi",
+    "PMO Iraq"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/IraqiPMO",
+    "facebook": null,
+    "x": null,
+    "website": "https://pmo.iq",
+    "youtube": null
+   },
+   "verification": "Telegram @IraqiPMO: علامة توثيق تلغرام ظاهرة، الوصف «القناة الرسمية للمكتب الإعلامي لرئيس الوزراء علي فالح الزيدي»، ~28K مشترك، منشورات حتى تشرين الأول 2026 (فُحص 2026-10-30). الموقع pmo.iq مُدرج في دليل investpromo.gov.iq (لم يُفتح مباشرة: فشل الجلب). فيسبوك: المرشّح facebook.com/IraqiPMO ظهر في سجل المشروع من البحث فقط — غير مؤكد. X غير مؤكد.",
+   "confidence": "high",
+   "evidence": [
+    "https://t.me/s/IraqiPMO",
+    "https://www.aljazeera.com/news/2026/5/14/iraqs-parliament-approves-new-ali-al-zaidi-government",
+    "https://investpromo.gov.iq/?p=198"
+   ]
+  },
+  {
+   "id": "president-nizar-amedi",
+   "kind": "person",
+   "name": "نزار آميدي",
+   "name_en": "Nizar Amedi",
+   "role": "رئيس جمهورية العراق (انتخبه مجلس النواب في 11 نيسان 2026)",
+   "terms_ar": [
+    "نزار آميدي",
+    "آميدي",
+    "ئاميدي",
+    "نزار ئاميدي",
+    "نزار اميدي",
+    "نزار العمادي",
+    "ديوان رئاسة الجمهورية",
+    "رئيس الجمهورية نزار",
+    "رئيس الجمهورية العراقي"
+   ],
+   "terms_en": [
+    "Nizar Amidi",
+    "Nizar Amedi",
+    "Iraqi President",
+    "Presidency of Iraq"
+   ],
+   "accounts": {
+    "telegram": null,
+    "facebook": null,
+    "x": null,
+    "website": "https://presidency.iq",
+    "youtube": null
+   },
+   "verification": "المنصب مؤكد من عدة مصادر (الشرق الأوسط، PUKmedia 13-04-2026). الموقع presidency.iq مُدرج في دليل المكتبة الوطنية اليابانية NDL ودليل investpromo.gov.iq ومرتبط من موقع cbi.iq؛ لم يُفتح مباشرة (طلب الإذن لم يُجب). لم يُعثر على حساب فيسبوك/X/تلغرام رسمي للرئاسة مذكور في مصدر موثوق — غير مؤكد.",
+   "confidence": "medium",
+   "evidence": [
+    "https://english.aawsat.com/node/5261247",
+    "https://www.pukmedia.com/EN/Details/81102",
+    "https://ndlsearch.ndl.go.jp/rnavi/db/asialinks/link_irq02"
+   ]
+  },
+  {
+   "id": "parliament-iraq",
+   "kind": "institution",
+   "name": "مجلس النواب العراقي",
+   "name_en": "Council of Representatives of Iraq",
+   "role": "السلطة التشريعية الاتحادية؛ رئيس المجلس الحالي هيبت الحلبوسي (انتُخب 29 كانون الأول 2025)",
+   "terms_ar": [
+    "مجلس النواب العراقي",
+    "مجلس النواب",
+    "البرلمان العراقي",
+    "رئيس مجلس النواب",
+    "رئاسة البرلمان",
+    "هيبت الحلبوسي",
+    "هيبت حمد الحلبوسي",
+    "هيبة الحلبوسي"
+   ],
+   "terms_en": [
+    "Haibet al-Halbousi",
+    "Haibat al-Halbousi",
+    "Council of Representatives",
+    "Iraqi Parliament"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/parliament_iq",
+    "facebook": null,
+    "x": null,
+    "website": "https://iq.parliament.iq",
+    "youtube": null
+   },
+   "verification": "Telegram @parliament_iq: علامة توثيق ظاهرة، الوصف «الحساب الرسمي لمجلس النواب العراقي»، ~15.7K، منشورات عن رئيس المجلس (فُحص 2026-10-30). الموقع iq.parliament.iq من دليل NDL. فيسبوك parliament.iq ويوتيوب @parliamentiq مرشّحان من البحث فقط — غير مؤكدين. حساب شخصي لهيبت الحلبوسي (facebook.com/HaibetAlhalbousi) غير مؤكد.",
+   "confidence": "high",
+   "evidence": [
+    "https://t.me/s/parliament_iq",
+    "https://www.thenationalnews.com/news/mena/2025/12/29/iraqi-parliament-to-hold-first-session-amid-sunni-political-deadlock",
+    "https://ndlsearch.ndl.go.jp/rnavi/db/asialinks/link_irq02"
+   ]
+  },
+  {
+   "id": "supreme-judicial-council",
+   "kind": "institution",
+   "name": "مجلس القضاء الأعلى",
+   "name_en": "Supreme Judicial Council",
+   "role": "أعلى هيئة إدارية للسلطة القضائية الاتحادية في العراق",
+   "terms_ar": [
+    "مجلس القضاء الأعلى",
+    "مجلس القضاء الاعلى",
+    "القضاء العراقي",
+    "السلطة القضائية",
+    "رئيس مجلس القضاء الأعلى",
+    "المركز الإعلامي للقضاء"
+   ],
+   "terms_en": [
+    "Supreme Judicial Council of Iraq",
+    "Iraqi judiciary"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/sjc_iq",
+    "facebook": "https://www.facebook.com/judiciary.sjc.iq",
+    "x": null,
+    "website": "https://www.sjc.iq",
+    "youtube": "https://www.youtube.com/@sjc-iq"
+   },
+   "verification": "Telegram @sjc_iq: اسم القناة «مجلس القضاء الأعلى»، ~7.5K، منشور إحصاءات قضائية مؤرخ 18 آب 2026؛ لا علامة توثيق ظاهرة. فيسبوك ويوتيوب: مسجّلان في سجل المشروع كمرتبطين من sjc.iq (فحص جلسة سابقة؛ لم يُعَد الفحص اليوم لأن جلب sjc.iq لم يُؤذن).",
+   "confidence": "medium",
+   "evidence": [
+    "https://t.me/s/sjc_iq",
+    "https://www.sjc.iq"
+   ]
+  },
+  {
+   "id": "ministry-of-interior",
+   "kind": "institution",
+   "name": "وزارة الداخلية العراقية",
+   "name_en": "Ministry of Interior of Iraq",
+   "role": "وزارة اتحادية مسؤولة عن الشرطة والأمن الداخلي؛ الناطق الرسمي العقيد د. محمد علي الحسون (بحسب منشورات القناة)",
+   "terms_ar": [
+    "وزارة الداخلية العراقية",
+    "وزارة الداخلية",
+    "وزير الداخلية",
+    "الناطق باسم وزارة الداخلية",
+    "خلية الإعلام - الداخلية"
+   ],
+   "terms_en": [
+    "MoI Iraq",
+    "Iraqi Interior Ministry",
+    "Ministry of Interior"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/moiiraqi",
+    "facebook": null,
+    "x": null,
+    "website": "https://moi.gov.iq",
+    "youtube": null
+   },
+   "verification": "Telegram @moiiraqi: علامة توثيق ظاهرة، ~86.5K، ومنشوراتها تحيل إلى moi.gov.iq/?article=… (ربط متبادل) — فُحص 2026-10-30. فيسبوك غير مؤكد.",
+   "confidence": "high",
+   "evidence": [
+    "https://t.me/s/moiiraqi",
+    "https://investpromo.gov.iq/?p=198"
+   ]
+  },
+  {
+   "id": "ministry-of-defence",
+   "kind": "institution",
+   "name": "وزارة الدفاع العراقية",
+   "name_en": "Ministry of Defence of Iraq",
+   "role": "وزارة اتحادية مسؤولة عن الجيش العراقي",
+   "terms_ar": [
+    "وزارة الدفاع العراقية",
+    "وزارة الدفاع",
+    "وزير الدفاع"
+   ],
+   "terms_en": [
+    "MoD Iraq",
+    "Iraqi Ministry of Defense"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/modiraq",
+    "facebook": null,
+    "x": null,
+    "website": null,
+    "youtube": null
+   },
+   "verification": "Telegram @modiraq: علامة توثيق ظاهرة، الوصف «القناة الرسمية لوزارة الدفاع العراقية»، ~167K (فُحص 2026-10-30). الموقع mod.mil.iq وارد في سجل المشروع بلا دليل — غير مؤكد فتُرك null. فيسبوك mod.mil.iq مرشّح من البحث فقط — غير مؤكد.",
+   "confidence": "high",
+   "evidence": [
+    "https://t.me/s/modiraq"
+   ]
+  },
+  {
+   "id": "security-media-cell",
+   "kind": "institution",
+   "name": "خلية الإعلام الأمني",
+   "name_en": "Security Media Cell",
+   "role": "الجهة الإعلامية الأمنية التابعة لمكتب رئيس مجلس الوزراء/القائد العام للقوات المسلحة، وتنشر بيانات قيادة العمليات المشتركة",
+   "terms_ar": [
+    "خلية الإعلام الأمني",
+    "خلية الاعلام الامني",
+    "خلية الإعلام الإمني",
+    "الإعلام الأمني",
+    "قيادة العمليات المشتركة",
+    "العمليات المشتركة",
+    "الناطق باسم القائد العام للقوات المسلحة"
+   ],
+   "terms_en": [
+    "Security Media Cell",
+    "SMC Iraq",
+    "Joint Operations Command"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/SecMedCell",
+    "facebook": null,
+    "x": null,
+    "website": null,
+    "youtube": null
+   },
+   "verification": "Telegram @SecMedCell: الوصف «القناة الرسمية لخلية الإعلام الأمني التابعة لمكتب رئيس مجلس الوزراء العراقي»، ~7.1K، آخر تاريخ ظاهر 3 آب 2026؛ لا علامة توثيق ظاهرة. لا موقع رسمي مؤكد؛ لم يُعثر على قناة منفصلة مؤكدة لقيادة العمليات المشتركة.",
+   "confidence": "medium",
+   "evidence": [
+    "https://t.me/s/SecMedCell"
+   ]
+  },
+  {
+   "id": "popular-mobilization-commission",
+   "kind": "institution",
+   "name": "هيئة الحشد الشعبي",
+   "name_en": "Popular Mobilization Commission (PMC)",
+   "role": "هيئة حكومية رسمية مرتبطة بالقائد العام للقوات المسلحة (الجهة الرسمية فقط، لا الفصائل)",
+   "terms_ar": [
+    "هيئة الحشد الشعبي",
+    "الحشد الشعبي",
+    "هيئة الحشد",
+    "مديرية إعلام الحشد الشعبي",
+    "رئيس هيئة الحشد الشعبي"
+   ],
+   "terms_en": [
+    "PMF",
+    "Hashd al-Shaabi",
+    "Popular Mobilization Forces",
+    "al-Hashd"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/alhashed_alshaebe",
+    "facebook": null,
+    "x": null,
+    "website": "https://al-hashed.gov.iq",
+    "youtube": null
+   },
+   "verification": "Telegram @alhashed_alshaebe: الوصف «القناة الرسمية لهيئة الحشد الشعبي عبر منصة تلجرام» ويربط al-hashed.gov.iq، ~39.3K، آخر تاريخ ظاهر آب 2026؛ لا علامة توثيق. الموقع al-hashed.gov.iq مذكور أيضاً في Wikipedia (لا pmf.gov.iq — لم يُعثر على دليل للنطاق pmf.gov.iq). قناة مديرية الإعلام @teamsmediawar_1 (~61K) تربط الموقع نفسه — بديل ثانوي. تنبيه: تُتابع البيانات الرسمية للهيئة فقط؛ الفصائل المصنفة أمريكياً مستبعدة.",
+   "confidence": "medium",
+   "evidence": [
+    "https://t.me/s/alhashed_alshaebe",
+    "https://en.wikipedia.org/wiki/Popular_Mobilization_Forces",
+    "https://t.me/s/teamsmediawar_1"
+   ]
+  },
+  {
+   "id": "central-bank-of-iraq",
+   "kind": "institution",
+   "name": "البنك المركزي العراقي",
+   "name_en": "Central Bank of Iraq",
+   "role": "السلطة النقدية في العراق؛ المحافظ نزار ناصر حسين (عُيّن حزيران 2026)",
+   "terms_ar": [
+    "البنك المركزي العراقي",
+    "محافظ البنك المركزي",
+    "نزار ناصر حسين"
+   ],
+   "terms_en": [
+    "Central Bank of Iraq",
+    "CBI governor",
+    "Nizar Nasser Hussein"
+   ],
+   "accounts": {
+    "telegram": null,
+    "facebook": null,
+    "x": null,
+    "website": "https://cbi.iq",
+    "youtube": null
+   },
+   "verification": "الموقع cbi.iq فُتح مباشرة (2026-10-30) ويعرض سيرة المحافظ نزار ناصر حسين؛ التعيين في حزيران 2026 بحسب The National وShafaq. الموقع لا يربط أي حساب تواصل رسمي (أزرار مشاركة فقط) — فيسبوك/X/تلغرام غير مؤكدة.",
+   "confidence": "high",
+   "evidence": [
+    "https://cbi.iq/page/50",
+    "https://www.thenationalnews.com/news/mena/2026/06/22/iraq-appoints-new-central-bank-governor-amid-financial-strain-and-push-for-reform/"
+   ]
+  },
+  {
+   "id": "ministry-of-electricity",
+   "kind": "institution",
+   "name": "وزارة الكهرباء العراقية",
+   "name_en": "Ministry of Electricity of Iraq",
+   "role": "وزارة اتحادية مسؤولة عن إنتاج ونقل وتوزيع الكهرباء",
+   "terms_ar": [
+    "وزارة الكهرباء العراقية",
+    "وزارة الكهرباء",
+    "وزير الكهرباء",
+    "الناطق باسم وزارة الكهرباء"
+   ],
+   "terms_en": [
+    "Ministry of Electricity",
+    "Iraq electricity ministry"
+   ],
+   "accounts": {
+    "telegram": null,
+    "facebook": null,
+    "x": null,
+    "website": "https://moelc.gov.iq",
+    "youtube": null
+   },
+   "verification": "الموقع moelc.gov.iq مُدرج في دليل investpromo.gov.iq (لم يُفتح مباشرة). صفحتا فيسبوك («وزارة الكهرباء العراقية» و«الناطق الرسمي لوزارة الكهرباء») في سجل المشروع من البحث فقط — غير مؤكدتين. لا تلغرام مؤكد.",
+   "confidence": "medium",
+   "evidence": [
+    "https://investpromo.gov.iq/?p=198",
+    "https://en.wikipedia.org/wiki/Ministry_of_Electricity_(Iraq)"
+   ]
+  },
+  {
+   "id": "ministry-of-oil",
+   "kind": "institution",
+   "name": "وزارة النفط العراقية",
+   "name_en": "Ministry of Oil of Iraq",
+   "role": "وزارة اتحادية مسؤولة عن قطاع النفط والغاز (يرتبط بها سومو وشركات النفط الوطنية)",
+   "terms_ar": [
+    "وزارة النفط العراقية",
+    "وزارة النفط",
+    "وزير النفط",
+    "سومو",
+    "شركة تسويق النفط"
+   ],
+   "terms_en": [
+    "Ministry of Oil",
+    "MoO Iraq",
+    "Iraq oil ministry",
+    "SOMO"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/ministry_of_oil",
+    "facebook": null,
+    "x": null,
+    "website": "https://oil.gov.iq",
+    "youtube": null
+   },
+   "verification": "Telegram @ministry_of_oil: الاسم «وزارة النفط العراقية»، الوصف يذكر «المكتب الإعلامي» و«المواقع الرسمية المعتمدة» ويربط bio.link/ministryofoil، ~19.1K؛ لا علامة توثيق، وآخر منشور مؤرخ ظاهر 26 تشرين الثاني 2025 (نشاط حديث غير مؤكد). الموقع oil.gov.iq من دليل investpromo.gov.iq. فيسبوك غير مؤكد.",
+   "confidence": "medium",
+   "evidence": [
+    "https://t.me/s/ministry_of_oil",
+    "https://investpromo.gov.iq/?p=198"
+   ]
+  },
+  {
+   "id": "krg-council-of-ministers",
+   "kind": "institution",
+   "name": "حكومة إقليم كوردستان",
+   "name_en": "Kurdistan Regional Government (KRG)",
+   "role": "السلطة التنفيذية في إقليم كوردستان؛ رئيس الحكومة مسرور بارزاني (حالة التشكيلة العاشرة/تصريف الأعمال غير مؤكدة بتاريخ 2026-10-30)؛ رئيس الإقليم نيجيرفان بارزاني",
+   "terms_ar": [
+    "حكومة إقليم كوردستان",
+    "حكومة اقليم كردستان",
+    "حكومة الإقليم",
+    "رئيس حكومة الإقليم",
+    "مسرور بارزاني",
+    "مسرور البارزاني",
+    "نيجيرفان بارزاني",
+    "رئاسة إقليم كوردستان",
+    "حکومەتی هەرێمی کوردستان",
+    "مەسرور بارزانی"
+   ],
+   "terms_en": [
+    "KRG",
+    "Kurdistan Regional Government",
+    "Masrour Barzani",
+    "Nechirvan Barzani"
+   ],
+   "accounts": {
+    "telegram": null,
+    "facebook": "https://www.facebook.com/Kurdistan/",
+    "x": "https://x.com/Kurdistan",
+    "website": "https://gov.krd",
+    "youtube": "https://www.youtube.com/@KurdistanRegionalGovernment"
+   },
+   "verification": "حسابات فيسبوك/X/يوتيوب مسجّلة في سجل المشروع كمرتبطة من gov.krd (فحص جلسة سابقة؛ لم يُعَد اليوم لأن جلب gov.krd لم يُؤذن). رئاسة مسرور بارزاني للحكومة مؤكدة (رسالة رأس السنة 2026 على gov.krd)، لكن لم أؤكد إن كانت التشكيلة العاشرة قد نالت الثقة. موقع رئاسة الإقليم presidency.gov.krd موجود لكنه لم يُرجع روابط تواصل. لا تلغرام مؤكد؛ القناة t.me/masrourbarzani مزيفة/غير ذات صلة (8 مشتركين) فاستُبعدت.",
+   "confidence": "medium",
+   "evidence": [
+    "https://gov.krd/english/government/the-prime-minister/activities/posts/2025/december/prime-minister-masrour-barzani-s-new-year-message-for-2026/",
+    "https://presidency.gov.krd/en/about"
+   ]
+  },
+  {
+   "id": "ihec",
+   "kind": "institution",
+   "name": "المفوضية العليا المستقلة للانتخابات",
+   "name_en": "Independent High Electoral Commission (IHEC)",
+   "role": "الهيئة المستقلة المسؤولة عن إدارة الانتخابات في العراق",
+   "terms_ar": [
+    "المفوضية العليا المستقلة للانتخابات",
+    "مفوضية الانتخابات",
+    "المفوضية العليا للانتخابات",
+    "المفوضية المستقلة للانتخابات"
+   ],
+   "terms_en": [
+    "IHEC",
+    "Iraq electoral commission",
+    "Independent High Electoral Commission"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/IHECOfficail",
+    "facebook": "https://www.facebook.com/IHECOfficial",
+    "x": null,
+    "website": "https://ihec.iq",
+    "youtube": null
+   },
+   "verification": "Telegram @IHECOfficail (التهجئة الأصلية للمعرّف هكذا): علامة توثيق ظاهرة، الوصف «الحساب الرسمي للمفوضية»، ~133K، آخر منشور 28 أيلول 2026 (فُحص 2026-10-30). فيسبوك مسجّل في سجل المشروع كمرتبط من ihec.iq/contact (فحص سابق؛ لم يُعَد اليوم). الموقع ihec.iq من دليل investpromo.gov.iq.",
+   "confidence": "high",
+   "evidence": [
+    "https://t.me/s/IHECOfficail",
+    "https://investpromo.gov.iq/?p=198"
+   ]
+  },
+  {
+   "id": "muqtada-al-sadr",
+   "kind": "person",
+   "name": "مقتدى الصدر",
+   "name_en": "Muqtada al-Sadr",
+   "role": "زعيم التيار الوطني الشيعي (التيار الصدري سابقاً)",
+   "terms_ar": [
+    "مقتدى الصدر",
+    "السيد مقتدى الصدر",
+    "التيار الصدري",
+    "التيار الوطني الشيعي",
+    "المكتب الخاص للسيد الصدر",
+    "صالح محمد العراقي",
+    "وزير القائد",
+    "السيد الصدر",
+    "زعيم التيار الصدري"
+   ],
+   "terms_en": [
+    "Muqtada Sadr",
+    "Moqtada al-Sadr",
+    "Moqtada Sadr",
+    "Sadrist Movement",
+    "Shiite National Movement"
+   ],
+   "accounts": {
+    "telegram": null,
+    "facebook": null,
+    "x": null,
+    "website": null,
+    "youtube": null
+   },
+   "verification": "لم أجد حساباً رسمياً موثقاً بمصدر موثوق. X يُستخدم بحسب التقارير لكن المعرّف لم يُؤكد. فيسبوك المرشّح facebook.com/jawabna2020 (بحث فقط) غير مؤكد. القناة t.me/Muqtada14alSadr أرشيف صور غير رسمي فاستُبعدت. يُنصح برصده عبر نقل وكالات موثوقة لبياناته.",
+   "confidence": "low",
+   "evidence": [
+    "https://en.964media.com/39635/",
+    "https://shafaq.com/en/Iraq/Al-Sadr-warns-against-regional-sectarian-incitement"
+   ]
+  },
+  {
+   "id": "nouri-al-maliki",
+   "kind": "person",
+   "name": "نوري المالكي",
+   "name_en": "Nouri al-Maliki",
+   "role": "رئيس ائتلاف دولة القانون والأمين العام لحزب الدعوة الإسلامية؛ رئيس وزراء سابق",
+   "terms_ar": [
+    "نوري المالكي",
+    "نوري كامل المالكي",
+    "أبو إسراء",
+    "ابو اسراء",
+    "ائتلاف دولة القانون",
+    "رئيس ائتلاف دولة القانون"
+   ],
+   "terms_en": [
+    "Nouri Maliki",
+    "Nuri al-Maliki",
+    "State of Law"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/nourialmalki",
+    "facebook": "https://www.facebook.com/Nouri.kamel.almaliki",
+    "x": "https://twitter.com/nourialmalikiiq",
+    "website": null,
+    "youtube": null
+   },
+   "verification": "Telegram @nourialmalki: الوصف «القناة الرسمية لنوري كامل المالكي رئيس ائتلاف دولة القانون»، ~8.87K، منشور مؤرخ 12 تشرين الأول 2026؛ لا علامة توثيق. روابط فيسبوك وX (nourialmalikiiq) وإنستغرام منقولة حرفياً من وصف هذه القناة — ربط ذاتي متبادل لا توثيق منصّة.",
+   "confidence": "medium",
+   "evidence": [
+    "https://t.me/s/nourialmalki"
+   ]
+  },
+  {
+   "id": "haider-al-abadi",
+   "kind": "person",
+   "name": "حيدر العبادي",
+   "name_en": "Haider al-Abadi",
+   "role": "رئيس ائتلاف النصر؛ رئيس وزراء سابق (2014–2018)",
+   "terms_ar": [
+    "حيدر العبادي",
+    "حيدر جواد العبادي",
+    "د. حيدر العبادي",
+    "ائتلاف النصر",
+    "المكتب الإعلامي للعبادي"
+   ],
+   "terms_en": [
+    "Haider Abadi",
+    "Haidar al-Abadi",
+    "Nasr Coalition",
+    "Victory Coalition"
+   ],
+   "accounts": {
+    "telegram": null,
+    "facebook": null,
+    "x": null,
+    "website": null,
+    "youtube": null
+   },
+   "verification": "لم يُعثر على حساب مؤكد بمصدر موثوق. فيسبوك المرشحان facebook.com/HaiderJAlabadi وfacebook.com/Iraq4PMMedia من البحث فقط — غير مؤكدين. القناة t.me/HaiderAlAbadi موجودة لكنها 7 مشتركين بلا وصف — غير رسمية/غير مؤكدة فاستُبعدت.",
+   "confidence": "low",
+   "evidence": [
+    "https://en.wikipedia.org/wiki/Haider_al-Abadi",
+    "https://t.me/s/HaiderAlAbadi"
+   ]
+  },
+  {
+   "id": "ammar-al-hakim",
+   "kind": "person",
+   "name": "عمار الحكيم",
+   "name_en": "Ammar al-Hakim",
+   "role": "رئيس تيار الحكمة الوطني ورئيس تحالف قوى الدولة الوطنية",
+   "terms_ar": [
+    "عمار الحكيم",
+    "السيد عمار الحكيم",
+    "عمار عبد العزيز الحكيم",
+    "تيار الحكمة",
+    "تيار الحكمة الوطني",
+    "قوى الدولة الوطنية",
+    "مكتب السيد الحكيم"
+   ],
+   "terms_en": [
+    "Ammar Hakim",
+    "Hikma Movement",
+    "National Wisdom Movement"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/ammar_alhakeem",
+    "facebook": "https://www.facebook.com/am.alhakeem",
+    "x": null,
+    "website": "https://www.alhikmae.net",
+    "youtube": null
+   },
+   "verification": "Telegram @ammar_alhakeem: علامة توثيق تلغرام ظاهرة، الوصف «رئيس تحالف قوى الدولة الوطنية»، ~213K، ويربط facebook.com/am.alhakeem وinstagram.com/Ammar_alhakeem (فُحص 2026-10-30). الموقع alhikmae.net مذكور في وصف قناة تيار الحكمة @alhikmamovement (لم يُفتح). X غير مؤكد.",
+   "confidence": "high",
+   "evidence": [
+    "https://t.me/s/ammar_alhakeem",
+    "https://t.me/s/alhikmamovement"
+   ]
+  },
+  {
+   "id": "mohammed-al-halbousi",
+   "kind": "person",
+   "name": "محمد الحلبوسي",
+   "name_en": "Mohammed al-Halbousi",
+   "role": "رئيس حزب تقدم؛ رئيس مجلس النواب الأسبق",
+   "terms_ar": [
+    "محمد الحلبوسي",
+    "الحلبوسي",
+    "محمد ريكان الحلبوسي",
+    "أبو ريكان",
+    "حزب تقدم"
+   ],
+   "terms_en": [
+    "Mohamed al-Halbousi",
+    "Muhammad al-Halbusi",
+    "Halbousi"
+   ],
+   "accounts": {
+    "telegram": "https://t.me/alhalbossii",
+    "facebook": null,
+    "x": null,
+    "website": null,
+    "youtube": null
+   },
+   "verification": "Telegram @alhalbossii: علامة توثيق ظاهرة، الوصف «القناة الرسمية للمكتب الإعلامي لرئيس حزب تقدم»، ~6.35K، بيان مؤرخ 15 تشرين الأول 2026. فيسبوك Mohammad.Alhalboosi وصفحات تقدم من البحث فقط — غير مؤكدة. لا يُخلط مع هيبت الحلبوسي (رئيس البرلمان الحالي).",
+   "confidence": "high",
+   "evidence": [
+    "https://t.me/s/alhalbossii"
+   ]
+  },
+  {
+   "id": "masoud-barzani",
+   "kind": "person",
+   "name": "مسعود بارزاني",
+   "name_en": "Masoud Barzani",
+   "role": "رئيس الحزب الديمقراطي الكوردستاني؛ رئيس إقليم كوردستان الأسبق",
+   "terms_ar": [
+    "مسعود بارزاني",
+    "مسعود البارزاني",
+    "الرئيس بارزاني",
+    "الزعيم بارزاني",
+    "مەسعود بارزانی"
+   ],
+   "terms_en": [
+    "KDP",
+    "Masoud Barzani",
+    "Massoud Barzani",
+    "President Barzani"
+   ],
+   "accounts": {
+    "telegram": null,
+    "facebook": null,
+    "x": "https://x.com/masoud_barzani",
+    "website": "https://www.masoudbarzani.krd",
+    "youtube": null
+   },
+   "verification": "الموقع masoudbarzani.krd ينشر بياناته وخطاباته (بيان 16 آذار 2026) لكنه لا يحوي روابط تواصل. معرّف X ‏masoud_barzani ظاهر في نسخة أرشيفية 2018 فقط — النشاط الحالي غير مؤكد. فيسبوك BarzaniHQ وصفحة KDP.info في سجل المشروع (KDP.info مرتبط من kdp.info في فحص سابق) — للحزب لا للشخص.",
+   "confidence": "medium",
+   "evidence": [
+    "https://masoudbarzani.krd/en/speeches/a-statement-from-president-masoud-barzani/",
+    "https://webarchive.archive.unhcr.org/20180622201648mp_/https://twitter.com/masoud_barzani"
+   ]
+  },
+  {
+   "id": "bafel-talabani",
+   "kind": "person",
+   "name": "بافل طالباني",
+   "name_en": "Bafel Talabani",
+   "role": "رئيس الاتحاد الوطني الكوردستاني",
+   "terms_ar": [
+    "بافل طالباني",
+    "بافل",
+    "بافل جلال طالباني",
+    "بافل الطالباني",
+    "الرئيس بافل",
+    "الاتحاد الوطني الكردستاني",
+    "بافڵ تاڵەبانی"
+   ],
+   "terms_en": [
+    "PUK",
+    "Bafel Jalal Talabani",
+    "Bafil Talabani",
+    "Bafel Talabany"
+   ],
+   "accounts": {
+    "telegram": null,
+    "facebook": null,
+    "x": null,
+    "website": "https://www.pukmedia.com",
+    "youtube": null
+   },
+   "verification": "PUKmedia (الإعلام الرسمي للحزب) يغطي تصريحاته باستمرار (مقالات 2026). لا حساب شخصي مؤكد: فيسبوك bafeljalaltalabani من البحث فقط، والمقالات لا تذكر المعرّفات. قناة @PUKmediaK في سجل المشروع لم تُرجع بيانات اليوم — للحزب لا للشخص.",
+   "confidence": "medium",
+   "evidence": [
+    "https://www.pukmedia.com/EN/Details/82162",
+    "https://pukmedia.com/EN/Details/80060"
+   ]
+  },
+  {
+   "id": "t-electricity",
+   "kind": "topic",
+   "name": "الكهرباء",
+   "terms_ar": [
+    "الكهرباء",
+    "وزارة الكهرباء",
+    "انقطاع التيار",
+    "ساعات التجهيز",
+    "المولدات الأهلية",
+    "الطاقة الكهربائية",
+    "محطة توليد",
+    "الغاز الإيراني",
+    "خطوط النقل"
+   ],
+   "terms_en": [
+    "electricity",
+    "power outage",
+    "power grid"
+   ],
+   "exclude": [
+    "كهرباء السيارة"
+   ]
+  },
+  {
+   "id": "t-budget",
+   "kind": "topic",
+   "name": "الموازنة والرواتب",
+   "terms_ar": [
+    "الموازنة",
+    "موازنة",
+    "جداول الموازنة",
+    "الرواتب",
+    "رواتب الموظفين",
+    "تمويل الرواتب",
+    "العجز المالي",
+    "وزارة المالية",
+    "الاقتراض"
+   ],
+   "terms_en": [
+    "budget",
+    "salaries",
+    "fiscal"
+   ]
+  },
+  {
+   "id": "t-pmf",
+   "kind": "topic",
+   "name": "الحشد الشعبي",
+   "terms_ar": [
+    "الحشد الشعبي",
+    "هيئة الحشد",
+    "قوات الحشد",
+    "قانون الحشد",
+    "ألوية الحشد",
+    "الحشد العشائري",
+    "حشد العتبات",
+    "رئيس هيئة الحشد"
+   ],
+   "terms_en": [
+    "Popular Mobilization",
+    "Popular Mobilisation",
+    "PMF",
+    "Hashd"
+   ]
+  },
+  {
+   "id": "t-dollar",
+   "kind": "topic",
+   "name": "الدولار وسعر الصرف",
+   "terms_ar": [
+    "سعر الصرف",
+    "الدولار",
+    "أسعار الدولار",
+    "المنصة الإلكترونية",
+    "مزاد العملة",
+    "الدينار العراقي"
+   ],
+   "terms_en": [
+    "exchange rate",
+    "dinar",
+    "dollar auction"
+   ]
+  },
+  {
+   "id": "t-water",
+   "kind": "topic",
+   "name": "المياه والجفاف",
+   "terms_ar": [
+    "الجفاف",
+    "شح المياه",
+    "الخزين المائي",
+    "وزارة الموارد المائية",
+    "الإطلاقات المائية",
+    "دجلة والفرات",
+    "التصحر"
+   ],
+   "terms_en": [
+    "drought",
+    "water shortage",
+    "water scarcity"
+   ]
+  },
+  {
+   "id": "t-oil",
+   "kind": "topic",
+   "name": "النفط والصادرات",
+   "terms_ar": [
+    "صادرات النفط",
+    "النفط العراقي",
+    "سومو",
+    "نفط الإقليم",
+    "خط جيهان",
+    "برميل",
+    "أوبك"
+   ],
+   "terms_en": [
+    "oil exports",
+    "SOMO",
+    "OPEC",
+    "crude"
+   ]
+  }
+ ]
+}

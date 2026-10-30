@@ -142,6 +142,74 @@ def digest(news, now):
     return "\n".join(out)[:4000]
 
 
+def watch_alerts(token, sent, news, now):
+    """تنبيهات قوائم المتابعة بالخاص للمحررين (لا للقناة العامة): حدث واحد = تنبيه واحد، وتحديث واحد إذا صار عاجلاً."""
+    chats = list((sent.get("_editor_chats") or {}).values())
+    if not chats:
+        return {"chats": 0}
+    try:
+        names = {f["id"]: f["name"] for f in json.loads((ROOT / "config" / "follow.json").read_text(encoding="utf-8"))["follow"]}
+    except Exception:  # noqa: BLE001
+        names = {}
+    wa = sent.setdefault("_walert", {})
+    n_sent = 0
+    for n in sorted(news, key=lambda n: n.get("collected_utc") or ""):
+        hits = n.get("watch") or []
+        if not hits:
+            continue
+        seen = n.get("collected_utc")
+        if not seen or datetime.fromisoformat(seen.replace("Z", "+00:00")) < now - timedelta(minutes=15):
+            continue
+        direct = any(h.get("prov") in ("رصد مباشر", "إدخال يدوي") for h in hits)
+        worthy_w = direct or is_breaking(n) or n.get("level") in ("عاجل", "مهم") or n.get("vstatus") == "متنازع عليه"
+        if not worthy_w:
+            continue
+        prev = wa.get(n["id"])
+        upd = prev is not None
+        if prev and (prev.get("b") or not is_breaking(n)):
+            continue
+        tags = " · ".join(dict.fromkeys(names.get(h["id"], h["id"]) for h in hits))
+        prov = next((h["prov"] for h in hits if h.get("prov")), "رصد موضوعي")
+        _, url = src(n)
+        txt = (f"{'🔁 تحديث | ' if upd else ''}👁 <b>{H.escape(tags)}</b>\n{'🔴 ' if is_breaking(n) else ''}{H.escape(n['title'][:500])}\n\n"
+               f"{H.escape(prov)} · {H.escape(n.get('vstatus') or '')} · {H.escape(src(n)[0])} · {bg(n.get('latest_utc'))} بغداد"
+               + (f"\n🔗 <a href=\"{H.escape(url, quote=True)}\">المصدر</a>" if url else "") + f"\n🆔 {n['id']}")
+        for c in chats:
+            try:
+                api(token, "sendMessage", chat_id=c, text=txt, parse_mode="HTML", disable_web_page_preview="true")
+            except Exception:  # noqa: BLE001
+                pass
+        wa[n["id"]] = {"t": now.timestamp(), "b": is_breaking(n)}
+        n_sent += 1
+        if n_sent >= 12:
+            break
+    # ملخص المتابعة اليومي 8 صباحاً بغداد
+    bgd = now + timedelta(hours=3)
+    today = bgd.strftime("%Y-%m-%d")
+    if bgd.hour == 8 and sent.get("_wdigest") != today:
+        day = [n for n in news if n.get("watch") and n.get("latest_utc") and datetime.fromisoformat(n["latest_utc"].replace("Z", "+00:00")) >= now - timedelta(hours=24)]
+        by = {}
+        for n in day:
+            for h in n["watch"]:
+                by.setdefault(h["id"], []).append(n)
+        lines = [f"👁 ملخص قوائم المتابعة — {bgd.strftime('%Y/%m/%d')}", ""]
+        for wid, lst in sorted(by.items(), key=lambda kv: -len(kv[1]))[:15]:
+            lst = sorted(lst, key=lambda n: (-(n.get("n_sources") or 1)))[:3]
+            lines.append(f"<b>{H.escape(names.get(wid, wid))}</b> — {len(by[wid])} حدث")
+            for n in lst:
+                _, u = src(n)
+                lines.append(f"• <a href=\"{H.escape(u, quote=True)}\">{H.escape(n['title'][:120])}</a> ({H.escape(n.get('vstatus') or '')})" if u else f"• {H.escape(n['title'][:120])}")
+            lines.append("")
+        lines.append(f"التفاصيل: {APP_URL}#watch")
+        for c in chats:
+            try:
+                api(token, "sendMessage", chat_id=c, text="\n".join(lines)[:4000], parse_mode="HTML", disable_web_page_preview="true")
+            except Exception:  # noqa: BLE001
+                pass
+        sent["_wdigest"] = today
+    return {"chats": len(chats), "sent": n_sent}
+
+
 def main():
     now = datetime.now(timezone.utc)
     status = {"enabled": False, "updated_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "sent_now": 0, "candidates": 0, "chat_title": None, "error": None}
@@ -205,8 +273,11 @@ def main():
             api(token, "sendMessage", chat_id=chat_id, text=digest(news, now), disable_web_page_preview="true")
             sent["_digest"] = today
             status["digest"] = today
+        status["watch_alerts"] = watch_alerts(token, sent, news, now)
         cut = now.timestamp() - 3 * 86400
         sent = {k: v for k, v in sent.items() if k.startswith("_") or v.get("t", 0) >= cut}
+        wa = sent.get("_walert", {})
+        sent["_walert"] = {k: v for k, v in wa.items() if v.get("t", 0) >= cut}
         SENT.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
     except Exception as e:  # noqa: BLE001
         msg = str(e)

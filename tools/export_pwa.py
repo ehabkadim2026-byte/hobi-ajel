@@ -10,6 +10,7 @@ from marsad import core  # noqa: E402
 from marsad.report import cluster_dossier  # noqa: E402
 from marsad.textnorm import iso, now_utc  # noqa: E402
 from tools.export_app import status_of  # noqa: E402
+from tools import verify as V, watch as W  # noqa: E402
 
 
 import re  # noqa: E402
@@ -90,6 +91,7 @@ PMF_STRONG = [norm_ar(w) for w in ["الحشد الشعبي", "هيئة الحش
 PMF_WEAK = norm_ar("الحشد")
 PMF_CTX = [norm_ar(w) for w in ["اللواء", "قوات", "قطعات", "عمليات", "الفصائل", "قانون", "هيئة", "مقاتلي", "الأمنية", "قيادة", "تشكيلات"]]
 PMF_EN = re.compile(r"\b(Popular Mobili[sz]ation (Forces|Units|Committee|Authority)|PMF|PMU|Hashd|al-Hashd|Hashed al-Shaabi|Falih al-Fayyadh)\b", re.I)
+DECISION_RX = re.compile(r"(قرر|قرار|أمر ديواني|امر ديواني|يوجه|وجّه|وجه ب|أصدر|اصدر|يقرر|تقرر|أقر|اقر|يعمم|عمّم)")
 STATEMENT_RX = re.compile(r"(قال|صرّح|صرح|أكد|اكد|أعلن|اعلن|أوضح|اوضح|said|says|told|announced|stated)")
 CLAIM_RX = re.compile(r"(اتهم|يتهم|اتهامات|زعم|يزعم|مزاعم|ادعى|يدعي|نسب|مصادر لم تكشف|مصدر مطلع|accus|alleg|claim|reportedly)", re.I)
 
@@ -140,6 +142,11 @@ def main(hours=24):
     con = core.connect()
     now = now_utc()
     out = []
+    matcher = W.Matcher()
+    try:
+        verdicts = json.loads((ROOT / "data" / "tg_sent.json").read_text(encoding="utf-8")).get("_verdicts", {})
+    except Exception:  # noqa: BLE001
+        verdicts = {}
     try:
         tr = json.loads((ROOT / "data" / "translations.json").read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001
@@ -196,7 +203,7 @@ def main(hours=24):
         agency = origin == "أجنبي" and (any(r.startswith("أجنبي — وكالة") for r in regs) or any(AGENCY_RX.search(e["source"] or "") for e in ev))
         views = max([views_num(r[0]) for r in con.execute("SELECT views FROM items WHERE cluster_id=?", (c["id"],))] or [0])
         first_ev = next((e for e in ev if e["time"]), ev[0] if ev else None)
-        irows = con.execute("SELECT i.source_name, i.url, i.published_utc, i.collected_utc, i.updated_utc, i.kind, i.title, s.official, s.category "
+        irows = con.execute("SELECT i.source_name, i.url, i.published_utc, i.collected_utc, i.updated_utc, i.kind, i.title, i.text, i.platform, i.source_id, s.official, s.category "
                             "FROM items i LEFT JOIN sources s ON s.id=i.source_id WHERE i.cluster_id=? ORDER BY COALESCE(i.published_utc, i.collected_utc)",
                             (c["id"],)).fetchall()
         edited = con.execute("SELECT COUNT(*) FROM item_versions v JOIN items i ON i.id=v.item_id WHERE i.cluster_id=?", (c["id"],)).fetchone()[0]
@@ -225,6 +232,12 @@ def main(hours=24):
                     delays.append((datetime.fromisoformat(r["collected_utc"].replace("Z", "+00:00")) - datetime.fromisoformat(r["published_utc"].replace("Z", "+00:00"))).total_seconds() / 60)
                 except ValueError:
                     pass
+        pmf_class = None
+        if pmf:
+            pmf_class = ("قرار" if DECISION_RX.search((title_ar or title)[:160]) else "بيان رسمي" if pmf_kind == "بيان رسمي"
+                         else "تصريح" if ctype == "تصريح" else "تحليل" if ctype == "تحليل/رأي" else "خبر")
+        watch_hits = matcher.match(ntext + " " + norm_ar(title_ar or ""), alltext + " " + title, irows) if (about_iraq or pmf) else []
+        va = V.assess([dict(r) for r in irows], verdicts.get(c["id"]))
         recent_n = sum(1 for r in irows if r["collected_utc"] and r["collected_utc"] >= iso(now - timedelta(minutes=60)))
         out.append({"id": c["id"], "title": title_ar or title, "title_orig": title if title_ar else None, "status": st, "basis": basis, "level": level, "scope": scope, "origin": origin, "about_iraq": about_iraq, "kind": kind, "agency": agency,
                     "n_items": c["n_items"], "views": views or None,
@@ -237,7 +250,11 @@ def main(hours=24):
                     "edited": bool(edited), "detect_delay_min": round(delays[0], 1) if delays and delays[0] >= -5 else None,
                     "escalating": recent_n >= 3 and (c["n_items"] or 0) >= 4,
                     "trending_unconfirmed": (d["n_sources"] or 0) >= 3 and st != "مؤكد",
-                    "timeline": [{"source": r["source_name"], "url": r["url"], "pub": r["published_utc"], "seen": r["collected_utc"]} for r in irows][:12]})
+                    "pmf_class": pmf_class, "watch": watch_hits, "vstatus": va["vstatus"], "vwhy": va["vwhy"], "cited": va["cited"],
+                    "origin_rec": va["origin"], "independent": va["independent"], "manual": any(r["platform"] == "manual" for r in irows),
+                    "timeline": [{"source": r["source_name"], "url": r["url"], "pub": r["published_utc"], "seen": r["collected_utc"],
+                                  "cited": V.cited_source((r["title"] or "") + " " + (r["text"] or "")), "manual": r["platform"] == "manual"} for r in irows][:12]})
+    V.cross_disputes(out)
     out.sort(key=lambda x: x["latest_utc"] or "", reverse=True)
     pwa = ROOT / "pwa"
     (pwa / "news.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
@@ -264,6 +281,25 @@ def main(hours=24):
                       "last_success": h["last_success"], "last_attempt": attempt.get(h["id"]), "error": h["last_error"],
                       "failures": h["failures"]})
     (pwa / "health.json").write_text(json.dumps(hrows, ensure_ascii=False), encoding="utf-8")
+    # قوائم المتابعة: ملف لكل شخصية/جهة/قضية + كيف نرصد حساباتها فعلاً
+    from urllib.parse import unquote
+    hby = {h["url"].lower().rstrip("/"): h for h in hrows}
+    gn = [unquote(h["url"]).lower() for h in hrows if "news.google.com" in h["url"]]
+    wl = []
+    for f in matcher.follow:
+        mine = [o for o in out if any(w["id"] == f["id"] for w in o.get("watch") or [])]
+        provs = {}
+        for o in mine:
+            for w in o["watch"]:
+                if w["id"] == f["id"] and w["prov"]:
+                    provs[w["prov"]] = provs.get(w["prov"], 0) + 1
+        wl.append({"id": f["id"], "kind": f.get("kind"), "name": f["name"], "role": f.get("role"), "n": len(mine), "prov": provs,
+                   "urgent": sum(1 for o in mine if o["level"] == "عاجل" or o.get("source_flag")),
+                   "latest": max((o["latest_utc"] for o in mine if o["latest_utc"]), default=None),
+                   "accounts": W.accounts_status(f, hby, gn) if f.get("kind") != "topic" else [],
+                   "verification": f.get("verification"), "confidence": f.get("confidence"),
+                   "terms": (f.get("terms_ar") or [])[:8]})
+    (pwa / "watch.json").write_text(json.dumps({"updated_utc": iso(now), "lists": wl}, ensure_ascii=False), encoding="utf-8")
     # أرشيف «تتبّع أصل الخبر»: كل مواد آخر 72 ساعة (لا الأخبار المجمّعة فقط)، مضغوطة؛ يُحمَّل عند فتح أداة التتبع فقط
     arch = []
     for r in con.execute("SELECT i.title, i.text, i.source_name, i.url, i.published_utc, i.collected_utc, i.kind, i.time_precision, s.official, s.region "
