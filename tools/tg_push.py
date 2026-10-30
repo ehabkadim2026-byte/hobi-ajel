@@ -35,8 +35,10 @@ def api(token, method, files=None, **params):
         body = b""
         for k, v in params.items():
             body += f"--{b}\r\nContent-Disposition: form-data; name=\"{k}\"\r\n\r\n{v}\r\n".encode()
-        for k, (fn, data) in files.items():
-            body += f"--{b}\r\nContent-Disposition: form-data; name=\"{k}\"; filename=\"{fn}\"\r\nContent-Type: image/jpeg\r\n\r\n".encode() + data + b"\r\n"
+        for k, spec in files.items():
+            fn, data = spec[0], spec[1]
+            ctype = spec[2] if len(spec) > 2 else "image/jpeg"
+            body += f"--{b}\r\nContent-Disposition: form-data; name=\"{k}\"; filename=\"{fn}\"\r\nContent-Type: {ctype}\r\n\r\n".encode() + data + b"\r\n"
         body += f"--{b}--\r\n".encode()
         req = urllib.request.Request(f"https://api.telegram.org/bot{token}/{method}", data=body,
                                      headers={"Content-Type": f"multipart/form-data; boundary={b}"})

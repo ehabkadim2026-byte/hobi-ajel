@@ -93,6 +93,7 @@ select,.inp{width:100%;border:1px solid var(--line);background:var(--surface);bo
 .wrow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;width:100%;text-align:start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;color:var(--ink)}
 .wrow b{font-size:.95rem} .wrow small{color:var(--muted);font-size:.74rem;grid-column:1/-1;line-height:1.5} .wrow .n{font-weight:800;font-size:1.05rem}
 .acc{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:.8rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px} .acc dt{font-weight:700} .acc dd{margin:0;color:var(--ink-2)} .acc a{color:var(--blue)}
+.mt{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:8px}.mt td,.mt th{border:1px solid var(--line);padding:5px 8px;text-align:start}.mt th{background:var(--surface-2)}
 .idbox{font-family:ui-monospace,monospace;font-size:.75rem;background:var(--surface-2);border-radius:8px;padding:6px 8px;overflow-wrap:anywhere}
 .title{font-size:1rem;font-weight:600;line-height:1.6;margin:4px 0 2px;overflow-wrap:anywhere}
 .orig{font-size:.82rem;color:var(--muted);direction:ltr;text-align:left;line-height:1.45;margin:0 0 3px;font-style:italic;overflow-wrap:anywhere}
@@ -355,10 +356,16 @@ function vTools(){
   if(k==="tracer") return vTracer();
   if(k==="sources") return vSources();
   if(k==="alerts") return vAlerts();
+  if(k==="metrics") return vMetrics();
+  if(k==="reports") return vReports();
+  if(k==="editors") return vEditors();
   return `<div class="narrow"><div class="sec"><h2>الأدوات</h2></div><div class="tgrid">
     <button class="tcard" type="button" data-tool="tracer"><b>تتبّع أصل الخبر</b><small>الصق نص خبر أو عبارة أو رابط، ويطلعلك أقدم نشر بالمصادر المفحوصة ويه خط زمني.</small></button>
     <button class="tcard" type="button" data-tool="sources"><b>إدارة المصادر</b><small>${health.length} مصدر، تشوف حالة كل واحد وآخر نجاح وآخر محاولة والأخطاء، وتكدر تعطّل أو تغيّر الأولوية.</small></button>
     <button class="tcard" type="button" data-tool="alerts"><b>إعدادات التنبيه</b><small>حسب الموضوع والمصدر والأهمية، ويه صوت اختياري.</small></button>
+    <button class="tcard" type="button" data-tool="metrics"><b>لوحة الأداء</b><small>المصادر العاملة والمتوقفة وأسبابها، زمن الوصول، التكرار والأخطاء، العينة المرجعية اليومية للأخبار الفائتة، والتخزين.</small></button>
+    <button class="tcard" type="button" data-tool="reports"><b>التقارير الصباحية</b><small>تقرير كل يوم 7 الصبح: أهم الأخبار، القضايا الصاعدة، تصريحات المتابَعين، وما يحتاج مراجعة. HTML وPDF.</small></button>
+    <button class="tcard" type="button" data-tool="editors"><b>صندوق المحررين</b><small>إدخال منشور فيسبوك أو أي رابط يدوياً عبر البوت، وأحكام التحقق.</small></button>
     <button class="tcard" type="button" data-go="world" data-sub="trend"><b>الأكثر تداولاً</b><small>الأخبار اللي نشرتها أكثر الجهات بآخر 24 ساعة.</small></button>
   </div></div>`;
 }
@@ -450,6 +457,53 @@ function vAlerts(){
    <div class="sec minor"><h2>كلمات أو مصادر</h2><span>افصل بفاصلة</span></div>
    <input class="inp" id="p_kw" placeholder="مثال: البصرة، الدولار، شفق" value="${esc(prefs.kw)}">
    <div class="btns"><button class="btn" id="pTest" type="button">جرّب التنبيه</button></div></div>`;
+}
+let metrics=null, reportsIdx=null;
+async function loadExtra(){ const t=Date.now(); try{ metrics=await fetch("metrics.json?t="+t,{cache:"no-store"}).then(r=>r.json()); }catch(e){} try{ reportsIdx=await fetch("reports/index.json?t="+t,{cache:"no-store"}).then(r=>r.ok?r.json():[]); }catch(e){ reportsIdx=[]; } if(view==="tools") render(true); }
+const kb=b=>b==null?"—":b>1e9?(b/1e9).toFixed(2)+" GB":b>1e6?(b/1e6).toFixed(1)+" MB":Math.round(b/1e3)+" KB";
+function vMetrics(){
+  if(!metrics){ loadExtra(); return `<div class="narrow">${back}<div class="note-box" style="margin-top:14px">جارِ التحميل…</div></div>`; }
+  const S=metrics.sources||{}, L=metrics.latency||{}, D=metrics.dup||{}, R=metrics.reference||{}, G=metrics.storage||{}, X=metrics.errors||{};
+  const stat=(v,l)=>`<div class="stat"><b>${v??"—"}</b><small>${l}</small></div>`;
+  const bt=Object.entries(L.by_type||{}).filter(([k,v])=>v).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.median_min} د</td><td>${v.p90_min} د</td><td>${v.n}</td></tr>`).join("");
+  const types=Object.entries(S.by_type||{}).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.working}</td><td>${v.enabled}</td></tr>`).join("");
+  const ref=(R.items||[]);
+  return `<div class="narrow">${back}<div class="sec"><h2>لوحة الأداء</h2><span>آخر تحديث ${esc(hm(metrics.updated_utc))}</span></div>
+  <div class="sec minor"><h2>المصادر</h2><span>${S.registered} مسجّلة في السجل</span></div>
+  <div class="stats">${stat(S.working,"تعمل")}${stat(S.failing,"متوقفة/فشل")}${stat(S.silent_24h,"صامتة 24س")}${stat(S.disabled,"معطّلة/مستبعدة")}</div>
+  <p class="note">«صامتة» = الجلب ينجح بس ما نزلت مواد 24 ساعة. ${S.duplicate_urls?.length?`روابط مكررة بالسجل: ${S.duplicate_urls.length}.`:"ماكو روابط مكررة بالسجل."} ${S.multi_route_outlets?.length?`منافذ مرصودة بأكثر من مسار (تلغرام+موقع): ${S.multi_route_outlets.length} — تُحسب جهة وحدة بالتحقق.`:""}</p>
+  <table class="mt"><tr><th>النوع</th><th>تعمل</th><th>مفعّلة</th></tr>${types}</table>
+  ${Object.keys(S.fail_reasons||{}).length?`<p class="note"><b>أسباب التعطل:</b> ${Object.entries(S.fail_reasons).map(([k,v])=>`${esc(k)} (${v})`).join("، ")}</p>`:""}
+  <details><summary class="note">قائمة المتوقفة (${(S.failing_list||[]).length})</summary><ul class="note">${(S.failing_list||[]).map(f=>`<li>${esc(srcName(f.name))} — ${esc(f.type)} — ${esc(f.error)} — آخر نجاح ${f.last_success?esc(full(f.last_success)):"أبداً"}</li>`).join("")}</ul></details>
+  <div class="sec minor"><h2>زمن وصول الأخبار</h2><span>وقت التقاطنا − وقت نشر المصدر (آخر 3 ساعات)</span></div>
+  <table class="mt"><tr><th>النوع</th><th>الوسيط</th><th>90%</th><th>عدد</th></tr>${bt||'<tr><td colspan="4">—</td></tr>'}</table>
+  <div class="sec minor"><h2>التكرار والأخطاء</h2><span>24 ساعة</span></div>
+  <div class="stats">${stat(D.items_24h,"مادة")}${stat(D.events_24h,"حدث")}${stat(D.copies_pct!=null?D.copies_pct+"%":"—","نسخ مكررة")}${stat(X.failed_pct!=null?X.failed_pct+"%":"—","محاولات جلب فاشلة")}</div>
+  <div class="sec minor"><h2>العينة المرجعية اليومية</h2><span>${R.n?`التقطنا ${R.captured} من ${R.n}`:"لم تُجمع بعد"}</span></div>
+  <p class="note">${esc(R.reference||"")}. ${esc(R.note||"")} ${R.median_lag_min!=null?`وسيط الفارق: ${R.median_lag_min} د.`:""}</p>
+  ${(metrics.reference_hist||[]).length>1?`<p class="note"><b>آخر الأيام:</b> ${(metrics.reference_hist||[]).slice(-7).map(h=>`${esc(h.day.slice(5))}: ${h.captured}/${h.n}`).join(" · ")}</p>`:""}
+  <ol class="tl">${ref.map(r=>`<li><div>${r.captured?'<span class="st s-ok">التُقط</span>':'<span class="st s-false">فاتنا</span>'} <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title.slice(0,110))} ↗</a><small>${esc(r.outlet||"")}${r.pub?` · نُشر ${esc(hm(r.pub))}`:""}${r.captured?` · عندنا: ${esc(srcName(r.our_source))} ${esc(hm(r.our_seen))}${r.lag_min!=null?` (${r.lag_min>0?"بعد":"قبل"} ${Math.abs(r.lag_min)} د)`:""}`:""}</small></div></li>`).join("")}</ol>
+  <div class="sec minor"><h2>التخزين والحدود المجانية</h2></div>
+  <dl class="kv"><dt>قاعدة البيانات</dt><dd>${kb(G.db_bytes)} · ${G.db?.items??"—"} مادة · احتفاظ ${G.retention_days_db||8} أيام</dd>
+  <dt>آخر نسخة احتياطية</dt><dd>${G.last_snapshot_utc?esc(full(G.last_snapshot_utc)):"—"} (${kb(G.snapshot_gz_bytes)} مضغوطة)</dd>
+  <dt>الأرشيف اليومي الدائم</dt><dd>${G.archive_avg_day_gz_bytes?`${kb(G.archive_avg_day_gz_bytes)}/يوم ≈ ${G.archive_year_estimate_mb} MB/سنة`:"—"}</dd>
+  <dt>آخر اختبار استعادة</dt><dd>${G.last_restore_test?`${G.last_restore_test.archive_ok&&G.last_restore_test.db_ok?"✅ ناجح":"❌ فشل"} · ${esc(full(G.last_restore_test.at_utc))} · ${G.last_restore_test.restored_items} مادة`:"—"}</dd>
+  ${Object.entries(G.limits||{}).map(([k,v])=>`<dt>${esc({actions_cache_repo:"كاش Actions",release_asset:"ملفات الإصدارات",pages_site:"موقع Pages",actions_minutes:"دقائق Actions"}[k]||k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>`;
+}
+function vReports(){
+  if(!reportsIdx){ loadExtra(); return `<div class="narrow">${back}<div class="note-box" style="margin-top:14px">جارِ التحميل…</div></div>`; }
+  const rows=reportsIdx.slice().reverse();
+  return `<div class="narrow">${back}<div class="sec"><h2>التقارير الصباحية</h2><span>${rows.length}</span></div>
+   <p class="note">تقرير يومي 7 الصبح بتوقيت بغداد، ويوصل المحررين PDF بالخاص عبر البوت. نسخة HTML قابلة للبحث ونسخة نصية.</p>
+   <div class="list">${rows.map(r=>`<div class="src-row"><div class="top2"><b>${esc(r.title)}</b></div><small><a style="color:var(--blue)" href="reports/${esc(r.html)}" target="_blank" rel="noopener">فتح HTML ↗</a> · <a style="color:var(--blue)" href="reports/${esc(r.txt)}" target="_blank" rel="noopener">نص</a>${r.pdf?` · <a style="color:var(--blue)" href="reports/${esc(r.pdf)}" target="_blank" rel="noopener">PDF</a>`:""}</small></div>`).join("")||'<div class="empty">ما كو تقارير بعد.</div>'}</div></div>`;
+}
+function vEditors(){
+  return `<div class="narrow">${back}<div class="sec"><h2>صندوق المحررين</h2></div>
+   <div class="note-box">المحررون = مشرفو قناة «عاجل هسه وصل». افتح البوت بالخاص واضغط Start مرة وحدة.</div>
+   <dl class="kv"><dt>إدخال يدوي</dt><dd>انسخ رابط المنشور (فيسبوك أو أي مكان) ونصه، وأرسلهم للبوت برسالة وحدة. أو صورة المنشور ويه تعليق بيه الرابط والنص. يدخل الرصد خلال دقيقتين موسوم «إدخال يدوي»، ويتجمّع ويتحقق مثل غيره.</dd>
+   <dt>حكم تحقق</dt><dd><code>/حكم رقم_الحدث كاذب</code> أو <code>متنازع</code> أو <code>مستقل</code> أو <code>رسمي</code> أو <code>إلغاء</code>. رقم الحدث بأسفل تفاصيل أي خبر، ووياه زر «نسخ أمر الحكم».</dd>
+   <dt>تنبيهات المتابعة</dt><dd>أي خبر جديد مهم عن شخصية أو جهة أو قضية بقائمة المتابعة يوصلك بالخاص مرة وحدة (مو لكل نسخة)، وتحديث وحيد إذا صار عاجل. وملخص المتابعة كل يوم 8 الصبح.</dd>
+   <dt>ليش يدوي؟</dt><dd>فيسبوك ما يسمح برصد صفحات الآخرين بدون موافقة Meta الرسمية (Page Public Content Access) وهي تحتاج مراجعة تطبيق وتوثيق شركة، والكشط مخالف لشروطه. فنرصد القنوات والمواقع الرسمية لنفس الشخصيات، والنقل عنهم، والإدخال اليدوي.</dd></dl></div>`;
 }
 function matchAlert(n){
   if(!prefs.on) return false;
@@ -593,7 +647,7 @@ $("#bAlerts").addEventListener("click",()=>openTool("alerts"));
 $("#bRefresh").addEventListener("click",()=>load(true));
 $("#bShare").addEventListener("click",()=>shareText("هوبي عاجل — منصة رصد أخبار العراق والحشد الشعبي والمنطقة، تتحدث كل 90 ثانية:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&meta&&mins(meta.updated_utc)>1.5) load(); });
-load(); setInterval(()=>{ if(!document.hidden||prefs.on) load(); },90000); setInterval(()=>render(true),60000);
+load(); loadExtra(); setInterval(()=>loadExtra(),300000); setInterval(()=>{ if(!document.hidden||prefs.on) load(); },90000); setInterval(()=>render(true),60000);
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
