@@ -186,7 +186,7 @@ def stats():
     days = list(st.get("daily_bytes", {}).values())
     avg = int(sum(days) / len(days)) if days else None
     out = {"updated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "db_bytes": db_bytes,
-           "db": c, "items_last_24h": per_day, "retention_days_db": int(os.environ.get("MARSAD_RETENTION_DAYS", "8")),
+           "db": c, "items_last_24h": per_day, "retention_days_db": int(os.environ.get("MARSAD_RETENTION_DAYS", "5")),
            "snapshot_gz_bytes": st.get("snapshot_gz_bytes"), "last_snapshot_utc": st.get("last_snapshot_utc"),
            "archive_avg_day_gz_bytes": avg,
            "archive_year_estimate_mb": round(avg * 365 / 1e6, 1) if avg else None,
