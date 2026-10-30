@@ -1,0 +1,35 @@
+# تجربة التلفزيون المحدودة: تفريغ مقاطع قصيرة من قنوات تلغرام الرسمية للقنوات العراقية.
+# سير عمل منفصل حتى لا يبطئ دورة الرصد. يُطلق بعد كل جولة رصد، ويعمل فعلياً كل ~20 دقيقة فقط.
+name: tv-pilot
+on:
+  workflow_run: {workflows: [hobi-ajel], types: [completed]}
+  workflow_dispatch: {}
+permissions: {contents: write}
+concurrency: {group: tv-pilot, cancel-in-progress: false}
+jobs:
+  tv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - uses: actions/cache/restore@v4
+        with: {path: "data/tv_state.json\ndata/tv.json", key: "tv-${{ github.run_id }}", restore-keys: "tv-"}
+      - id: gate
+        run: python3 -m tools.tv_pilot --due >> "$GITHUB_OUTPUT"
+      - if: steps.gate.outputs.due == 'true'
+        uses: actions/cache@v4
+        with: {path: ~/.cache/huggingface, key: whisper-small-v1}
+      - if: steps.gate.outputs.due == 'true'
+        run: pip install -q faster-whisper
+      - if: steps.gate.outputs.due == 'true'
+        run: python3 -m tools.tv_pilot
+      - if: steps.gate.outputs.due == 'true'
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh release view tv-pilot >/dev/null 2>&1 || gh release create tv-pilot --title "تجربة التلفزيون" --notes "تفريغ آلي لمقاطع قصيرة (JSON)" --prerelease
+          gh release upload tv-pilot data/tv.json --clobber
+      - if: steps.gate.outputs.due == 'true'
+        uses: actions/cache/save@v4
+        with: {path: "data/tv_state.json\ndata/tv.json", key: "tv-${{ github.run_id }}"}

@@ -359,12 +359,14 @@ function vTools(){
   if(k==="metrics") return vMetrics();
   if(k==="reports") return vReports();
   if(k==="editors") return vEditors();
+  if(k==="tv") return vTV();
   return `<div class="narrow"><div class="sec"><h2>الأدوات</h2></div><div class="tgrid">
     <button class="tcard" type="button" data-tool="tracer"><b>تتبّع أصل الخبر</b><small>الصق نص خبر أو عبارة أو رابط، ويطلعلك أقدم نشر بالمصادر المفحوصة ويه خط زمني.</small></button>
     <button class="tcard" type="button" data-tool="sources"><b>إدارة المصادر</b><small>${health.length} مصدر، تشوف حالة كل واحد وآخر نجاح وآخر محاولة والأخطاء، وتكدر تعطّل أو تغيّر الأولوية.</small></button>
     <button class="tcard" type="button" data-tool="alerts"><b>إعدادات التنبيه</b><small>حسب الموضوع والمصدر والأهمية، ويه صوت اختياري.</small></button>
     <button class="tcard" type="button" data-tool="metrics"><b>لوحة الأداء</b><small>المصادر العاملة والمتوقفة وأسبابها، زمن الوصول، التكرار والأخطاء، العينة المرجعية اليومية للأخبار الفائتة، والتخزين.</small></button>
     <button class="tcard" type="button" data-tool="reports"><b>التقارير الصباحية</b><small>تقرير كل يوم 7 الصبح: أهم الأخبار، القضايا الصاعدة، تصريحات المتابَعين، وما يحتاج مراجعة. HTML وPDF.</small></button>
+    <button class="tcard" type="button" data-tool="tv"><b>التلفزيون (تجريبي)</b><small>تفريغ آلي لمقاطع قصيرة تنشرها القنوات العراقية على تلغرام، ويه توقيت كل مقطع ورابطه.</small></button>
     <button class="tcard" type="button" data-tool="editors"><b>صندوق المحررين</b><small>إدخال منشور فيسبوك أو أي رابط يدوياً عبر البوت، وأحكام التحقق.</small></button>
     <button class="tcard" type="button" data-go="world" data-sub="trend"><b>الأكثر تداولاً</b><small>الأخبار اللي نشرتها أكثر الجهات بآخر 24 ساعة.</small></button>
   </div></div>`;
@@ -496,6 +498,19 @@ function vReports(){
   return `<div class="narrow">${back}<div class="sec"><h2>التقارير الصباحية</h2><span>${rows.length}</span></div>
    <p class="note">تقرير يومي 7 الصبح بتوقيت بغداد، ويوصل المحررين PDF بالخاص عبر البوت. نسخة HTML قابلة للبحث ونسخة نصية.</p>
    <div class="list">${rows.map(r=>`<div class="src-row"><div class="top2"><b>${esc(r.title)}</b></div><small><a style="color:var(--blue)" href="reports/${esc(r.html)}" target="_blank" rel="noopener">فتح HTML ↗</a> · <a style="color:var(--blue)" href="reports/${esc(r.txt)}" target="_blank" rel="noopener">نص</a>${r.pdf?` · <a style="color:var(--blue)" href="reports/${esc(r.pdf)}" target="_blank" rel="noopener">PDF</a>`:""}</small></div>`).join("")||'<div class="empty">ما كو تقارير بعد.</div>'}</div></div>`;
+}
+let tv=null, tvQ="";
+function vTV(){
+  if(!tv){ fetch("tv.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():{clips:[]}).then(j=>{tv=j;render(true)}).catch(()=>{tv={clips:[]};render(true)}); return `<div class="narrow">${back}<div class="note-box" style="margin-top:14px">جارِ التحميل…</div></div>`; }
+  const q=AR_N(tvQ.trim()), ts=s=>`${Math.floor(s/60)}:${p2(Math.floor(s%60))}`;
+  const clips=(tv.clips||[]).slice().reverse().filter(c=>!q||AR_N(c.caption+" "+c.segments.map(x=>x.t).join(" ")).includes(q));
+  return `<div class="narrow">${back}<div class="sec"><h2>التلفزيون — تجربة محدودة</h2><span>${(tv.clips||[]).length} مقطع</span></div>
+   <div class="note-box">${esc(tv.limits||"")} القنوات: ${esc((tv.channels||[]).join("، "))}. النص آلي وقد يخطئ بالأسماء والأرقام، فارجع للمقطع قبل أي اقتباس.</div>
+   <input class="inp" id="tvq" type="search" placeholder="ابحث بالتفريغ…" value="${esc(tvQ)}" style="margin-top:10px">
+   <div class="list" style="margin-top:10px">${clips.map(c=>`<div class="src-row"><div class="top2"><b>${esc(c.channel)}</b><span class="stt warn">${esc(c.flag)}</span></div>
+     <small>نُشر ${esc(full(c.posted))} · ${ts(c.duration)} · <a style="color:var(--blue)" href="${esc(c.post_url)}" target="_blank" rel="noopener">المقطع ↗</a></small>
+     ${c.caption?`<small><b>نص القناة:</b> ${esc(c.caption.slice(0,220))}</small>`:""}
+     <details><summary class="note">التفريغ بالتوقيت (${c.segments.length} مقطع)</summary>${c.segments.map(x=>`<small style="display:block${x.low?";color:var(--gold)":""}"><a style="color:var(--blue)" href="${esc(c.post_url)}?t=${Math.floor(x.s)}" target="_blank" rel="noopener">${ts(x.s)}</a> ${esc(x.t)}${x.low?" (ثقة منخفضة)":""}</small>`).join("")}</details></div>`).join("")||'<div class="empty">ما كو مقاطع مفرّغة بعد.</div>'}</div></div>`;
 }
 function vEditors(){
   return `<div class="narrow">${back}<div class="sec"><h2>صندوق المحررين</h2></div>
@@ -638,6 +653,7 @@ let qT; const refocus=id=>{ const el=$("#"+id); if(el){el.focus(); el.setSelecti
 document.addEventListener("input",e=>{
   const t=e.target;
   if(t.id==="fq"){ query=t.value; clearTimeout(qT); qT=setTimeout(()=>{ render(true); refocus("fq"); },300); }
+  if(t.id==="tvq"){ tvQ=t.value; clearTimeout(qT); qT=setTimeout(()=>{ render(true); refocus("tvq"); },300); }
   if(t.id==="srcq"){ srcQ=t.value; clearTimeout(qT); qT=setTimeout(()=>{ render(true); refocus("srcq"); },300); }
   if(t.id==="p_kw"){ prefs.kw=t.value; store.set("hobi_alerts",prefs); }
   if(t.id==="gq"){ query=t.value; clearTimeout(qT); qT=setTimeout(()=>{ view=query.trim()?"search":"home"; setNav(view); render(); refocus("gq"); },350); }

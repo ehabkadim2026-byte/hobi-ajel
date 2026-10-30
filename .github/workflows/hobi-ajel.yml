@@ -66,6 +66,10 @@ jobs:
         run: python3 -m tools.translate
         continue-on-error: true
         timeout-minutes: 6
+      - name: tv pilot results (من سير العمل المنفصل)
+        continue-on-error: true
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: gh release download tv-pilot -p tv.json -D pwa --clobber || echo "no tv yet"
       - run: python3 -m tools.export_pwa
       - name: archive (لقطة كل 30 دقيقة + أرشيف يومي + اختبار استعادة + أرقام السعة)
         continue-on-error: true
