@@ -176,6 +176,9 @@ def main():
             if prev is None:
                 out.append((n, False))
         status["candidates"] = len(out)
+        from collections import Counter
+        fresh = [n for n in news if n.get("collected_utc") and datetime.fromisoformat(n["collected_utc"].replace("Z", "+00:00")) >= now - timedelta(minutes=12)]
+        status["fresh12"] = dict(Counter(f"{'IQ' if (n.get('about_iraq') or n.get('pmf')) else n.get('origin')}|{n.get('level')}|{'F' if n.get('source_flag') else ''}" for n in fresh))
         if first_run:  # أول تشغيل: لا نغرق القناة بالقديم؛ نرسل رسالة ترحيب ونعلّم الموجود كمُرسل
             for n, _ in out:
                 sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp()}
