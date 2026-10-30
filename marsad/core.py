@@ -35,12 +35,12 @@ CREATE INDEX IF NOT EXISTS ix_items_pub ON items(published_utc);
 CREATE INDEX IF NOT EXISTS ix_items_fp ON items(fp);
 CREATE INDEX IF NOT EXISTS ix_items_cluster ON items(cluster_id);
 CREATE INDEX IF NOT EXISTS ix_items_source ON items(source_id);
-CREATE INDEX IF NOT EXISTS ix_clusters_last ON clusters(last_utc);
 CREATE TABLE IF NOT EXISTS item_versions(
   item_id TEXT, seen_utc TEXT, title TEXT, text TEXT, views TEXT);
 CREATE TABLE IF NOT EXISTS clusters(
   id TEXT PRIMARY KEY, label TEXT, first_utc TEXT, last_utc TEXT, n_items INTEGER,
   n_sources INTEGER, origin_item_id TEXT, storyline TEXT, verification TEXT, watchlists TEXT);
+CREATE INDEX IF NOT EXISTS ix_clusters_last ON clusters(last_utc);
 CREATE TABLE IF NOT EXISTS alerts(
   id INTEGER PRIMARY KEY AUTOINCREMENT, cluster_id TEXT, level TEXT, score INTEGER,
   created_utc TEXT, signature TEXT, is_update INTEGER, what_new TEXT, body TEXT,
