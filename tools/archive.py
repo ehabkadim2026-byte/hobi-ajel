@@ -117,7 +117,7 @@ def daily(force_day=None):
     day = force_day or (bgd - timedelta(days=1)).strftime("%Y-%m-%d")
     st = load_state()
     if not force_day and not st.get("last_restore_test"):
-        force_day = bgd.strftime("%Y-%m-%d")  # أول تشغيل: اختبار استعادة فوري على اليوم الجاري (جزئي)
+        force_day = day = bgd.strftime("%Y-%m-%d")  # أول تشغيل: اختبار استعادة فوري على اليوم الجاري (جزئي)
     if not force_day and bgd.hour < 3:
         return
     if st.get("last_daily") == day and not force_day:
