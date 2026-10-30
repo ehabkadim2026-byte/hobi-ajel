@@ -116,6 +116,8 @@ def daily(force_day=None):
     bgd = now + timedelta(hours=3)
     day = force_day or (bgd - timedelta(days=1)).strftime("%Y-%m-%d")
     st = load_state()
+    if not force_day and not st.get("last_restore_test"):
+        force_day = bgd.strftime("%Y-%m-%d")  # أول تشغيل: اختبار استعادة فوري على اليوم الجاري (جزئي)
     if not force_day and bgd.hour < 3:
         return
     if st.get("last_daily") == day and not force_day:
@@ -127,7 +129,7 @@ def daily(force_day=None):
     con = sqlite3.connect(str(DB))
     con.row_factory = sqlite3.Row
     TMP.mkdir(parents=True, exist_ok=True)
-    out = TMP / f"items-{day}.jsonl.gz"
+    out = TMP / (f"items-{day}.jsonl.gz" if not force_day else f"items-{day}-partial.jsonl.gz")
     n = 0
     q = ("SELECT i.id, i.platform, i.source_id, i.source_name, i.url, i.published_utc, i.collected_utc, i.title, "
          "substr(i.text,1,1200) AS text, i.kind, i.entities, i.watchlists, i.cluster_id, c.label AS cluster_label, "
@@ -141,7 +143,8 @@ def daily(force_day=None):
     con.close()
     if n == 0:
         print("::warning title=archive::لا مواد لليوم", day)
-        st["last_daily"] = day
+        if not force_day:
+            st["last_daily"] = day
         save_state(st)
         return
     tag = "archive-" + day[:7]
@@ -160,7 +163,10 @@ def daily(force_day=None):
     test = {"day": day, "archived_items": n, "restored_items": back, "archive_ok": back == n,
             "db_backup": dbc, "db_ok": dbc["integrity"] == "ok" and dbc["items"] > 0,
             "gz_bytes": out.stat().st_size, "at_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ")}
-    st["last_daily"] = day
+    if not force_day:
+        st["last_daily"] = day
+    else:
+        test["partial_day"] = True
     st["last_restore_test"] = test
     st.setdefault("daily_bytes", {})[day] = out.stat().st_size
     st["daily_bytes"] = dict(sorted(st["daily_bytes"].items())[-60:])
