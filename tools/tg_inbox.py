@@ -34,7 +34,7 @@ def main():
         return
     sent = load(SENT, {})
     chat = load(CHAT, {})
-    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id")
+    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id") or "@hassawassal"  # القناة عامة: اسمها يكفي
     now = datetime.now(timezone.utc)
     stats = {"updates": 0, "manual": 0, "verdicts": 0, "rejected": 0}
     try:

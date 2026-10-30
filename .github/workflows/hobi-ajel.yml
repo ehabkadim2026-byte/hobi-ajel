@@ -6,6 +6,7 @@ name: hobi-ajel
 on:
   schedule: [{cron: "*/10 * * * *"}]
   workflow_dispatch: {}
+  push: {branches: [main]}  # أي تحديث للكود يعيد تشغيل السلسلة إن انقطعت
 permissions: {contents: write, pages: write, id-token: write, actions: write}
 concurrency: {group: hobi-ajel, cancel-in-progress: false}
 jobs:
@@ -132,9 +133,12 @@ jobs:
         run: |
           wait=$(( 85 - ($(date +%s) - START) )); if [ "$wait" -gt 0 ]; then sleep "$wait"; fi
           n=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/hobi-ajel.yml/runs?per_page=10" --jq '[.workflow_runs[]|select(.status=="queued" or .status=="pending" or .status=="waiting" or .status=="requested")]|length')
-          if [ "$n" = "0" ]; then gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/hobi-ajel.yml/dispatches" -f ref=main && echo "dispatched"; else echo "next round already queued ($n)"; fi
+          if [ "$n" = "0" ]; then
+            ok=0; for a in 1 2 3; do if gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/hobi-ajel.yml/dispatches" -f ref=main; then ok=1; break; fi; sleep 5; done
+            if [ "$ok" = "1" ]; then echo "::notice title=chain::dispatched"; else echo "::warning title=chain::فشل إطلاق الجولة التالية"; fi
+          else echo "::notice title=chain::next round already queued ($n)"; fi
           # تجربة التلفزيون: تُطلق كل ~20 دقيقة إذا لم تكن جارية (سير عمل منفصل لا يبطئ الرصد)
           if [ $(( $(date +%s) / 90 % 13 )) -eq 0 ]; then
             t=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/tv-pilot.yml/runs?per_page=5" --jq '[.workflow_runs[]|select(.status!="completed")]|length' || echo 1)
-            [ "$t" = "0" ] && gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/tv-pilot.yml/dispatches" -f ref=main && echo "tv dispatched"
+            if [ "$t" = "0" ]; then gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/tv-pilot.yml/dispatches" -f ref=main || true; fi
           fi

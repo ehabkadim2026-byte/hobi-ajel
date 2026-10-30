@@ -223,7 +223,7 @@ def main():
         return
     try:
         chat = load(CHAT, {})
-        chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id")
+        chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id") or "@hassawassal"  # القناة عامة: اسمها يكفي
         if not chat_id:
             ups = api(token, "getUpdates", timeout=0).get("result", [])
             for u in reversed(ups):
@@ -239,7 +239,7 @@ def main():
             print(status)
             return
         status["enabled"] = True
-        status["chat_title"] = chat.get("title")
+        status["chat_title"] = chat.get("title") or "عاجل هسه وصل"
         news = load(PWA / "news.json", [])
         sent = load(SENT, {})
         first_run = not sent.get("_init")
@@ -258,7 +258,6 @@ def main():
         if first_run:  # أول تشغيل: لا نغرق القناة بالقديم؛ نرسل رسالة ترحيب ونعلّم الموجود كمُرسل
             for n, _ in out:
                 sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp()}
-            api(token, "sendMessage", chat_id=chat_id, text="✅ تم ربط قناة الفريق بمنصة «هوبي عاجل». من الآن تصلكم هنا الأخبار العاجلة والمهمة عن العراق والحشد الشعبي فور رصدها، وموجز يومي الساعة 8 صباحاً.\n" + APP_URL)
             sent["_init"] = True
             out = []
         status["images"] = {}
