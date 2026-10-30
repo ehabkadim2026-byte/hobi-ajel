@@ -1,0 +1,20 @@
+{
+ "_note": "مصادر أضافها محرك الاكتشاف أو المحرر من قائمة المراجعة. احذف أي سطر للتراجع.",
+ "sources": [
+  {
+   "id": "telegram:t.me/albaseeraaa",
+   "name": "البصيرة — telegram",
+   "url": "https://t.me/albaseeraaa",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مكتشف تلقائياً",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "محرك الاكتشاف",
+   "evidence": "درجة 76 · صلة 0.54 · أصالة 1.0 · 5/24س"
+  }
+ ]
+}
