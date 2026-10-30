@@ -74,7 +74,8 @@ def build(now):
     rise, has_prev = rising(con, now, follow)
     kinds = {f["id"]: f.get("kind") for f in follow}
     persons = [n for n in day if any(kinds.get(w["id"]) in ("person", "institution") for w in n.get("watch") or [])]
-    persons = sorted(persons, key=lambda n: (not any(w.get("prov") == "رصد مباشر" for w in n["watch"]), n.get("latest_utc") or ""), reverse=False)[:20]
+    persons = sorted(persons, key=lambda n: n.get("latest_utc") or "", reverse=True)
+    persons = sorted(persons, key=lambda n: not any(w.get("prov") == "رصد مباشر" for w in n["watch"]))[:20]
     review = [n for n in day if n.get("vstatus") == "متنازع عليه"]
     review += [n for n in day if n.get("vstatus") == "غير متحقق" and (n.get("n_sources") or 1) >= 3 and n not in review]
     review += [n for n in day if n.get("cited") == "مصدر غير مسمى" and (n.get("n_sources") or 1) >= 2 and n not in review]

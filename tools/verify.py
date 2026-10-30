@@ -12,8 +12,14 @@ import re
 from marsad.core import outlet_key
 from marsad.textnorm import norm_ar, tokens
 
-DENY = [norm_ar(w) for w in ["ينفي", "تنفي", "نفى", "نفت", "نفي", "تكذيب", "يكذب", "تكذب", "عار عن الصحة", "عاري عن الصحة", "غير صحيح",
-                              "لا صحة", "مفبرك", "مفبركة", "خبر كاذب", "اخبار كاذبة", "مزيف", "مزيفة", "تصحيح"]]
+DENY = [norm_ar(w) for w in ["ينفي", "تنفي", "نفى", "نفت", "تكذيب", "تكذب", "عار عن الصحة", "عاري عن الصحة", "عارية عن الصحة", "غير صحيح",
+                              "غير صحيحة", "لا صحة", "مفبرك", "مفبركة", "خبر كاذب", "اخبار كاذبة", "انباء كاذبة", "مزيف", "مزيفة"]]
+# مطابقة على مستوى الكلمة (لا جزء كلمة: «نفي» داخل «تنفيذ» كان يعطي نفياً كاذباً)
+DENY_RX = re.compile(r"(^|\s)(و|ف)?(" + "|".join(re.escape(w) for w in DENY) + r")(\s|$)")
+
+
+def _has_deny(nt):
+    return bool(DENY_RX.search(" " + nt + " "))
 DENY_EN = re.compile(r"\b(denies|denied|deny|false claim|fake|fabricated|debunk)", re.I)
 CITED_RX = re.compile(r"(?:نقلاً|نقلا)\s+عن\s+([^\n،,.:؛\"«»]{3,45})|(?:بحسب|حسب|وفقاً\s*لـ?|وفقا\s*لـ?|طبقاً\s*لـ?)\s*([^\n،,.:؛\"«»]{3,45})"
                       r"|(?:ذكرت|أفادت|افادت|أعلنت|اعلنت|أكدت|اكدت|قالت|قال)\s+([^\n،,.:؛\"«»]{3,45})")
@@ -61,16 +67,20 @@ def assess(rows, verdict=None):
         if c:
             cites.append(c)
         tk = tokens(body[:400])
-        if any(_jac(tk, t2) >= 0.75 for t2 in toks_list):
-            continue  # نسخة شبه حرفية من نص سبق
+        if any(_jac(tk, t2) >= 0.5 for t2 in toks_list):
+            continue  # نسخة أو إعادة صياغة قريبة من نص سبق (بيان واحد تعيد نشره عدة جهات)
         toks_list.append(tk)
         groups.add(norm_ar(c) if c else "self:" + ok)
     independent = len([g for g in groups if g != norm_ar("مصدر غير مسمى")]) + (1 if norm_ar("مصدر غير مسمى") in groups else 0)
     main_cite = max(set(cites), key=cites.count) if cites else None
     denial = None
+    first_is_denial = _has_deny(norm_ar(first["title"] or ""))
     for r in rows[1:]:
-        nt = norm_ar((r["title"] or "") + " " + (r["text"] or "")[:300])
-        if any(w in nt for w in DENY) or DENY_EN.search(r["title"] or ""):
+        if first_is_denial:
+            break  # الحدث نفسه بيان نفي: ليس «متنازعاً عليه»
+        if outlet_key(r["source_name"]) == outlet_key(first["source_name"]):
+            continue
+        if _has_deny(norm_ar(r["title"] or "")) or DENY_EN.search(r["title"] or ""):
             denial = r
             break
     if verdict:
@@ -79,11 +89,11 @@ def assess(rows, verdict=None):
         st, why = "متنازع عليه", f"نفي/تصحيح لدى {denial['source_name']}"
     elif main_cite == "مصدر غير مسمى" and not any(r["official"] and not cited_source((r["title"] or "") + " " + (r["text"] or "")) for r in rows):
         st, why = "غير متحقق", "منسوب إلى مصدر غير مسمى (حتى لو نقلته وسيلة رسمية)"
-    elif independent >= 2:
-        st, why = "مؤيد بمصادر مستقلة", f"{independent} مصادر مستقلة (بعد استبعاد النسخ والنقل عن المصدر نفسه)"
     elif any(r["official"] for r in rows):
         src = next(r["source_name"] for r in rows if r["official"])
         st, why = "منسوب لمصدر رسمي", f"صادر عن {src} — يثبت التصريح لا صحة كل مضمونه"
+    elif independent >= 2:
+        st, why = "مؤيد بمصادر مستقلة", f"{independent} مصادر مستقلة (بعد استبعاد النسخ وإعادة الصياغة والنقل عن المصدر نفسه)"
     elif main_cite and main_cite != "مصدر غير مسمى" and OFFICIAL_RX.search(main_cite):
         st, why = "منسوب لمصدر رسمي", f"منسوب إلى «{main_cite}» حسب الناقل — لم نرصد الأصل الرسمي"
     else:
@@ -92,8 +102,7 @@ def assess(rows, verdict=None):
 
 
 def is_denial(title):
-    nt = norm_ar(title or "")
-    return any(w in nt for w in DENY) or bool(DENY_EN.search(title or ""))
+    return _has_deny(norm_ar(title or "")) or bool(DENY_EN.search(title or ""))
 
 
 def cross_disputes(items):

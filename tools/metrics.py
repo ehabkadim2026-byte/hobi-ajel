@@ -52,7 +52,14 @@ def reference_check(con, now):
         if k not in seen and r.get("title"):
             seen.add(k)
             sample.append(r)
-    sample = sample[:20]
+    # عينة عادلة: أخبار نُشرت خلال آخر 24 ساعة وبعد بدء أرشيفنا الحالي (لا نحاسب على ما قبل وجود البيانات)
+    oldest = con.execute("SELECT MIN(collected_utc) FROM items").fetchone()[0]
+    floor = max(now - timedelta(hours=24), datetime.fromisoformat(oldest.replace("Z", "+00:00")) + timedelta(minutes=30)) if oldest else now - timedelta(hours=24)
+    def pub_ok(x):
+        p = parse_time(x.get("published_utc"))[0] if x.get("published_utc") else None
+        return p is not None and floor <= p <= now
+    excluded = sum(1 for x in sample if not pub_ok(x))
+    sample = [x for x in sample if pub_ok(x)][:20]
     rows = con.execute("SELECT i.title, i.text, i.source_name, i.url, i.published_utc, i.collected_utc FROM items i "
                        "WHERE i.collected_utc >= ? AND i.url NOT LIKE '%news.google.com%'", (iso(now - timedelta(hours=36)),)).fetchall()
     idx = [(set(tokens((r["title"] or "") + " " + (r["text"] or "")[:200])), r) for r in rows]
@@ -79,7 +86,8 @@ def reference_check(con, now):
     n = len(out)
     lags = sorted(x["lag_min"] for x in out if x["lag_min"] is not None)
     return {"at_utc": iso(now), "reference": "أبرز أخبار العراق في Google News (عربي، العراق) — خلاصة ليست من مصادرنا",
-            "n": n, "captured": sum(1 for x in out if x["captured"]),
+            "n": n, "captured": sum(1 for x in out if x["captured"]), "excluded_old": excluded, "v": 2,
+            "window_from": iso(floor),
             "median_lag_min": lags[len(lags) // 2] if lags else None,
             "note": "التطابق آلي بالكلمات (≥50% من كلمات العنوان). الفائت = لم نجد مادة مطابقة من مصادرنا خلال 36 ساعة. سالب = التقطناه قبل نشر المرجع.",
             "items": out}
@@ -117,16 +125,17 @@ def main():
     st = load(STATE, {})
     ref = st.get("ref_check")
     bgd = now + timedelta(hours=3)
-    if not ref or (bgd.hour >= 9 and ref.get("day") != bgd.strftime("%Y-%m-%d")):
+    if not ref or ref.get("v") != 2 or (bgd.hour >= 9 and ref.get("day") != bgd.strftime("%Y-%m-%d")):
         try:
             ref = reference_check(con, now)
             ref["day"] = bgd.strftime("%Y-%m-%d")
-            hist = st.setdefault("ref_hist", [])
+            hist = [h for h in st.get("ref_hist", []) if h["day"] != ref["day"]]
             hist.append({"day": ref["day"], "n": ref["n"], "captured": ref["captured"], "median_lag_min": ref["median_lag_min"]})
             st["ref_hist"] = hist[-30:]
             st["ref_check"] = ref
             STATE.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
-            print(f"::notice title=reference_check::{ref['captured']}/{ref['n']} median_lag={ref['median_lag_min']}")
+            print(f"::notice title=reference_check::{ref['captured']}/{ref['n']} median_lag={ref['median_lag_min']} | " +
+                  " || ".join(f"{'✓' if x['captured'] else '✗'}{x['score']} {x['pub']} {x['title'][:70]}" for x in ref["items"]))
         except Exception as e:  # noqa: BLE001
             print("::warning title=metrics ref failed::", type(e).__name__, str(e)[:150])
     out = {"updated_utc": iso(now),
