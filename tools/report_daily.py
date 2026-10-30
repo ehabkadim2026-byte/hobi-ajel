@@ -115,6 +115,17 @@ def build(now):
                + (f"<li>العينة المرجعية اليومية: التقطنا {ref.get('captured')} من {ref.get('n')} خبراً من «أبرز أخبار العراق» في Google News.</li>" if ref.get("n") else "")
                + "<li>فيسبوك وX وتيك توك غير مرصودة مباشرة؛ نتابع النقل عنها والإدخال اليدوي. البث التلفزيوني غير مرصود حالياً.</li>"
                "<li>الحالات: «منسوب لمصدر رسمي» يثبت التصريح لا صحة مضمونه؛ كثرة الجهات تعني انتشاراً لا تأكيداً.</li></ul>")
+    ops = load(PWA / "ops.json", {})
+    incs = [i for i in ops.get("incidents", []) if i.get("at", "") >= iso(now - timedelta(hours=24))]
+    from collections import Counter as _C
+    kinds = _C(i["kind"] for i in incs)
+    disc = ops.get("discovery") or {}
+    ch = ops.get("chain") or {}
+    sec.append("<h2>٦. استقرار المنظومة ونمو المصادر (24 ساعة)</h2><ul>"
+               f"<li>الأعطال المسجلة: {len(incs)}" + (" — " + "، ".join(f"{E(k)} ×{v}" for k, v in kinds.most_common()) if incs else "") + "</li>"
+               + "".join(f"<li><b>متكرر:</b> {E(k)} حدث {v} مرات — يحتاج معالجة جذرية لا إعادة تشغيل فقط.</li>" for k, v in kinds.items() if v >= 3)
+               + f"<li>جولات آخر ساعة: {ch.get('runs_1h', '—')} · متوسط الجولة {ch.get('avg_run_s', '—')} ث · مصادر معزولة: {(ops.get('sources') or {}).get('isolated', '—')} · توقف غير طبيعي: {(ops.get('sources') or {}).get('stalled_abnormal', '—')}</li>"
+               f"<li>محرك الاكتشاف: أضاف {len(disc.get('added') or [])} مصدراً حتى الآن؛ {len(disc.get('review') or [])} بانتظار المراجعة.</li></ul>")
     body = "\n".join(sec)
     font_local = (Path.home() / "fonts" / "NotoKufiArabic.ttf")
     css = ("@font-face{font-family:K;src:url('" + (font_local.as_uri() if font_local.exists() else "") + "')}"

@@ -360,10 +360,12 @@ function vTools(){
   if(k==="reports") return vReports();
   if(k==="editors") return vEditors();
   if(k==="tv") return vTV();
+  if(k==="ops") return vOps();
   return `<div class="narrow"><div class="sec"><h2>الأدوات</h2></div><div class="tgrid">
     <button class="tcard" type="button" data-tool="tracer"><b>تتبّع أصل الخبر</b><small>الصق نص خبر أو عبارة أو رابط، ويطلعلك أقدم نشر بالمصادر المفحوصة ويه خط زمني.</small></button>
     <button class="tcard" type="button" data-tool="sources"><b>إدارة المصادر</b><small>${health.length} مصدر، تشوف حالة كل واحد وآخر نجاح وآخر محاولة والأخطاء، وتكدر تعطّل أو تغيّر الأولوية.</small></button>
     <button class="tcard" type="button" data-tool="alerts"><b>إعدادات التنبيه</b><small>حسب الموضوع والمصدر والأهمية، ويه صوت اختياري.</small></button>
+    <button class="tcard" type="button" data-tool="ops"><b>مركز عمليات راصد</b><small>حالة الرصد المباشرة، المصادر المعزولة والمتوقفة، الأعطال المعالجة تلقائياً، والمصادر المكتشفة والتي تحتاج مراجعة.</small></button>
     <button class="tcard" type="button" data-tool="metrics"><b>لوحة الأداء</b><small>المصادر العاملة والمتوقفة وأسبابها، زمن الوصول، التكرار والأخطاء، العينة المرجعية اليومية للأخبار الفائتة، والتخزين.</small></button>
     <button class="tcard" type="button" data-tool="reports"><b>التقارير الصباحية</b><small>تقرير كل يوم 7 الصبح: أهم الأخبار، القضايا الصاعدة، تصريحات المتابَعين، وما يحتاج مراجعة. HTML وPDF.</small></button>
     <button class="tcard" type="button" data-tool="tv"><b>التلفزيون (تجريبي)</b><small>تفريغ آلي لمقاطع قصيرة تنشرها القنوات العراقية على تلغرام، ويه توقيت كل مقطع ورابطه.</small></button>
@@ -511,6 +513,33 @@ function vTV(){
      <small>نُشر ${esc(full(c.posted))} · ${ts(c.duration)} · <a style="color:var(--blue)" href="${esc(c.post_url)}" target="_blank" rel="noopener">المقطع ↗</a></small>
      ${c.caption?`<small><b>نص القناة:</b> ${esc(c.caption.slice(0,220))}</small>`:""}
      <details><summary class="note">التفريغ بالتوقيت (${c.segments.length} مقطع)</summary>${c.segments.map(x=>`<small style="display:block${x.low?";color:var(--gold)":""}"><a style="color:var(--blue)" href="${esc(c.post_url)}?t=${Math.floor(x.s)}" target="_blank" rel="noopener">${ts(x.s)}</a> ${esc(x.t)}${x.low?" (ثقة منخفضة)":""}</small>`).join("")}</details></div>`).join("")||'<div class="empty">ما كو مقاطع مفرّغة بعد.</div>'}</div></div>`;
+}
+let ops=null;
+function vOps(){
+  if(!ops){ fetch("ops.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():{}).then(j=>{ops=j;render(true)}).catch(()=>{ops={};render(true)}); return `<div class="narrow">${back}<div class="note-box" style="margin-top:14px">جارِ التحميل…</div></div>`; }
+  const O=ops, S=O.sources||{}, C=O.chain||{}, F=O.full_check||{}, D=O.discovery||{}, dl=O.detect_delay||{};
+  const stat=(v,l)=>`<div class="stat"><b>${v??"—"}</b><small>${l}</small></div>`;
+  const live=O.live?`<span class="stt ok">يعمل — آخر مادة قبل ${O.idle_min} د</span>`:`<span class="stt bad">متوقف؟ آخر مادة قبل ${O.idle_min} د</span>`;
+  return `<div class="narrow">${back}<div class="sec"><h2>مركز عمليات راصد</h2><span>تحديث ${esc(hm(O.updated_utc))}</span></div>
+  <div class="src-row"><div class="top2"><b>حالة الرصد المباشرة</b>${live}</div>
+   <small>جولات آخر ساعة: ${C.runs_1h??"—"} (فاشلة ${C.failed_1h??0}) · متوسط الجولة ${C.avg_run_s??"—"} ث · المراقب المستقل: ${C.watchdog?esc((C.watchdog.status==="completed"?(C.watchdog.conclusion==="success"?"آخر فحص ناجح ":"آخر فحص فشل "):"يعمل الآن ")+hm(C.watchdog.at)):"—"}</small></div>
+  <div class="stats" style="margin-top:10px">${stat(O.items_1h,"خبر/مادة آخر ساعة")}${stat(dl.median_min!=null?fmtDelay(dl.median_min):"—","متوسط زمن الاكتشاف")}${stat(S.working,"مصادر نشطة")}${stat((S.failing||0)+(S.isolated||0),"متوقفة/معزولة")}</div>
+  <div class="stats" style="margin-top:8px">${stat(O.auto_healed,"أعطال عولجت تلقائياً")}${stat(S.stalled_abnormal,"توقف غير طبيعي")}${stat((D.added||[]).length,"مصادر مضافة (اكتشاف)")}${stat((D.review||[]).length,"تحتاج مراجعة")}</div>
+  <div class="sec minor"><h2>سجل الأعطال والمعالجة</h2><span>${(O.incidents||[]).length}</span></div>
+  ${(O.incidents||[]).length?`<ol class="tl">${O.incidents.map(i=>`<li><div><b>${esc(i.kind)}</b> <small>${esc(full(i.at))} · ${esc(i.by)}</small><small>السبب: ${esc(i.cause)}</small><small>الإجراء: ${esc(i.action)} · النتيجة: ${esc(i.result)}</small></div></li>`).join("")}</ol>`:'<p class="note">ما صار عطل مسجّل.</p>'}
+  <div class="sec minor"><h2>المصادر المعزولة (Circuit Breaker)</h2><span>${(O.breaker||[]).length}</span></div>
+  <p class="note">مصدر فشل 3 مرات أو أكثر ينعزل حتى ما يأخر الجولة، ويتجرّب بفواصل تكبر: كل ~15 دقيقة، بعدين كل ساعة، بعدين كل 4 ساعات.</p>
+  <ul class="note">${(O.breaker||[]).map(b=>`<li>${esc(srcName(b.name))} — ${b.failures} إخفاق · يُجرب كل ~${b.retry_every_min} د · آخر نجاح ${b.last_success?esc(full(b.last_success)):"أبداً"}</li>`).join("")||"<li>لا شيء</li>"}</ul>
+  <div class="sec minor"><h2>توقف غير طبيعي</h2><span>الجلب ينجح بس الأخبار واكفة أكثر من معدلها</span></div>
+  <ul class="note">${(O.stalled||[]).map(x=>`<li>${esc(srcName(x.name))} — بلا جديد ${fmtDelay(x.since_min)} (معدله خبر كل ~${fmtDelay(x.typical_gap_min)})</li>`).join("")||"<li>لا شيء</li>"}</ul>
+  <div class="sec minor"><h2>محرك اكتشاف المصادر</h2><span>كل 6 ساعات · آخر تشغيل ${D.last_run?esc(full(D.last_run)):"—"}</span></div>
+  <p class="note"><b>أضيف تلقائياً:</b> ${(D.added||[]).map(a=>`<a style="color:var(--blue)" href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.name)}</a> (${a.score})`).join("، ")||"لا شيء بعد"}</p>
+  <p class="note"><b>تحتاج مراجعة</b> — للقبول أرسل للبوت <code>/مصدر قبول المفتاح</code> أو <code>/مصدر رفض المفتاح</code>:</p>
+  <div class="list">${(D.review||[]).map(c=>`<div class="src-row"><div class="top2"><b>${esc(c.name)}</b><span class="stt warn">${c.score}</span></div><small>${esc(c.type)} · ${c.n24??0} منشور/24س · صلة بالعراق ${Math.round((c.iraq||0)*100)}% · أصالة ${Math.round((c.original||0)*100)}%${c.lead_min!=null?` · يسبق مصادرنا ${c.lead_min} د`:""}</small><small><a style="color:var(--blue)" href="${esc(c.url)}" target="_blank" rel="noopener">فتح ↗</a> · <button class="more-l" type="button" data-copyid="/مصدر قبول ${esc(c.key)}" style="padding:0">نسخ أمر القبول</button> · <span class="idbox" style="display:inline">${esc(c.key)}</span></small></div>`).join("")||'<div class="empty">ما كو</div>'}</div>
+  <div class="sec minor"><h2>آخر فحص شامل</h2><span>كل 6 ساعات</span></div>
+  <dl class="kv"><dt>الوقت</dt><dd>${F.at?esc(full(F.at)):"—"} · ${F.ok?"✅ سليم":F.at?"⚠️ "+esc((F.problems||[]).join("، ")):"—"}</dd><dt>سلامة القاعدة</dt><dd>${esc(F.db_integrity||"—")}</dd>
+  <dt>عمر النسخة الاحتياطية</dt><dd>${F.snapshot_age_min!=null?F.snapshot_age_min+" د":"—"}</dd><dt>اختبار الاستعادة</dt><dd>${F.restore_test_ok?"ناجح":"—"}</dd>
+  <dt>الجولات (6 ساعات)</dt><dd>${F.runs_6h??"—"} · فاشلة ${F.failed_runs_6h??0}</dd></dl></div>`;
 }
 function vEditors(){
   return `<div class="narrow">${back}<div class="sec"><h2>صندوق المحررين</h2></div>
