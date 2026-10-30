@@ -76,8 +76,8 @@ def worthy(n, now):
     if not seen or datetime.fromisoformat(seen.replace("Z", "+00:00")) < now - timedelta(minutes=12):
         return False
     if n.get("about_iraq") or n.get("pmf"):
-        return bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم")
-    return bool(n.get("source_flag")) and n.get("origin") != "أجنبي"
+        return bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم", "متابعة")
+    return n.get("origin") != "أجنبي" and (bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم"))
 
 
 def meta_line(n):
