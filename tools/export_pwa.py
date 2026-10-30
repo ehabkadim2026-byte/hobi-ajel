@@ -11,6 +11,7 @@ from marsad.report import cluster_dossier  # noqa: E402
 from marsad.textnorm import iso, now_utc  # noqa: E402
 from tools.export_app import status_of  # noqa: E402
 from tools import verify as V, watch as W  # noqa: E402
+from marsad.collect import IRAQ_RX as IRAQ_MULTI  # noqa: E402
 
 
 import re  # noqa: E402
@@ -168,12 +169,14 @@ def main(hours=24):
             # المصدر نفسه وسمه «عاجل»: يصير عاجلاً، إلا إذا كانت القناة مجمّعاً يسمي كل شي عاجل (اسمها فيه «عاجل»)
             names = [e["source"] or "" for e in ev]
             level = "مهم" if all("عاجل" in n for n in names) else "عاجل"
-        regs = {r[0] or "" for r in con.execute("SELECT s.region FROM items i JOIN sources s ON s.id=i.source_id WHERE i.cluster_id=?", (c["id"],))}
+        rl = con.execute("SELECT s.region, s.lang FROM items i JOIN sources s ON s.id=i.source_id WHERE i.cluster_id=?", (c["id"],)).fetchall()
+        regs = {r[0] or "" for r in rl}
+        langs = {r[1] or "" for r in rl}
         origins = {"أجنبي" if r.startswith("أجنبي") else "عربي" if r.startswith("إقليمي") else "عراقي" for r in regs} or {"عراقي"}
         origin = "عراقي" if "عراقي" in origins else "عربي" if "عربي" in origins else "أجنبي"
         alltext = " ".join(texts) + " " + (d["label"] or "")
         ntext = norm_ar(alltext)
-        iraq_kw = any(w in ntext for w in IRAQ_AR) or bool(IRAQ_EN.search(alltext))
+        iraq_kw = any(w in ntext for w in IRAQ_AR) or bool(IRAQ_EN.search(alltext)) or bool(IRAQ_MULTI.search(alltext))
         foreign_kw = any(w in ntext for w in FOREIGN_AR)
         about_iraq = iraq_kw or (origin == "عراقي" and not foreign_kw)
         if origin == "أجنبي" and not iraq_kw:
@@ -190,6 +193,8 @@ def main(hours=24):
         title_ar = tr.get(title) or tr.get((d["label"] or "").strip())
         if not ARABIC_CH.search(title_ar or title):
             continue  # لا نعرض عنواناً غير مترجم للعربية
+        if not title_ar and langs and langs <= {"fa", "tr"}:
+            continue  # فارسي/تركي غير مترجم بعد (الفارسي بحروف عربية لكنه ليس عربياً)
         en = title if title_ar else ""
         kind = None
         if origin == "أجنبي":

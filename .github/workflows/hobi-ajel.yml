@@ -35,7 +35,7 @@ jobs:
         run: python3 -m tools.archive restore
       - name: translation model cache (Argos en→ar، مجاني)
         uses: actions/cache@v4
-        with: {path: ~/argos, key: argos-en-ar-v1}
+        with: {path: ~/argos, key: argos-en-ar-fa-tr-v2}
       - run: pip install -q ctranslate2 sentencepiece pillow arabic-reshaper python-bidi
         continue-on-error: true
       - name: arabic font cache (بطاقات منشورات تلغرام)
@@ -56,6 +56,10 @@ jobs:
           MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
       - name: process (بدون PDF واللوحة لتسريع الجولة)
         run: python3 -c "from marsad import core; c=core.connect(); core.prune(c, 8); core.cluster_items(c, window_hours=48); core.generate_alerts(c)"
+      - name: translation models (en→ar + fa→en + tr→en، مرة واحدة ثم من الكاش)
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python3 -c "from tools.translate import ensure_model, PIVOT; ensure_model(); ensure_model('fa','en',PIVOT['fa']); ensure_model('tr','en',PIVOT['tr'])"
       - name: translate foreign titles (ترجمة آلية؛ فشلها لا يوقف الجولة)
         run: python3 -m tools.translate
         continue-on-error: true

@@ -116,7 +116,8 @@ def collect_telegram(source, last_seen=None, max_pages=3):
     return items
 
 
-IRAQ_RX = re.compile(r"\b(Iraq|Iraqi|Iraqis|Baghdad|Kurdistan|Erbil|Irbil|Basra|Basrah|Mosul|Kirkuk|Najaf|Karbala|Sulaymaniyah|Anbar|Fallujah|Sinjar|Duhok|Sudani|Zaidi)\b", re.I)
+IRAQ_RX = re.compile(r"\b(Iraq|Iraqi|Iraqis|Baghdad|Kurdistan|Erbil|Irbil|Basra|Basrah|Mosul|Kirkuk|Najaf|Karbala|Sulaymaniyah|Anbar|Fallujah|Sinjar|Duhok|Sudani|Zaidi"
+                     r"|Irak\w*|Bağdat|Kerkük|Musul|Süleymaniye|Haşdi)\b|عراق|بغداد|اربیل|اربيل|کرکوک|كركوك|موصل|بصره|سلیمانیه|حشد الشعبی|حشدالشعبی", re.I)
 
 
 def _google_news(items):

@@ -21,6 +21,7 @@ from marsad import core  # noqa: E402
 
 INDEX = "https://raw.githubusercontent.com/argosopentech/argospm-index/main/index.json"
 MODEL_DIR = Path.home() / "argos" / "en_ar"
+PIVOT = {"fa": Path.home() / "argos" / "fa_en", "tr": Path.home() / "argos" / "tr_en"}  # فارسي/تركي → إنكليزي → عربي
 CACHE = ROOT / "data" / "translations.json"
 STATUS = ROOT / "pwa" / "translate_status.json"
 LATIN = re.compile(r"[A-Za-z]")
@@ -33,23 +34,25 @@ def _get(url, timeout=120):
         return r.read()
 
 
-def ensure_model():
-    if (MODEL_DIR / "ready").exists():
+def ensure_model(frm="en", to="ar", d=None):
+    d = d or MODEL_DIR
+    if (d / "ready").exists():
         return
     idx = json.loads(_get(INDEX))
-    pkg = next(p for p in idx if p.get("from_code") == "en" and p.get("to_code") == "ar")
+    pkg = next(p for p in idx if p.get("from_code") == frm and p.get("to_code") == to)
     blob = _get(pkg["links"][0], timeout=600)
-    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    d.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(io.BytesIO(blob)) as z:
-        z.extractall(MODEL_DIR)
-    (MODEL_DIR / "ready").write_text(json.dumps({"version": pkg.get("package_version")}))
+        z.extractall(d)
+    (d / "ready").write_text(json.dumps({"version": pkg.get("package_version")}))
 
 
-def load_translator():
+def load_translator(d=None):
     import ctranslate2
     import sentencepiece as spm
-    mb = next(MODEL_DIR.rglob("model.bin"))
-    sp_path = next(MODEL_DIR.rglob("sentencepiece.model"))
+    d = d or MODEL_DIR
+    mb = next(d.rglob("model.bin"))
+    sp_path = next(d.rglob("sentencepiece.model"))
     return ctranslate2.Translator(str(mb.parent), device="cpu", inter_threads=2), spm.SentencePieceProcessor(model_file=str(sp_path))
 
 
@@ -81,9 +84,12 @@ def post(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
-def needs(text):
-    return (bool(text) and len(LATIN.findall(text)) > 8 and not ARABIC.search(text)
-            and not URL_RX.search(text) and len(text.split()) >= 3)
+def needs(text, lang="en"):
+    if not text or URL_RX.search(text) or len(text.split()) < 3:
+        return False
+    if lang == "fa":
+        return bool(ARABIC.search(text))
+    return len(LATIN.findall(text)) > 8 and not ARABIC.search(text)
 
 
 def main(limit=500, budget_s=90):
@@ -98,13 +104,36 @@ def main(limit=500, budget_s=90):
     status = {"ok": False, "translated_now": 0, "cached": len(cache), "error": None}
     try:
         con = core.connect()
-        todo = []
-        for (t,) in con.execute("SELECT DISTINCT i.title FROM items i JOIN sources s ON s.id=i.source_id "
-                                "WHERE s.lang='en' AND i.collected_utc >= datetime('now','-2 day') ORDER BY i.collected_utc DESC"):
+        todo, pivot = [], {"fa": [], "tr": []}
+        for (t, lang) in con.execute("SELECT DISTINCT i.title, s.lang FROM items i JOIN sources s ON s.id=i.source_id "
+                                     "WHERE s.lang IN ('en','fa','tr') AND i.collected_utc >= datetime('now','-2 day') ORDER BY i.collected_utc DESC"):
             t = (t or "").strip()
-            if needs(t) and t not in cache and t not in todo:
+            if t in cache:
+                continue
+            if lang == "en" and needs(t) and t not in todo:
                 todo.append(t)
+            elif lang in pivot and needs(t, lang) and t not in pivot[lang]:
+                pivot[lang].append(t)
         todo = todo[:limit]
+        # فارسي/تركي: نترجم للإنكليزي أولاً (نموذج مستقل)، ثم يمر بنفس مسار إنكليزي→عربي. الترجمة الوسيطة تُضعف الدقة: تُوسم آلياً.
+        via = {}
+        for lang, lst in pivot.items():
+            lst = lst[:120]
+            if not lst or time.time() - t0 > budget_s * 0.4:
+                continue
+            try:
+                ensure_model(lang, "en", PIVOT[lang])
+                ptr, psp = load_translator(PIVOT[lang])
+                res = ptr.translate_batch([psp.encode(x, out_type=str) for x in lst], beam_size=2, max_decoding_length=160)
+                for src, r in zip(lst, res):
+                    en = psp.decode(r.hypotheses[0]).replace("▁", " ").strip()
+                    if en and len(LATIN.findall(en)) > 8:
+                        via[en] = src
+                        if en not in todo:
+                            todo.append(en)
+                status.setdefault("pivot", {})[lang] = len(lst)
+            except Exception as e:  # noqa: BLE001
+                status.setdefault("pivot_error", {})[lang] = f"{type(e).__name__}: {e}"[:120]
         if todo:
             ensure_model()
             tr, sp = load_translator()
@@ -116,13 +145,13 @@ def main(limit=500, budget_s=90):
                 for src, r in zip(batch, res):
                     out = post(sp.decode(r.hypotheses[0]).replace("▁", " "))
                     if out and ARABIC.search(out) and len(out.split()) >= 0.45 * len(src.split()):
-                        cache[src] = out
+                        cache[via.get(src, src)] = out
                         status["translated_now"] += 1
         status["ok"] = True
         status["sample"] = [[k, cache[k]] for k in todo[:5] if k in cache]
     except Exception as e:  # noqa: BLE001
         status["error"] = f"{type(e).__name__}: {e}"[:300]
-    cache = {k: v for k, v in cache.items() if k != "_v" and needs(k) and k != v}
+    cache = {k: v for k, v in cache.items() if k != "_v" and (needs(k) or needs(k, "fa")) and k != v}
     if len(cache) > 6000:
         cache = dict(list(cache.items())[-4000:])
     cache["_v"] = VERSION
