@@ -34,6 +34,29 @@ SETUP = """📲 ربط إشعارات فيسبوك بالرصد (مرة واحد
 ⚠️ لا تشارك هذا الرابط أو الكلمة مع أحد."""
 
 
+import re  # noqa: E402
+
+# خصوصية: لا يدخل الرصد إلا إشعار «صفحة نشرت». كل ما يخص حسابك الشخصي يُرمى ولا يُخزن أبداً.
+PERSONAL = re.compile(r"(منشورك|منشورِك|صورتك|تعليقك|قصتك|على منشور لك|ذكرك|أشار إليك|اشار اليك|إشارة إليك|طلب صداقة|طلب الصداقة|صديق|أصدقاء|عيد ميلاد|ذكريات|"
+                      r"أعجب|اعجب|تفاعل|رسالة|رسائل|مجموعة|حدث|دعاك|دعوة|سوق|Marketplace|your post|your photo|your comment|mentioned you|tagged you|"
+                      r"friend|birthday|memories|reacted|liked|message|invited|group|event)", re.I)
+POSTED = re.compile(r"(نشر|نشرت|شارك|شاركت|بث مباشر|بثاً مباشراً|أضاف|أضافت|posted|shared|is live|went live|added|updated)", re.I)
+
+
+def allowed(page, text):
+    """القائمة البيضاء في config/fb_pages.json (إن وُجدت) لها الأولوية؛ وإلا: «صفحة نشرت» وليس إشعاراً شخصياً."""
+    try:
+        wl = json.loads((ROOT / "config" / "fb_pages.json").read_text(encoding="utf-8")).get("pages", [])
+    except Exception:  # noqa: BLE001
+        wl = []
+    blob = page + " " + text
+    if PERSONAL.search(blob):
+        return False
+    if wl:
+        return any(w and w in blob for w in wl)
+    return bool(POSTED.search(blob))
+
+
 def secrets(token):
     h = hashlib.sha256((token + "|rasid-fb").encode()).hexdigest()
     return "rasid-" + h[:24], h[24:30]
@@ -72,7 +95,8 @@ def main():
                 continue
             parts = [p.strip() for p in msg[len(pw):].strip(" |").split("|", 1)]
             page, text = (parts[0], parts[1]) if len(parts) == 2 else ("فيسبوك", parts[0])
-            if len(text) < 10:
+            if len(text) < 10 or not allowed(page, text):
+                stats["filtered_private"] = stats.get("filtered_private", 0) + 1
                 continue
             items.append({"source_id": "fb:notifications", "source_name": f"إشعار فيسبوك — {page[:60]}",
                           "url": f"https://fb-notification.hobi-ajel.local/{ev['id']}", "platform": "facebook_notif",
