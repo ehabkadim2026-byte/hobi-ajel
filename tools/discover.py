@@ -194,13 +194,18 @@ def fast_outlets(con, st, disc, t0, budget=100):
     for (n,) in con.execute("SELECT source_name FROM items WHERE url LIKE '%news.google.com%' AND collected_utc >= ?", (since,)):
         cnt[re.sub(r"\s*\(عبر Google News\)$", "", n or "").strip()] += 1
     pubs = {v.strip(): u for u, v in gn_publishers().items()}
-    _, doms = known(con)
+    # «معروف» هنا = مرصود مباشرة (RSS/تلغرام)، لا عبر استعلامات site: في Google News (تلك هي البطيئة)
+    doms = set()
+    for (u,) in con.execute("SELECT url FROM sources WHERE method IN ('rss','telegram_preview') AND url NOT LIKE '%news.google.com%'"):
+        h = urlsplit(u or "").netloc
+        if h:
+            doms.add(h[4:] if h.startswith("www.") else h)
     added = []
     for name, c in cnt.most_common(40):
         if time.time() - t0 > budget:
             break
         home = pubs.get(name)
-        if not home or c < 5:
+        if not home or c < 5 or len(name.split()) > 5:  # اسم بشكل عنوان خبر = بيانات ناشر خاطئة
             continue
         dom = urlsplit(home).netloc.replace("www.", "")
         key = "fast:" + dom
@@ -273,7 +278,7 @@ def main(force=False):
         if NON_NEWS_TOPIC.search((c.get("name") or "") + " " + (c.get("desc") or "")) or (c.get("iraq") or 0) < 0.3:
             st["review"].pop(k)
             st["seen"][k] = {"t": time.time(), "decision": "رفض", "why": "إعادة تقييم: ليس إخبارياً أو صلة ضعيفة"}
-    due = force or time.time() - st.get("last", 0) >= EVERY_H * 3600 or not st.get("fast_v1")
+    due = force or time.time() - st.get("last", 0) >= EVERY_H * 3600 or not st.get("fast_v2")
     report = {"ran": False}
     if due:
         t0 = time.time()
@@ -328,7 +333,7 @@ def main(force=False):
             fast = fast_outlets(con, st, disc, t0, budget=max(30, 200 - (time.time() - t0)))
         except Exception as e:  # noqa: BLE001
             fast = [f"خطأ: {type(e).__name__}"]
-        st["fast_v1"] = True
+        st["fast_v2"] = True
         auto += [{"name": n, "url": "", "score": 0, "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")} for n in fast if not n.startswith("خطأ")]
         st["last"] = time.time()
         st["added"] = (st.get("added", []) + [{"name": c["name"], "url": c["url"], "score": c["score"], "at": c["at"]} for c in auto])[-100:]
