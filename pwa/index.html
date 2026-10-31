@@ -248,6 +248,8 @@ const score=n=>(LV[n.level]?.w||0)+Math.min(n.n_sources||1,6)*4+(ST[n.status]?.[
 const byNew=(a,b)=>ms(b.latest_utc)-ms(a.latest_utc);
 const fmtDelay=m=>m==null?"":m<1?"أقل من دقيقة":m<60?`${Math.round(m)} د`:`${Math.round(m/60)} س`;
 const isUrg=n=>n.source_flag||n.level==="عاجل";
+const t0=n=>n.first_utc||n.latest_utc; // وقت أول نشر للخبر لدى أي مصدر مرصود
+const lateMin=n=>(n.first_utc&&n.collected_utc)?(ms(n.collected_utc)-ms(n.first_utc))/60000:0;
 
 function tagsOf(n){
   return `${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${n.source_flag?'<span class="tag t-urgent">عاجل المصدر</span>':(LV[n.level]?LV[n.level].t:"")}${n.escalating?'<span class="tag t-esc">متصاعد</span>':""}<span class="tag t-type">${esc(n.ctype||"خبر")}</span><span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}${n.manual?'<span class="tag t-man">إدخال يدوي</span>':""}${n.pmf_class&&view==="pmf"?`<span class="tag t-follow">${esc(n.pmf_class)}</span>`:""}${view==="watch"&&sub.watch?provTag(((n.watch||[]).find(w=>w.id===sub.watch)||{}).prov):""}<span class="st ${VS[n.vstatus]||ST[n.status]?.[0]||"s-unv"}">${esc(n.vstatus||n.status||"غير متحقق")}</span>`;
@@ -255,9 +257,9 @@ function tagsOf(n){
 function card(n){
   const s=(n.sources||[])[0]||{};
   return `<div role="button" tabindex="0" class="card ${isUrg(n)?"l-urgent":LV[n.level]?LV[n.level].c:""}" data-id="${esc(n.id)}">
-    <div class="when"><b>${esc(hm(n.latest_utc))}</b><small>${esc(day(n.latest_utc))}</small><small>${esc(dm(n.latest_utc))}</small></div>
+    <div class="when"><b>${esc(hm(t0(n)))}</b><small>${esc(day(t0(n)))}</small><small>${esc(dm(t0(n)))}</small></div>
     <div class="body"><div class="tags">${tagsOf(n)}</div><h3 class="title">${esc(n.title)}</h3>${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p>`:""}
-    <div class="meta"><span>${esc(srcName(s.name))}${n.n_sources>2?` و${n.n_sources-1} جهات`:n.n_sources===2?" وجهة أخرى":""}</span><span class="sep">رُصد ${esc(hm(n.collected_utc))}</span>${s.url?`<a class="sep" href="${esc(s.url)}" target="_blank" rel="noopener" data-stop>الأصل ↗</a>`:""}</div></div></div>`;
+    <div class="meta"><span>${esc(srcName(s.name))}${n.n_sources>2?` و${n.n_sources-1} جهات`:n.n_sources===2?" وجهة أخرى":""}</span><span class="sep">رُصد ${esc(hm(n.collected_utc))}${lateMin(n)>15?` · <b style="color:var(--gold)">نُشر قبل رصدنا بـ${esc(fmtDelay(lateMin(n)))}</b>`:""}</span>${s.url?`<a class="sep" href="${esc(s.url)}" target="_blank" rel="noopener" data-stop>الأصل ↗</a>`:""}</div></div></div>`;
 }
 const block=(t,subt,rows,more)=>`<div class="sec"><h2>${esc(t)}</h2>${more?`<button class="more-l" type="button" data-go="${more}">${esc(subt)} ←</button>`:`<span>${esc(subt)}</span>`}</div>`+(rows.length?`<div class="list">${rows.map(card).join("")}</div>`:'<div class="empty">ما كو أخبار بهذا القسم لحد الآن.</div>');
 
@@ -296,13 +298,13 @@ const segBar=(k,opts)=>`<div class="seg" data-seg="${k}" style="margin-top:16px"
 function vHome(all){
   const h6=all.filter(n=>mins(n.latest_utc)<=360);
   const escal=all.filter(n=>n.escalating).sort((a,b)=>score(b)-score(a)).slice(0,10);
-  const five=all.filter(n=>n.about_iraq&&(n.level in LV||n.source_flag)&&mins(n.latest_utc)<=5).sort((a,b)=>score(b)-score(a));
+  const five=all.filter(n=>n.about_iraq&&(n.level in LV||n.source_flag)&&mins(t0(n))<=5).sort((a,b)=>score(b)-score(a));
   const sf=h6.filter(n=>n.source_flag).sort(byNew).slice(0,8);
   const imp=h6.filter(n=>!n.source_flag&&(n.level==="عاجل"||n.level==="مهم")).sort((a,b)=>score(b)-score(a)).slice(0,8);
   const tr=h6.filter(n=>n.trending_unconfirmed&&!n.source_flag).sort((a,b)=>b.n_sources-a.n_sources).slice(0,8);
   let h="";
   if(escal.length) h+=`<div class="sec"><h2>أحداث متصاعدة</h2><span>تكاثرت تغطيتها بآخر ساعة</span></div><div class="esc">${escal.map(n=>`<button type="button" data-id="${esc(n.id)}"><small>${n.n_items} مادة · ${n.n_sources} جهات</small><b>${esc(n.title)}</b></button>`).join("")}</div>`;
-  h+=`<div class="sec"><h2>آخر 5 دقائق · المهم عن العراق</h2><span>${five.length} خبر</span></div>`+(five.length?`<div class="tbl"><div class="tr th"><span>الوقت</span><span>الخبر</span><span>المصدر</span></div>${five.map(n=>{const s=(n.sources||[])[0]||{};return`<button type="button" class="tr" data-id="${esc(n.id)}"><span class="tt"><b>${esc(hm(n.latest_utc))}</b><small>${esc(ago(n.latest_utc))}</small></span><span class="th2">${n.source_flag?'<span class="tag t-urgent">عاجل</span> ':LV[n.level]?LV[n.level].t+" ":""}${esc(n.title)}</span><span class="ts">${esc(srcName(s.name))}<small>${n.n_sources>1?n.n_sources+" جهات":"جهة واحدة"}</small></span></button>`}).join("")}</div>`:'<div class="note-box">ما نشرت المصادر المرصودة خبراً مهماً عن العراق بآخر 5 دقائق.</div>');
+  h+=`<div class="sec"><h2>آخر 5 دقائق · المهم عن العراق</h2><span>${five.length} خبر</span></div>`+(five.length?`<div class="tbl"><div class="tr th"><span>الوقت</span><span>الخبر</span><span>المصدر</span></div>${five.map(n=>{const s=(n.sources||[])[0]||{};return`<button type="button" class="tr" data-id="${esc(n.id)}"><span class="tt"><b>${esc(hm(t0(n)))}</b><small>${esc(ago(t0(n)))}</small></span><span class="th2">${n.source_flag?'<span class="tag t-urgent">عاجل</span> ':LV[n.level]?LV[n.level].t+" ":""}${esc(n.title)}</span><span class="ts">${esc(srcName(s.name))}<small>${n.n_sources>1?n.n_sources+" جهات":"جهة واحدة"}</small></span></button>`}).join("")}</div>`:'<div class="note-box">ما نشرت المصادر المرصودة خبراً مهماً عن العراق بآخر 5 دقائق.</div>');
   h+=`<div class="tri"><div>${block("عاجل نشره المصدر","آخر 6 ساعات",sf)}</div><div>${block("مهم صنّفه النظام","آخر 6 ساعات",imp)}</div><div>${block("متداول لم يتأكد بعد","3 جهات أو أكثر",tr)}</div></div>`;
   const cI=all.filter(n=>n.about_iraq&&!n.pmf).sort(byNew).slice(0,12), cP=all.filter(n=>n.pmf).sort(byNew).slice(0,12), cW=all.filter(n=>!n.about_iraq||n.origin!=="عراقي").sort(byNew).slice(0,12);
   h+=`<div class="cols" style="margin-top:10px"><div class="col">${block("العراق","الكل",cI,"iraq")}</div><div class="col">${block("الحشد الشعبي","الكل",cP,"pmf")}</div><div class="col">${block("المنطقة والعالم","الكل",cW,"world")}</div></div>`;

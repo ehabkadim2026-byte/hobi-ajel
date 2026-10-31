@@ -8,6 +8,7 @@
 """
 import html as H
 import json
+import re
 import os
 import uuid
 import sys
@@ -77,6 +78,9 @@ def worthy(n, now):
     seen = n.get("collected_utc")
     if not seen or datetime.fromisoformat(seen.replace("Z", "+00:00")) < now - timedelta(minutes=12):
         return False
+    first = n.get("first_utc")  # أول نشر للخبر لدى أي مصدر مرصود: إذا انتشر قبل أكثر من 25 دقيقة فهو ليس «جديداً» للقناة
+    if first and datetime.fromisoformat(first.replace("Z", "+00:00")) < now - timedelta(minutes=25):
+        return False
     if n.get("about_iraq") or n.get("pmf"):
         return bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم", "متابعة")
     return n.get("origin") != "أجنبي" and (bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم"))
@@ -97,33 +101,88 @@ def is_breaking(n):
     return rank(n) >= 3 or (n.get("n_sources") or 1) >= 3
 
 
+VAGUE_RX = re.compile(r"(شاهد|بالفيديو|بالصور|فيديو|التفاصيل|تفاصيل|إليكم|اليكم|هذا ما|ماذا|لماذا|كيف|هكذا|إليك|اليك|تعرف|الكشف عن|كشف عن|مفاجأة|\?|؟|…|\.\.\.?$)")
+
+
+def is_vague(title):
+    """عنوان مبهم لا يكفي وحده: قصير، أو بصيغة «شاهد/التفاصيل/ماذا…»، أو ينتهي بنقطتين."""
+    t = (title or "").strip()
+    words = len(t.split())
+    return words < 7 or bool(VAGUE_RX.search(t)) or t.endswith(":")
+
+
 def fmt(n, update=False):
-    """الخبر فقط، وأسفله دعوة القناة — بلا تفاصيل رصد."""
+    """الخبر فقط، وأسفله دعوة القناة. رابط المصدر يُضاف فقط للعناوين المبهمة."""
     mark = "🔴 عاجل | " if is_breaking(n) else ""
-    return f"<b>{mark}{H.escape(n['title'][:800])}</b>\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
+    _, url = src(n)
+    more = f"\n\n🔗 التفاصيل: {H.escape(url)}" if (url and is_vague(n["title"]) and "news.google.com" not in url) else ""
+    return f"<b>{mark}{H.escape(n['title'][:800])}</b>{more}\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
 
 
-def post(token, chat_id, n, upd):
-    """صورة المنشور الأصلي إن وُجدت، وإلا بطاقة بالعنوان، وإلا نص فقط."""
+CARDS = PWA / "cards"
+PENDING = DATA / "tg_pending.json"
+
+
+def prepare_card(n):
+    """يصنع بطاقة الخبر (صورة المصدر أو خلفية الهوية) ويحفظها في pwa/cards ليُنشر رابطها مع موقع التطبيق."""
     from tools import tg_card
-    cap = fmt(n, upd)
     _, url = src(n)
     img = tg_card.find_image(url)
     DEBUG.append(f"{urllib.parse.urlparse(url).netloc}:{'img' if img else 'noimg'}")
+    photo = None
     if img:
         try:
-            jpg = tg_card.news_card(tg_card.fetch_jpeg(img), n["title"], is_breaking(n), bg(n.get("latest_utc")))
-            api(token, "sendPhoto", files={"photo": ("src.jpg", jpg)}, chat_id=chat_id, caption=cap, parse_mode="HTML")
-            return "source"
+            photo = tg_card.fetch_jpeg(img)
+        except Exception as e:  # noqa: BLE001
+            DEBUG.append(f"imgfail:{type(e).__name__}")
+    jpg = tg_card.news_card2(photo, n["title"], is_breaking(n), n.get("first_utc") or n.get("latest_utc"))
+    CARDS.mkdir(parents=True, exist_ok=True)
+    name = re.sub(r"[^A-Za-z0-9_]", "", n["id"])[:40] + f"_{int(datetime.now(timezone.utc).timestamp())}.jpg"
+    (CARDS / name).write_bytes(jpg)
+    return name, "source" if photo else "card"
+
+
+def url_ok(u, timeout=6):
+    try:
+        req = urllib.request.Request(u, method="HEAD", headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status == 200
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def send_pending(token, chat_id):
+    """بعد نشر الموقع: رسالة نصية قابلة للنسخ بالكامل، وصورة البطاقة كبيرة فوق النص (معاينة الرابط).
+    إذا لم يصبح رابط البطاقة متاحاً خلال المهلة نرسلها صورةً مع تعليق (احتياط)."""
+    import time as _t
+    pend = load(PENDING, [])
+    done = {"preview": 0, "photo": 0, "text": 0}
+    deadline = _t.time() + 60
+    for p in pend:
+        cu = APP_URL + "cards/" + p["card"]
+        ok = False
+        while _t.time() < deadline:
+            if url_ok(cu):
+                ok = True
+                break
+            _t.sleep(4)
+        try:
+            if ok:
+                api(token, "sendMessage", chat_id=chat_id, text=p["text"], parse_mode="HTML",
+                    link_preview_options=json.dumps({"url": cu, "prefer_large_media": True, "show_above_text": True}))
+                done["preview"] += 1
+            else:
+                api(token, "sendPhoto", files={"photo": (p["card"], (CARDS / p["card"]).read_bytes())}, chat_id=chat_id, caption=p["text"][:1024], parse_mode="HTML")
+                done["photo"] += 1
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"sendfail:{type(e).__name__}:{str(e)[:60]}")
-    try:
-        jpg = tg_card.news_card(None, n["title"], is_breaking(n), bg(n.get("latest_utc")))
-        api(token, "sendPhoto", files={"photo": ("hobi.jpg", jpg)}, chat_id=chat_id, caption=cap, parse_mode="HTML")
-        return "card"
-    except Exception:  # noqa: BLE001
-        api(token, "sendMessage", chat_id=chat_id, text=cap, parse_mode="HTML", disable_web_page_preview="true")
-        return "text"
+            try:
+                api(token, "sendMessage", chat_id=chat_id, text=p["text"], parse_mode="HTML", disable_web_page_preview="true")
+                done["text"] += 1
+            except Exception:  # noqa: BLE001
+                pass
+    PENDING.write_text("[]", encoding="utf-8")
+    return done
 
 
 def digest(news, now):
@@ -261,12 +320,20 @@ def main():
             sent["_init"] = True
             out = []
         status["images"] = {}
-        for n, upd in out[-MAX_PER_RUN:]:
-            kind = post(token, chat_id, n, upd)
+        pend = []
+        # العاجل أولاً ثم الأحدث
+        for n, upd in sorted(out[-MAX_PER_RUN:], key=lambda x: (not is_breaking(x[0]), x[0].get("collected_utc") or "")):
+            try:
+                card, kind = prepare_card(n)
+            except Exception as e:  # noqa: BLE001
+                DEBUG.append(f"cardfail:{type(e).__name__}")
+                continue
             status["images"][kind] = status["images"].get(kind, 0) + 1
+            pend.append({"id": n["id"], "card": card, "text": fmt(n, upd)})
             sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "b": is_breaking(n)}
             status["sent_now"] += 1
-            SENT.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
+        PENDING.write_text(json.dumps(pend, ensure_ascii=False), encoding="utf-8")
+        SENT.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
         # موجز 8 صباحاً بغداد، مرة واحدة يومياً
         bgd = now + timedelta(hours=3)
         today = bgd.strftime("%Y-%m-%d")
@@ -290,5 +357,21 @@ def main():
     print({k: v for k, v in status.items()})
 
 
+def send_main():
+    token = os.environ.get("MARSAD_TG_BOT_TOKEN", "").strip()
+    if not token:
+        return
+    chat = load(CHAT, {})
+    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id") or "@hassawassal"
+    try:
+        r = send_pending(token, chat_id)
+    except Exception as e:  # noqa: BLE001
+        r = {"error": f"{type(e).__name__}: {str(e).replace(token, '***')[:150]}"}
+    print(f"::notice title=tg_send::{json.dumps({**r, 'debug': DEBUG[-6:]}, ensure_ascii=False)}")
+
+
 if __name__ == "__main__":
-    main()
+    if "--send" in sys.argv:
+        send_main()
+    else:
+        main()

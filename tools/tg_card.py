@@ -283,3 +283,114 @@ def news_card(photo_jpg, title, breaking=True, time_str="", handle="t.me/hassawa
     buf = io.BytesIO()
     im.save(buf, "JPEG", quality=90)
     return buf.getvalue()
+
+
+AR_DAYS = ["الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"]
+AR_MONTHS = ["كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران", "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"]
+
+
+def news_card2(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hassawassal"):
+    """القالب الفاخر 1280×720: صورة كاملة + لوح زجاجي ضبابي أسفل + خط أحمر-ذهبي + شارة عاجل/خبر + شريحة التاريخ والوقت + الشعار."""
+    from datetime import datetime, timedelta
+    from PIL import ImageDraw as _D, ImageFilter, ImageEnhance
+    W, H, P = 1280, 720, 60
+    red, red2, gold, navy = (210, 20, 40), (150, 8, 24), (232, 182, 64), (9, 20, 44)
+    kw = {"direction": "rtl", "language": "ar"} if RAQM else {}
+    if photo_jpg:
+        base = _cover(Image.open(io.BytesIO(photo_jpg)).convert("RGB"), W, H)
+        base = ImageEnhance.Contrast(base).enhance(1.06)
+    else:
+        base = Image.new("RGB", (W, H), navy)
+        px = base.load()
+        for y in range(H):
+            for x in range(0, W, 2):
+                dx, dy = (x - W * 0.82) / W, (y - H * 0.15) / H
+                g = max(0.0, 1 - (dx * dx + dy * dy) ** 0.5 * 1.6)
+                c = (int(9 + 120 * g * 0.55), int(20 + 10 * g), int(44 + 20 * g))
+                px[x, y] = c
+                if x + 1 < W:
+                    px[x + 1, y] = c
+        d0 = _D.Draw(base)
+        for i, x in enumerate(range(-H, W, 90)):
+            d0.line([(x, H), (x + H, 0)], fill=(70, 90, 140) if i % 4 == 0 else (24, 38, 72), width=1)
+        if LOGO.exists():
+            lgi = Image.open(LOGO)
+            lg = lgi.convert("L").resize((560, int(560 * lgi.height / lgi.width)))
+            base.paste(Image.new("RGB", lg.size, (255, 255, 255)), (W - lg.width - 30, 10), lg.point(lambda v: 22 if v < 200 else 0))
+    im = base.copy()
+    # لوح زجاجي: ضبابية + تعتيم للجزء السفلي
+    top = int(H * 0.52)
+    glass = im.crop((0, top, W, H)).filter(ImageFilter.GaussianBlur(22))
+    glass = Image.blend(glass, Image.new("RGB", glass.size, (6, 12, 28)), 0.62)
+    im.paste(glass, (0, top))
+    # تدرّج انتقالي فوق اللوح
+    fade = Image.new("L", (1, 90))
+    for y in range(90):
+        fade.putpixel((0, y), int(150 * (y / 90) ** 1.6))
+    im.paste(Image.new("RGB", (W, 90), (6, 12, 28)), (0, top - 90), fade.resize((W, 90)))
+    d = _D.Draw(im)
+    # خط أحمر→ذهبي أعلى اللوح
+    for x in range(W):
+        k = x / W
+        d.line([(x, top), (x, top + 5)], fill=(int(gold[0] * (1 - k) + red[0] * k), int(gold[1] * (1 - k) + red[1] * k), int(gold[2] * (1 - k) + red[2] * k)))
+    # شارة عاجل / خبر (يمين، تتقاطع مع الخط)
+    tag = "عاجل" if breaking else "خبر"
+    ft = _font(36)
+    tw = d.textlength(_shape(tag), font=ft, **kw)
+    bx1, by0 = W - P, top - 30
+    bx0 = bx1 - tw - 74
+    d.rounded_rectangle([bx0, by0, bx1, by0 + 60], radius=10, fill=red if breaking else navy, outline=None if breaking else gold, width=0 if breaking else 3)
+    d.ellipse([bx1 - 30, by0 + 23, bx1 - 16, by0 + 37], fill=(255, 255, 255) if breaking else gold)
+    _draw_rtl(d, bx1 - 42, by0 + 6, tag, ft, (255, 255, 255))
+    # العنوان
+    size = 56
+    fb = _font(size)
+    lines = _wrap(d, title, fb, W - 2 * P)
+    while len(lines) > 3 and size > 38:
+        size -= 3
+        fb = _font(size)
+        lines = _wrap(d, title, fb, W - 2 * P)
+    if len(lines) > 3:
+        lines = lines[:3]
+        lines[-1] += " …"
+    lh = int(size * 1.5)
+    bottom_bar = 58
+    avail = H - bottom_bar - (top + 46)
+    y = top + 46 + max(0, (avail - lh * len(lines)) // 2) - 6
+    for ln in lines:
+        _draw_rtl(d, W - P, y + 2, ln, fb, (0, 0, 0))  # ظل خفيف
+        _draw_rtl(d, W - P - 1, y, ln, fb, (255, 255, 255))
+        y += lh
+    # الشريط السفلي
+    d.rectangle([0, H - bottom_bar, W, H], fill=(4, 8, 20))
+    d.rectangle([0, H - bottom_bar, W, H - bottom_bar + 2], fill=red2)
+    fs = _font(24)
+    _draw_rtl(d, W - P, H - bottom_bar + 13, "هسة وصل — أخبار العراق لحظة بلحظة", fs, (230, 232, 240))
+    d.text((P, H - bottom_bar + 15), handle, font=_font(22), fill=gold)
+    # شريحة التاريخ والوقت (أعلى اليمين) + الشعار (أعلى اليسار)
+    if when_utc:
+        try:
+            t = datetime.fromisoformat(when_utc.replace("Z", "+00:00")) + timedelta(hours=3)
+            chip = f"{AR_DAYS[t.weekday()]} {t.day} {AR_MONTHS[t.month - 1]} · {t.strftime('%H:%M')}"
+            fc = _font(24)
+            cw = d.textlength(_shape(chip), font=fc, **kw)
+            cbox = Image.new("RGBA", (int(cw) + 40, 48), (6, 12, 28, 170))
+            im.paste(cbox.convert("RGB"), (W - P - int(cw) - 40, 30), cbox.split()[3])
+            d = _D.Draw(im)
+            d.rectangle([W - P - 4, 30, W - P, 78], fill=red)
+            _draw_rtl(d, W - P - 18, 38, chip, fc, (255, 255, 255))
+        except Exception:  # noqa: BLE001
+            pass
+    if LOGO.exists():
+        lg = Image.open(LOGO).convert("RGB")
+        lw = 120
+        lg = lg.resize((lw, int(lg.height * lw / lg.width)), Image.LANCZOS)
+        pad = 8
+        badge = Image.new("RGB", (lw + 2 * pad, lg.height + 2 * pad), (255, 255, 255))
+        badge.paste(lg, (pad, pad))
+        bm = Image.new("L", badge.size, 0)
+        _D.Draw(bm).rounded_rectangle([0, 0, badge.width - 1, badge.height - 1], radius=14, fill=255)
+        im.paste(badge, (P - 20, 26), bm)
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=92)
+    return buf.getvalue()
