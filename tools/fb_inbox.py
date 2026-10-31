@@ -37,9 +37,9 @@ SETUP = """📲 ربط إشعارات فيسبوك بالرصد (مرة واحد
 import re  # noqa: E402
 
 # خصوصية: لا يدخل الرصد إلا إشعار «صفحة نشرت». كل ما يخص حسابك الشخصي يُرمى ولا يُخزن أبداً.
-PERSONAL = re.compile(r"(منشورك|منشورِك|صورتك|تعليقك|قصتك|على منشور لك|ذكرك|أشار إليك|اشار اليك|إشارة إليك|طلب صداقة|طلب الصداقة|صديق|أصدقاء|عيد ميلاد|ذكريات|"
-                      r"أعجب|اعجب|تفاعل|رسالة|رسائل|مجموعة|حدث|دعاك|دعوة|سوق|Marketplace|your post|your photo|your comment|mentioned you|tagged you|"
-                      r"friend|birthday|memories|reacted|liked|message|invited|group|event)", re.I)
+PERSONAL = re.compile(r"(منشورك|صورتك|تعليقك|قصتك|منشور لك|ذكرك|أشار إليك|اشار اليك|طلب صداقة|طلب الصداقة|اقتراح صداقة|أصدقائك|صديقك|عيد ميلاد|ذكرياتك|ذكريات|"
+                      r"أعجب ب|اعجب ب|تفاعل مع|أرسل لك|ارسل لك|رسالة جديدة|في مجموعة|نشر في مجموعة|دعاك|دعوتك|حدث قادم|Marketplace|"
+                      r"your post|your photo|your comment|mentioned you|tagged you|friend request|birthday|memories|reacted to|liked your|sent you|invited you)", re.I)
 POSTED = re.compile(r"(نشر|نشرت|شارك|شاركت|بث مباشر|بثاً مباشراً|أضاف|أضافت|posted|shared|is live|went live|added|updated)", re.I)
 
 
