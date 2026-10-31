@@ -40,6 +40,8 @@ jobs:
       - uses: actions/cache/restore@v4
         with: {path: pwa/reports, key: "reports-${{ github.run_id }}", restore-keys: "reports-"}
       - uses: actions/cache/restore@v4
+        with: {path: pwa/cards, key: "cards-${{ github.run_id }}", restore-keys: "cards-"}
+      - uses: actions/cache/restore@v4
         with: {path: "data/ops_state.json\ndata/discovery_state.json", key: "ops-state-${{ github.run_id }}", restore-keys: "ops-state-"}
       - name: restore db from independent backup if cache missed
         env: {GH_TOKEN: "${{ github.token }}"}
@@ -142,6 +144,9 @@ jobs:
       - uses: actions/cache/save@v4
         if: always()
         with: {path: pwa/reports, key: "reports-${{ github.run_id }}"}
+      - uses: actions/cache/save@v4
+        if: always()
+        with: {path: pwa/cards, key: "cards-${{ github.run_id }}"}
       - uses: actions/cache/save@v4
         if: always()
         with: {path: "data/ops_state.json\ndata/discovery_state.json", key: "ops-state-${{ github.run_id }}"}

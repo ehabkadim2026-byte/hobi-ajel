@@ -137,6 +137,10 @@ def prepare_card(n):
             DEBUG.append(f"imgfail:{type(e).__name__}")
     jpg = tg_card.news_card2(photo, n["title"], is_breaking(n), n.get("first_utc") or n.get("latest_utc"))
     CARDS.mkdir(parents=True, exist_ok=True)
+    cut = datetime.now(timezone.utc).timestamp() - 5 * 86400  # البطاقات تبقى متاحة 5 أيام (تُحفظ بين الجولات)
+    for f in CARDS.glob("*.jpg"):
+        if f.stat().st_mtime < cut:
+            f.unlink()
     name = re.sub(r"[^A-Za-z0-9_]", "", n["id"])[:40] + f"_{int(datetime.now(timezone.utc).timestamp())}.jpg"
     (CARDS / name).write_bytes(jpg)
     return name, "source" if photo else "card"
