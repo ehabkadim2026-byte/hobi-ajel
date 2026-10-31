@@ -30,6 +30,38 @@
    "official": false,
    "added_by": "محرك الاكتشاف",
    "evidence": "درجة 80 · صلة 0.98 · أصالة 0.63 · 35/24س · https://iraq.shafaqna.com"
+  },
+  {
+   "id": "rss:https://hathalyoum.net/feed",
+   "name": "هذا اليوم — RSS",
+   "url": "https://hathalyoum.net/feed",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مسار السرعة (بديل Google News)",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "محرك الاكتشاف",
+   "evidence": "درجة 62 · صلة 0.57 · أصالة 0.4 · 30/24س · https://hathalyoum.net · كانت تصلنا عبر Google News (409/24س)",
+   "priority": 1
+  },
+  {
+   "id": "rss:https://964media.com/feed/?for=public&access=dcf191addb8e5554d7986d6603ab8a26583615a3",
+   "name": "شبكة 964 — RSS",
+   "url": "https://964media.com/feed/?for=public&access=dcf191addb8e5554d7986d6603ab8a26583615a3",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مسار السرعة (بديل Google News)",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "محرك الاكتشاف",
+   "evidence": "درجة 57 · صلة 0.45 · أصالة 0.35 · 20/24س · https://964media.com · كانت تصلنا عبر Google News (63/24س)",
+   "priority": 1
   }
  ]
 }
