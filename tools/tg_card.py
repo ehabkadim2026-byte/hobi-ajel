@@ -394,3 +394,124 @@ def news_card2(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hass
     buf = io.BytesIO()
     im.save(buf, "JPEG", quality=92)
     return buf.getvalue()
+
+
+# ───────────────────────── هوية «هسة وصل» v3 ─────────────────────────
+# مستخرجة من الشعار: أحمر الإشارة + كحلي، أشعة «وصل» الثلاث، خط Alexandria الهندسي المطابق لحروف الشعار.
+FONTS_DIR = ROOT / "assets" / "fonts"
+BRAND_RED, BRAND_NAVY, INK, PAPER, MUTED = (227, 6, 19), (13, 35, 71), (13, 27, 52), (255, 255, 255), (112, 122, 140)
+
+
+def _ff(name, size):
+    p = FONTS_DIR / name
+    try:
+        return ImageFont.truetype(str(p), size)
+    except Exception:  # noqa: BLE001
+        return _font(size)
+
+
+def _rays(d, x, y, s, fill, width=None, dot=False):
+    """نقطة «وصل» وأشعتها الثلاث (لأعلى-يمين كما في الشعار). (x, y) مركز النقطة، s الحجم."""
+    import math
+    w = width or max(3, int(s * 0.14))
+    if dot:
+        r = s * 0.22
+        d.ellipse([x - r, y - r, x + r, y + r], fill=fill)
+    for ang, ln in ((-78, 0.62), (-42, 0.72), (-8, 0.56)):
+        a = math.radians(ang)
+        r0 = s * 0.42
+        x0, y0 = x + math.cos(a) * r0, y + math.sin(a) * r0
+        x1, y1 = x + math.cos(a) * (r0 + s * ln), y + math.sin(a) * (r0 + s * ln)
+        d.line([(x0, y0), (x1, y1)], fill=fill, width=w)
+        for (cx, cy) in ((x0, y0), (x1, y1)):
+            d.ellipse([cx - w / 2, cy - w / 2, cx + w / 2, cy + w / 2], fill=fill)
+
+
+def news_card3(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hassawassal", source=None):
+    """بطاقة الهوية v3 (1280×720): صورة الخبر أعلى، لوح أبيض تحريري أسفل بعنوان كحلي، شارة عاجل حمراء بأشعة الإشارة،
+    وتذييل: الشعار الأصلي (خلفيته بيضاء فيندمج) + التاريخ والوقت بتوقيت بغداد + رابط القناة."""
+    from datetime import datetime, timedelta
+    from PIL import ImageDraw as _D, ImageEnhance
+    W, H, P = 1280, 720, 64
+    split = 372
+    kw = {"direction": "rtl", "language": "ar"} if RAQM else {}
+    im = Image.new("RGB", (W, H), PAPER)
+    # ── الصورة
+    if photo_jpg:
+        ph = _cover(Image.open(io.BytesIO(photo_jpg)).convert("RGB"), W, split)
+        ph = ImageEnhance.Contrast(ImageEnhance.Color(ph).enhance(0.92)).enhance(1.05)
+        # تظليل كحلي خفيف أسفل الصورة للعمق
+        sh = Image.new("L", (1, split))
+        for y in range(split):
+            k = max(0.0, (y - split * 0.45) / (split * 0.55))
+            sh.putpixel((0, y), int(150 * k ** 1.8))
+        ph.paste(Image.new("RGB", (W, split), BRAND_NAVY), (0, 0), sh.resize((W, split)))
+    else:
+        ph = Image.new("RGB", (W, split), BRAND_NAVY)
+        d0 = _D.Draw(ph)
+        for i in range(9):  # حلقات إشارة باهتة
+            r = 90 + i * 70
+            d0.ellipse([W * 0.2 - r, split * 0.62 - r, W * 0.2 + r, split * 0.62 + r], outline=(22, 48, 92), width=2)
+        _rays(d0, W * 0.2, split * 0.62, 110, BRAND_RED, dot=True)
+    im.paste(ph, (0, 0))
+    d = _D.Draw(im)
+    # ── خط الإشارة: أحمر عريض يمين، يتحول لخط رفيع
+    d.rectangle([0, split, W, split + (5 if breaking else 3)], fill=BRAND_RED if breaking else BRAND_NAVY)
+    # ── الشارة (عاجل / خبر)
+    tag = "عاجل" if breaking else "خبر"
+    ft = _ff("Alexandria-Black.ttf", 34)
+    tw = d.textlength(_shape(tag), font=ft, **kw)
+    bh = 62
+    bx1 = W - P
+    bx0 = int(bx1 - tw - 38 - (52 if breaking else 0))
+    by0 = split - bh // 2 - 14
+    d.rectangle([bx0, by0, bx1, by0 + bh], fill=BRAND_RED if breaking else BRAND_NAVY)
+    if not breaking:
+        d.rectangle([bx0, by0 + bh - 5, bx1, by0 + bh], fill=BRAND_RED)
+    _draw_rtl(d, bx1 - 19, by0 + 7, tag, ft, PAPER)
+    if breaking:
+        _rays(d, bx0 + 20, by0 + bh * 0.66, 30, PAPER, width=4, dot=True)
+    # ── العنوان
+    foot = 78
+    top_t = split + 62
+    avail_h = H - foot - top_t - 6
+    size = 54
+    while True:
+        fb = _ff("Alexandria-Bold.ttf", size)
+        lines = _wrap(d, title, fb, W - 2 * P)
+        lh = int(size * 1.42)
+        if (len(lines) * lh <= avail_h and len(lines) <= 3) or size <= 34:
+            break
+        size -= 2
+    if len(lines) * lh > avail_h:
+        keep = max(1, avail_h // lh)
+        lines = lines[:keep]
+        lines[-1] = lines[-1].rstrip("،.") + " …"
+    y = top_t + max(0, (avail_h - len(lines) * lh) // 2) - int(size * 0.18)
+    for ln in lines:
+        _draw_rtl(d, W - P, y, ln, fb, INK)
+        y += lh
+    # ── التذييل
+    fy = H - foot
+    d.line([(P, fy), (W - P, fy)], fill=(228, 231, 237), width=2)
+    meta = []
+    if when_utc:
+        try:
+            t = datetime.fromisoformat(when_utc.replace("Z", "+00:00")) + timedelta(hours=3)
+            meta.append(f"{AR_DAYS[t.weekday()]} {t.day} {AR_MONTHS[t.month - 1]} · {t.strftime('%H:%M')} بغداد")
+        except Exception:  # noqa: BLE001
+            pass
+    fm = _ff("ReadexPro-Medium.ttf", 23)
+    xr = W - P
+    d.rectangle([xr - 6, fy + 26, xr, fy + 52], fill=BRAND_RED)
+    if meta:
+        _draw_rtl(d, xr - 18, fy + 22, meta[0], fm, MUTED)
+    if LOGO.exists():
+        lg = Image.open(LOGO).convert("RGB")
+        lh_ = 62
+        lg = lg.resize((int(lg.width * lh_ / lg.height), lh_), Image.LANCZOS)
+        im.paste(lg, (P - 6, fy + 8))
+        d.text((P - 6 + lg.width + 18, fy + 25), handle, font=_ff("ReadexPro-Medium.ttf", 21), fill=BRAND_NAVY)
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=92, subsampling=0)
+    return buf.getvalue()

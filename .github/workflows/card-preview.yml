@@ -1,0 +1,27 @@
+name: card-preview
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get install -y -q libraqm0 >/dev/null 2>&1 || true; pip install -q pillow arabic-reshaper python-bidi
+      - name: latest news
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: curl -sSL -m 30 "https://ehabkadim2026-byte.github.io/hobi-ajel/news.json" -o pwa/news.json
+      - run: python3 -m tools.card_preview
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      - name: upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view card-preview >/dev/null 2>&1 || gh release create card-preview --title "نماذج البطاقات" --notes "للمراجعة فقط" --prerelease
+          gh release upload card-preview preview/*.jpg --clobber

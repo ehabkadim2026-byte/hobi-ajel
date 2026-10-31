@@ -111,16 +111,39 @@ def is_vague(title):
     return words < 7 or bool(VAGUE_RX.search(t)) or t.endswith(":")
 
 
+def detail_url(n):
+    """أفضل رابط تفاصيل للجمهور: مقال موقع مباشر، ثم منشور تلغرام، ثم رابط Google News (يحوّل للمقال)."""
+    urls = [s.get("url") or "" for s in (n.get("sources") or [])]
+    for test in (lambda u: u.startswith("http") and "t.me/" not in u and "news.google.com" not in u and "hobi-ajel.local" not in u,
+                 lambda u: "t.me/" in u,
+                 lambda u: "news.google.com" in u):
+        for u in urls:
+            if test(u):
+                return u
+    return ""
+
+
+def is_important(n):
+    return is_breaking(n) or n.get("level") in ("عاجل", "مهم")
+
+
+def headline(n):
+    if "_hl" not in n:
+        from tools.editorial import edit_headline
+        n["_hl"] = edit_headline(n["title"])
+    return n["_hl"]
+
+
 def fmt(n, update=False):
-    """الخبر فقط، وأسفله دعوة القناة. رابط المصدر يُضاف فقط للعناوين المبهمة."""
-    from tools.editorial import clean_headline
+    """الخبر المحرَّر، ورابط التفاصيل للأخبار المهمة والعناوين المبهمة، وأسفله دعوة القناة."""
     mark = "🔴 عاجل | " if is_breaking(n) else ""
-    _, url = src(n)
-    more = f"\n\n🔗 التفاصيل: {H.escape(url)}" if (url and is_vague(n["title"]) and "news.google.com" not in url) else ""
-    return f"<b>{mark}{H.escape(clean_headline(n['title']))}</b>{more}\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
+    url = detail_url(n)
+    more = f"\n\n🔗 التفاصيل: {H.escape(url)}" if (url and (is_important(n) or is_vague(n["title"]))) else ""
+    return f"<b>{mark}{H.escape(headline(n))}</b>{more}\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
 
 
 CARDS = PWA / "cards"
+CARD_STYLE = "v2"  # يتحول إلى v3 (هوية هسة وصل الجديدة) بعد موافقة إيهاب على النموذج
 PENDING = DATA / "tg_pending.json"
 
 
@@ -136,8 +159,8 @@ def prepare_card(n):
             photo = tg_card.fetch_jpeg(img)
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"imgfail:{type(e).__name__}")
-    from tools.editorial import clean_headline
-    jpg = tg_card.news_card2(photo, clean_headline(n["title"]), is_breaking(n), n.get("first_utc") or n.get("latest_utc"))
+    maker = tg_card.news_card3 if CARD_STYLE == "v3" else tg_card.news_card2
+    jpg = maker(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"))
     CARDS.mkdir(parents=True, exist_ok=True)
     cut = datetime.now(timezone.utc).timestamp() - 5 * 86400  # البطاقات تبقى متاحة 5 أيام (تُحفظ بين الجولات)
     for f in CARDS.glob("*.jpg"):
@@ -338,6 +361,8 @@ def main():
             pend.append({"id": n["id"], "card": card, "text": fmt(n, upd)})
             sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "b": is_breaking(n)}
             status["sent_now"] += 1
+        from tools.editorial import LLM_STATS
+        status["editor_llm"] = LLM_STATS
         PENDING.write_text(json.dumps(pend, ensure_ascii=False), encoding="utf-8")
         SENT.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
         # موجز 8 صباحاً بغداد، مرة واحدة يومياً

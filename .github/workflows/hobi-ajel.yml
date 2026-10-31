@@ -69,6 +69,7 @@ jobs:
         env:
           MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
           MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       - name: facebook notifications inbox (MacroDroid → ntfy، مجاني)
         run: python3 -m tools.fb_inbox
         continue-on-error: true
@@ -136,6 +137,7 @@ jobs:
         env:
           MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
           MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       - uses: actions/cache/save@v4
         with:
           path: |
