@@ -149,7 +149,7 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with: {path: pwa}
       - uses: actions/deploy-pages@v4
-      - name: telegram send (بعد نشر الموقع: نص قابل للنسخ + بطاقة كبيرة فوقه)
+      - name: "telegram send (بعد نشر الموقع — نص قابل للنسخ + بطاقة كبيرة فوقه)"
         if: always()
         continue-on-error: true
         timeout-minutes: 3
