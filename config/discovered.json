@@ -15,6 +15,37 @@
    "official": false,
    "added_by": "محرك الاكتشاف",
    "evidence": "درجة 76 · صلة 0.54 · أصالة 1.0 · 5/24س"
+  },
+  {
+   "id": "rss:https://iraq.shafaqna.com/feed/",
+   "name": "شفقنا العراق — RSS",
+   "url": "https://iraq.shafaqna.com/feed/",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مكتشف تلقائياً",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "محرك الاكتشاف",
+   "evidence": "درجة 80 · صلة 0.98 · أصالة 0.63 · 35/24س · https://iraq.shafaqna.com"
+  },
+  {
+   "id": "rss:https://www.video-agencyia.iq/rss",
+   "name": "عصابات الجولاني تعدم الأب الروحي لكنيسة مار إلياس في طرطوس — RSS",
+   "url": "https://www.video-agencyia.iq/rss",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مسار السرعة (بديل Google News)",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "محرك الاكتشاف",
+   "evidence": "درجة 56 · صلة 0.35 · أصالة 0.4 · 20/24س · https://www.video-agencyia.iq · كانت تصلنا عبر Google News (21/24س)",
+   "priority": 1
   }
  ]
 }
