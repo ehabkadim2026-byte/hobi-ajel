@@ -28,6 +28,7 @@ def clean_headline(title, max_len=170):
     t = SIGN.sub("", t)
     t = t.replace('"', "«", 1).replace('"', "»", 1) if t.count('"') >= 2 else t
     t = re.sub(r"\.{2,}", "…", t)
+    t = re.sub(r"«\s+", "«", re.sub(r"\s+»", "»", t))
     t = re.sub(r"\s+([،,.:؛!؟?])", r"\1", t)
     t = re.sub(r"([،:؛])(?=\S)", r"\1 ", t)
     t = re.sub(r"\s{2,}", " ", t).strip(" -–—|:،")

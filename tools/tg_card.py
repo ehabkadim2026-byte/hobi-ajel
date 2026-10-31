@@ -475,14 +475,22 @@ def news_card3(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hass
     foot = 78
     top_t = split + 62
     avail_h = H - foot - top_t - 6
-    size = 54
+    size = 64
     while True:
         fb = _ff("Alexandria-Bold.ttf", size)
         lines = _wrap(d, title, fb, W - 2 * P)
         lh = int(size * 1.42)
-        if (len(lines) * lh <= avail_h and len(lines) <= 3) or size <= 34:
+        if (len(lines) * lh <= avail_h and len(lines) <= (2 if size > 54 else 3)) or size <= 34:
             break
         size -= 2
+    # لا نترك كلمة يتيمة في السطر الأخير إذا كان تصغير بسيط يجمع العنوان بسطور أقل
+    if len(lines) > 1 and len(lines[-1].split()) <= 1:
+        for s2 in range(size - 2, 45, -2):
+            f2 = _ff("Alexandria-Bold.ttf", s2)
+            l2 = _wrap(d, title, f2, W - 2 * P)
+            if len(l2) < len(lines):
+                size, fb, lines, lh = s2, f2, l2, int(s2 * 1.42)
+                break
     if len(lines) * lh > avail_h:
         keep = max(1, avail_h // lh)
         lines = lines[:keep]
