@@ -62,6 +62,38 @@
    "added_by": "محرك الاكتشاف",
    "evidence": "درجة 57 · صلة 0.45 · أصالة 0.35 · 20/24س · https://964media.com · كانت تصلنا عبر Google News (63/24س)",
    "priority": 1
+  },
+  {
+   "id": "rss:https://www.alrasheedmedia.com/feed/",
+   "name": "قناة الرشيد الفضائية — RSS",
+   "url": "https://www.alrasheedmedia.com/feed/",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مسار السرعة (بديل Google News)",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "محرك الاكتشاف",
+   "evidence": "درجة 58 · صلة 0.42 · أصالة 0.42 · 12/24س · https://www.alrasheedmedia.com · كانت تصلنا عبر Google News (25/24س)",
+   "priority": 1
+  },
+  {
+   "id": "rss:https://www.pukmedia.com/ar/rss",
+   "name": "PUKmedia یەکێتیی نیشتمانیی کوردستان — RSS",
+   "url": "https://www.pukmedia.com/ar/rss",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مسار السرعة (بديل Google News)",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "محرك الاكتشاف",
+   "evidence": "درجة 72 · صلة 0.6 · أصالة 0.77 · 6/24س · https://www.pukmedia.com · كانت تصلنا عبر Google News (19/24س)",
+   "priority": 1
   }
  ]
 }
