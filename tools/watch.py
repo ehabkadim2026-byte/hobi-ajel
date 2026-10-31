@@ -62,6 +62,8 @@ class Matcher:
                     u = (r["url"] or "").lower()
                     if r["platform"] == "manual":
                         prov = "إدخال يدوي"
+                    if r["platform"] == "facebook_notif":
+                        prov = "إشعار فيسبوك"
                     if (own_tg and u.startswith(own_tg + "/")) or (own_dom and _dom(u).endswith(own_dom)):
                         prov = "رصد مباشر"
                         break

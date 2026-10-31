@@ -69,6 +69,12 @@ jobs:
         env:
           MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
           MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
+      - name: facebook notifications inbox (MacroDroid → ntfy، مجاني)
+        run: python3 -m tools.fb_inbox
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
       - name: process (بدون PDF واللوحة لتسريع الجولة)
         run: python3 -c "from marsad import core; c=core.connect(); core.prune(c, 5); core.cluster_items(c, window_hours=48); core.generate_alerts(c)"
       - name: translation models (en→ar + fa→en + tr→en، مرة واحدة ثم من الكاش)

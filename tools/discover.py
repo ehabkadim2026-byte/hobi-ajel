@@ -201,6 +201,7 @@ def fast_outlets(con, st, disc, t0, budget=100):
         if h:
             doms.add(h[4:] if h.startswith("www.") else h)
     added = []
+    st["fast_last_eval"] = 0
     for name, c in cnt.most_common(40):
         if time.time() - t0 > budget:
             break
@@ -211,6 +212,7 @@ def fast_outlets(con, st, disc, t0, budget=100):
         key = "fast:" + dom
         if dom in doms or key in st["seen"] or EXCLUDE.search(name + " " + home):
             continue
+        st["fast_last_eval"] += 1
         try:
             ev = eval_site(con, home, name)
         except Exception as e:  # noqa: BLE001
@@ -342,6 +344,18 @@ def main(force=False):
                   "secs": round(time.time() - t0, 1)}
         st["runs"] = (st.get("runs", []) + [{**report, "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}])[-30:]
         st["last_rejected"] = [{"name": c["name"], "url": c["url"], "score": c.get("score"), "why": (c.get("excluded") or ["درجة منخفضة"])[0]} for c in rejected][-30:]
+    fast_more = []
+    if not due and st.get("fast_idle_until", 0) < time.time():  # مسار السرعة يكمل كل جولة بشريحة صغيرة حتى تُفحص كل الجهات البطيئة (بلا انتظار 6 ساعات)
+        try:
+            fast_more = fast_outlets(core.connect(), st, disc, time.time(), budget=25)
+        except Exception:  # noqa: BLE001
+            fast_more = []
+        if not st.get("fast_last_eval"):
+            st["fast_idle_until"] = time.time() + EVERY_H * 3600  # لا جهات جديدة للفحص: نرتاح حتى الدورة القادمة
+        if fast_more:
+            st["added"] = (st.get("added", []) + [{"name": n, "url": "", "score": 0, "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")} for n in fast_more])[-100:]
+            report["fast_outlets"] = fast_more
+            added_now = added_now + fast_more
     if due or added_now:
         DISC.write_text(json.dumps(disc, ensure_ascii=False, indent=1), encoding="utf-8")
         report["commit"] = commit(report.get("auto_added", []) + added_now) if (report.get("auto_added") or added_now) else "لا جديد"
