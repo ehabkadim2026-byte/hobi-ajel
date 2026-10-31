@@ -1,0 +1,20 @@
+name: models-test
+on: workflow_dispatch
+permissions:
+  models: read
+  contents: read
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: probe
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for m in openai/gpt-4.1-mini openai/gpt-4o-mini meta/Llama-3.3-70B-Instruct; do
+            echo "== $m"
+            curl -sS -m 40 https://models.github.ai/inference/chat/completions -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/json" \
+              -d "{\"model\":\"$m\",\"messages\":[{\"role\":\"user\",\"content\":\"أعد صياغة بعربية فصحى رصينة بسطر واحد: عاجل | شاهد.. الداخلية تعلن القبض على عصابة بيهم 5 متهمين ببغداد\"}],\"max_tokens\":120}" | head -c 600 > out.txt
+            python3 -c "import json;d=json.load(open('out.txt'));print('::notice title=$m::'+(d.get('choices',[{}])[0].get('message',{}).get('content') or json.dumps(d)[:300]).replace(chr(10),' '))" || echo "::notice title=$m::$(head -c 300 out.txt)"
+          done
