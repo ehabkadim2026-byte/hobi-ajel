@@ -186,6 +186,44 @@ def gn_publishers():
     return out
 
 
+def fast_outlets(con, st, disc, t0, budget=100):
+    """مسار السرعة: جهات تصلنا أخبارها عن العراق فقط عبر Google News (متأخرة ~50 دقيقة).
+    نبحث لها عن خلاصة RSS مباشرة (أسرع بكثير) ونضيفها بأولوية 1 إذا كانت فعّالة ومرتبطة بالعراق."""
+    since = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    cnt = Counter()
+    for (n,) in con.execute("SELECT source_name FROM items WHERE url LIKE '%news.google.com%' AND collected_utc >= ?", (since,)):
+        cnt[re.sub(r"\s*\(عبر Google News\)$", "", n or "").strip()] += 1
+    pubs = {v.strip(): u for u, v in gn_publishers().items()}
+    _, doms = known(con)
+    added = []
+    for name, c in cnt.most_common(40):
+        if time.time() - t0 > budget:
+            break
+        home = pubs.get(name)
+        if not home or c < 5:
+            continue
+        dom = urlsplit(home).netloc.replace("www.", "")
+        key = "fast:" + dom
+        if dom in doms or key in st["seen"] or EXCLUDE.search(name + " " + home):
+            continue
+        try:
+            ev = eval_site(con, home, name)
+        except Exception as e:  # noqa: BLE001
+            st["seen"][key] = {"t": time.time(), "decision": "تعذر", "why": type(e).__name__}
+            continue
+        ok = ev.get("feed") and ev.get("n24", 0) >= 3 and ev.get("iraq", 0) >= 0.3 and not ev.get("excluded")
+        st["seen"][key] = {"t": time.time(), "decision": "إضافة (سرعة)" if ok else "رفض", "score": ev.get("score"), "gn_items": c}
+        if ok:
+            src = to_source(ev)
+            src["priority"] = 1
+            src["category"] = "مسار السرعة (بديل Google News)"
+            src["evidence"] += f" · كانت تصلنا عبر Google News ({c}/24س)"
+            if all(x["id"] != src["id"] for x in disc["sources"]):
+                disc["sources"].append(src)
+                added.append(name)
+    return added
+
+
 def to_source(c):
     if c["type"] == "تلغرام":
         return {"id": "telegram:t.me/" + c["url"].split("/")[-1], "name": c["name"] + " — telegram", "url": c["url"], "platform": "telegram",
@@ -235,7 +273,7 @@ def main(force=False):
         if NON_NEWS_TOPIC.search((c.get("name") or "") + " " + (c.get("desc") or "")) or (c.get("iraq") or 0) < 0.3:
             st["review"].pop(k)
             st["seen"][k] = {"t": time.time(), "decision": "رفض", "why": "إعادة تقييم: ليس إخبارياً أو صلة ضعيفة"}
-    due = force or time.time() - st.get("last", 0) >= EVERY_H * 3600
+    due = force or time.time() - st.get("last", 0) >= EVERY_H * 3600 or not st.get("fast_v1")
     report = {"ran": False}
     if due:
         t0 = time.time()
@@ -286,9 +324,15 @@ def main(force=False):
             else:
                 st["seen"][c["key"]] = {"t": time.time(), "decision": "رفض", "score": c.get("score"), "why": (c.get("excluded") or ["درجة منخفضة"])[0]}
                 rejected.append(c)
+        try:
+            fast = fast_outlets(con, st, disc, t0, budget=max(30, 200 - (time.time() - t0)))
+        except Exception as e:  # noqa: BLE001
+            fast = [f"خطأ: {type(e).__name__}"]
+        st["fast_v1"] = True
+        auto += [{"name": n, "url": "", "score": 0, "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")} for n in fast if not n.startswith("خطأ")]
         st["last"] = time.time()
         st["added"] = (st.get("added", []) + [{"name": c["name"], "url": c["url"], "score": c["score"], "at": c["at"]} for c in auto])[-100:]
-        report = {"ran": True, "candidates_tg": len(cands), "candidates_web": len(site_c), "evaluated": len(evaluated),
+        report = {"ran": True, "fast_outlets": fast, "candidates_tg": len(cands), "candidates_web": len(site_c), "evaluated": len(evaluated),
                   "auto_added": [c["name"] for c in auto], "to_review": [c["name"] for c in review], "rejected": len(rejected),
                   "secs": round(time.time() - t0, 1)}
         st["runs"] = (st.get("runs", []) + [{**report, "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}])[-30:]

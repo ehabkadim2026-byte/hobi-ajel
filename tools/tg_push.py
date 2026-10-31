@@ -113,10 +113,11 @@ def is_vague(title):
 
 def fmt(n, update=False):
     """الخبر فقط، وأسفله دعوة القناة. رابط المصدر يُضاف فقط للعناوين المبهمة."""
+    from tools.editorial import clean_headline
     mark = "🔴 عاجل | " if is_breaking(n) else ""
     _, url = src(n)
     more = f"\n\n🔗 التفاصيل: {H.escape(url)}" if (url and is_vague(n["title"]) and "news.google.com" not in url) else ""
-    return f"<b>{mark}{H.escape(n['title'][:800])}</b>{more}\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
+    return f"<b>{mark}{H.escape(clean_headline(n['title']))}</b>{more}\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
 
 
 CARDS = PWA / "cards"
@@ -135,7 +136,8 @@ def prepare_card(n):
             photo = tg_card.fetch_jpeg(img)
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"imgfail:{type(e).__name__}")
-    jpg = tg_card.news_card2(photo, n["title"], is_breaking(n), n.get("first_utc") or n.get("latest_utc"))
+    from tools.editorial import clean_headline
+    jpg = tg_card.news_card2(photo, clean_headline(n["title"]), is_breaking(n), n.get("first_utc") or n.get("latest_utc"))
     CARDS.mkdir(parents=True, exist_ok=True)
     cut = datetime.now(timezone.utc).timestamp() - 5 * 86400  # البطاقات تبقى متاحة 5 أيام (تُحفظ بين الجولات)
     for f in CARDS.glob("*.jpg"):
