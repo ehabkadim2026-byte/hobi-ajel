@@ -427,7 +427,7 @@ def _rays(d, x, y, s, fill, width=None, dot=False):
             d.ellipse([cx - w / 2, cy - w / 2, cx + w / 2, cy + w / 2], fill=fill)
 
 
-def news_card3(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hassawassal", source=None):
+def news_card3(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hassawassal", source=None, dim=False):
     """بطاقة الهوية v3 (1280×720): صورة الخبر أعلى، لوح أبيض تحريري أسفل بعنوان كحلي، شارة عاجل حمراء بأشعة الإشارة،
     وتذييل: الشعار الأصلي (خلفيته بيضاء فيندمج) + التاريخ والوقت بتوقيت بغداد + رابط القناة."""
     from datetime import datetime, timedelta
@@ -465,12 +465,14 @@ def news_card3(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hass
     bx1 = W - P
     bx0 = int(bx1 - tw - 38 - (52 if breaking else 0))
     by0 = split - bh // 2 - 14
-    d.rectangle([bx0, by0, bx1, by0 + bh], fill=BRAND_RED if breaking else BRAND_NAVY)
+    d.rectangle([bx0, by0, bx1, by0 + bh], fill=((92, 8, 16) if dim else BRAND_RED) if breaking else BRAND_NAVY)
     if not breaking:
         d.rectangle([bx0, by0 + bh - 5, bx1, by0 + bh], fill=BRAND_RED)
-    _draw_rtl(d, bx1 - 19, by0 + 7, tag, ft, PAPER)
-    if breaking:
+    _draw_rtl(d, bx1 - 19, by0 + 7, tag, ft, (255, 150, 155) if dim else PAPER)
+    if breaking and not dim:
         _rays(d, bx0 + 20, by0 + bh * 0.66, 30, PAPER, width=4, dot=True)
+    elif breaking:  # في الوميض المطفأ تبقى النقطة فقط (الإشارة «تنبض»)
+        d.ellipse([bx0 + 14, by0 + bh * 0.66 - 6, bx0 + 26, by0 + bh * 0.66 + 6], fill=(255, 150, 155))
     # ── العنوان
     foot = 78
     top_t = split + 62
@@ -523,3 +525,24 @@ def news_card3(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hass
     buf = io.BytesIO()
     im.save(buf, "JPEG", quality=92, subsampling=0)
     return buf.getvalue()
+
+
+def breaking_anim(photo_jpg, title, when_utc=None):
+    """بطاقة عاجل متحركة (MP4 صامت يتكرر تلقائياً في تلغرام): شارة «عاجل» تومض وأشعة الإشارة تنبض. ~2 ثانية."""
+    import os
+    import subprocess
+    import tempfile
+    import imageio_ffmpeg
+    a = Image.open(io.BytesIO(news_card3(photo_jpg, title, True, when_utc)))
+    b = Image.open(io.BytesIO(news_card3(photo_jpg, title, True, when_utc, dim=True)))
+    fps, n = 12, 24
+    # منحنى الوميض: مضيء 0.6ث، انطفاء سريع، مطفأ 0.35ث، رجوع سريع
+    curve = [0, 0, 0, 0, 0, 0, 0, 0.5, 1, 1, 1, 1, 0.5, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 1, 0.5]
+    with tempfile.TemporaryDirectory() as td:
+        for i, k in enumerate(curve[:n]):
+            Image.blend(a, b, k).save(os.path.join(td, f"f{i:03d}.png"))
+        out = os.path.join(td, "a.mp4")
+        subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-y", "-loglevel", "error", "-framerate", str(fps), "-i", os.path.join(td, "f%03d.png"),
+                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "26", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", out],
+                       check=True, timeout=60)
+        return open(out, "rb").read()

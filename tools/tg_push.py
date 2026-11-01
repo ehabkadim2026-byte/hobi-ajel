@@ -143,6 +143,7 @@ def fmt(n, update=False):
 
 
 CARDS = PWA / "cards"
+ANIM = DATA / "anim"
 CARD_STYLE = "v3"  # هوية هسة وصل الجديدة — اعتمدها إيهاب 2026-11-01
 PENDING = DATA / "tg_pending.json"
 
@@ -168,6 +169,15 @@ def prepare_card(n):
             f.unlink()
     name = re.sub(r"[^A-Za-z0-9_]", "", n["id"])[:40] + f"_{int(datetime.now(timezone.utc).timestamp())}.jpg"
     (CARDS / name).write_bytes(jpg)
+    if is_breaking(n) and CARD_STYLE == "v3":  # العاجل: بطاقة متحركة بوميض شارة «عاجل»
+        try:
+            ANIM.mkdir(parents=True, exist_ok=True)
+            for f in ANIM.glob("*.mp4"):
+                if f.stat().st_mtime < cut:
+                    f.unlink()
+            (ANIM / name.replace(".jpg", ".mp4")).write_bytes(tg_card.breaking_anim(photo, headline(n), n.get("first_utc") or n.get("latest_utc")))
+        except Exception as e:  # noqa: BLE001
+            DEBUG.append(f"animfail:{type(e).__name__}:{str(e)[:40]}")
     return name, "source" if photo else "card"
 
 
@@ -185,9 +195,20 @@ def send_pending(token, chat_id):
     إذا لم يصبح رابط البطاقة متاحاً خلال المهلة نرسلها صورةً مع تعليق (احتياط)."""
     import time as _t
     pend = load(PENDING, [])
-    done = {"preview": 0, "photo": 0, "text": 0}
+    done = {"preview": 0, "photo": 0, "text": 0, "anim": 0}
     deadline = _t.time() + 60
     for p in pend:
+        av = ANIM / p["card"].replace(".jpg", ".mp4")
+        if av.exists():  # عاجل: بطاقة متحركة تومض + النص كاملاً كتعليق
+            try:
+                r = api(token, "sendAnimation", files={"animation": (av.name, av.read_bytes(), "video/mp4")}, chat_id=chat_id,
+                        caption=p["text"][:1024], parse_mode="HTML", width="1280", height="720")
+                av.unlink()
+                if r.get("ok"):
+                    done["anim"] += 1
+                    continue
+            except Exception as e:  # noqa: BLE001
+                DEBUG.append(f"animsend:{type(e).__name__}:{str(e)[:50]}")
         cu = APP_URL + "cards/" + p["card"]
         ok = False
         while _t.time() < deadline:
@@ -369,7 +390,11 @@ def main():
         bgd = now + timedelta(hours=3)
         today = bgd.strftime("%Y-%m-%d")
         if bgd.hour == 8 and sent.get("_digest") != today:
-            api(token, "sendMessage", chat_id=chat_id, text=digest(news, now), disable_web_page_preview="true")
+            for c in (sent.get("_editor_chats") or {}).values():  # للمحررين بالخاص فقط — لا يُنشر بالقناة العامة (طلب إيهاب 2026-11-01)
+                try:
+                    api(token, "sendMessage", chat_id=c, text=digest(news, now), disable_web_page_preview="true")
+                except Exception:  # noqa: BLE001
+                    pass
             sent["_digest"] = today
             status["digest"] = today
         status["watch_alerts"] = watch_alerts(token, sent, news, now)

@@ -10,7 +10,9 @@ from marsad import core  # noqa: E402
 from marsad.report import cluster_dossier  # noqa: E402
 from marsad.textnorm import iso, now_utc  # noqa: E402
 from tools.export_app import status_of  # noqa: E402
-from tools import verify as V, watch as W  # noqa: E402
+from tools import verify as V, watch as W, analysis as A  # noqa: E402
+WNAMES = {f["id"]: f.get("name", f["id"]) for f in W.load()}
+WKIND = {f["id"]: f.get("kind") for f in W.load()}
 from marsad.collect import IRAQ_RX as IRAQ_MULTI  # noqa: E402
 
 
@@ -143,6 +145,7 @@ def main(hours=24):
     con = core.connect()
     now = now_utc()
     out = []
+    analysis = []
     matcher = W.Matcher()
     try:
         verdicts = json.loads((ROOT / "data" / "tg_sent.json").read_text(encoding="utf-8")).get("_verdicts", {})
@@ -243,6 +246,12 @@ def main(hours=24):
                          else "تصريح" if ctype == "تصريح" else "تحليل" if ctype == "تحليل/رأي" else "خبر")
         watch_hits = matcher.match(ntext + " " + norm_ar(title_ar or ""), alltext + " " + title, irows) if (about_iraq or pmf) else []
         va = V.assess([dict(r) for r in irows], verdicts.get(c["id"]))
+        if A.eligible(d["n_sources"], about_iraq, level):
+            try:
+                analysis.append(A.build(c["id"], title_ar or title, irows, va, level,
+                                        [WNAMES.get(w["id"], w["id"]) for w in watch_hits if WKIND.get(w["id"]) != "topic"]))
+            except Exception as e:  # noqa: BLE001
+                print("::warning title=analysis::", type(e).__name__, str(e)[:100])
         recent_n = sum(1 for r in irows if r["collected_utc"] and r["collected_utc"] >= iso(now - timedelta(minutes=60)))
         out.append({"id": c["id"], "title": title_ar or title, "title_orig": title if title_ar else None, "status": st, "basis": basis, "level": level, "scope": scope, "origin": origin, "about_iraq": about_iraq, "kind": kind, "agency": agency,
                     "n_items": c["n_items"], "views": views or None,
@@ -260,6 +269,10 @@ def main(hours=24):
                     "timeline": [{"source": r["source_name"], "url": r["url"], "pub": r["published_utc"], "seen": r["collected_utc"],
                                   "cited": V.cited_source((r["title"] or "") + " " + (r["text"] or "")), "manual": r["platform"] == "manual"} for r in irows][:12]})
     V.cross_disputes(out)
+    analysis.sort(key=lambda x: (x["last_time"] or ""), reverse=True)
+    (ROOT / "pwa" / "analysis.json").write_text(json.dumps({"updated_utc": iso(now), "min_sources": A.MIN_SOURCES, "items": analysis[:40]},
+                                                           ensure_ascii=False), encoding="utf-8")
+    print(f"::notice title=analysis::{len(analysis)} حدث كبير (20+ جهة)")
     out.sort(key=lambda x: x["latest_utc"] or "", reverse=True)
     pwa = ROOT / "pwa"
     (pwa / "news.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")

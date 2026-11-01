@@ -170,12 +170,31 @@ select,.inp{width:100%;border:1px solid var(--line);background:var(--surface);bo
 .foot{margin-top:28px;display:grid;gap:8px}
 .note{font-size:.76rem;color:var(--muted);line-height:1.75;margin:0}
 .nav{position:fixed;inset-inline:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-.nav-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);height:var(--nav-h)}
+.nav-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr);height:var(--nav-h)}
 .nav button{border:0;background:transparent;display:grid;place-items:center;align-content:center;gap:2px;color:var(--muted);font-size:.68rem;font-weight:600;cursor:pointer;position:relative;line-height:1.25;text-align:center}
 .nav svg{width:21px;height:21px}
 .nav button[aria-selected="true"]{color:var(--ink)}
 .nav button[aria-selected="true"]::after{content:"";position:absolute;top:0;width:26px;height:3px;border-radius:0 0 3px 3px;background:var(--ink)}
 .badge{position:absolute;top:7px;inset-inline-start:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--urgent);color:#fff;font-size:.62rem;font-weight:700;display:grid;place-items:center;line-height:1}
+@keyframes blink{0%,55%{opacity:1}70%,90%{opacity:.25}100%{opacity:1}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--urgent) 0%,transparent)}50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--urgent) 28%,transparent)}}
+.t-urgent{animation:blink 1.1s ease-in-out infinite}
+.card.l-urgent{animation:glow 1.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.t-urgent,.card.l-urgent{animation:none}}
+.an{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.an h3{font-size:1rem;line-height:1.55;margin:6px 0 8px;cursor:pointer}
+.an .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;color:var(--muted);font-size:.78rem}
+.an .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.an .stats div{background:var(--surface-2);border-radius:10px;padding:8px;text-align:center}
+.an .stats b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:1.02rem;line-height:1.35}.an .stats div:first-child b{font-size:.82rem}.an .stats small{color:var(--muted);font-size:.7rem}
+.spark{display:flex;align-items:flex-end;gap:2px;height:38px;margin:6px 0 2px}
+.spark i{flex:1;background:var(--urgent);opacity:.75;border-radius:2px 2px 0 0;min-height:2px}
+.an details{margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.an summary{cursor:pointer;font-weight:700;font-size:.86rem}
+.an h4{font-size:.8rem;color:var(--muted);margin:12px 0 6px}
+.an ul{margin:0;padding-inline-start:18px;font-size:.84rem;line-height:1.7}
+.an a{color:var(--blue);text-decoration:none}
+.kchips{display:flex;flex-wrap:wrap;gap:6px}.kchips span{background:var(--surface-2);border-radius:8px;padding:2px 8px;font-size:.76rem}
 .toast{position:fixed;inset-inline:16px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 12px);max-width:440px;margin:auto;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;text-align:center;font-weight:600;font-size:.86rem;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:50}
 .toast.on{opacity:1;transform:none}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
@@ -213,6 +232,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   <button role="tab" type="button" data-v="pmf" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>الحشد الشعبي<span class="badge" hidden></span></button>
   <button role="tab" type="button" data-v="watch" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>المتابعة<span class="badge" hidden></span></button>
   <button role="tab" type="button" data-v="world" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>العالم</button>
+  <button role="tab" type="button" data-v="analysis" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M6 16v-4M11 16V8M16 16v-6M21 16V5"/></svg>تحليل خبري</button>
   <button role="tab" type="button" data-v="tools" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/></svg>الأدوات</button>
 </div></nav>
 
@@ -602,6 +622,35 @@ function openDrawer(id){
 }
 function closeDrawer(){ $("#drawer").classList.remove("on"); $("#scrim").classList.remove("on"); }
 
+let analysisD=null;
+const whenA=i=>i?(mins(i)>1200?`${dm(i)} ${hm(i)}`:hm(i)):"";
+function vAnalysis(){
+  if(!analysisD){ fetch("analysis.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():{items:[]}).then(j=>{analysisD=j;render(true)}).catch(()=>{analysisD={items:[]};render(true)}); return `<div class="note-box" style="margin-top:16px">جارِ التحميل…</div>`; }
+  const A=analysisD.items||[];
+  let h=`<div class="sec"><h2>تحليل خبري</h2><span>أحداث العراق والمهمة التي نشرتها ${analysisD.min_sources||20} جهة فأكثر · آخر 24 ساعة · ${A.length}</span></div>
+  <div class="note-box">تحليل محسوب من بيانات الرصد نفسها: من نشر أولاً، سرعة الانتشار، نوع الناشرين، اختلاف الروايات، وما لم يتأكد. كثرة الناشرين تعني انتشاراً لا تأكيداً، و«أول ناشر» هو أقدم ظهور ضمن ما نرصده.</div>`;
+  if(!A.length) return h+`<div class="empty">ما كو حدث بلغ ${analysisD.min_sources||20} جهة بآخر 24 ساعة.</div>`;
+  for(const a of A){
+    const mx=Math.max(1,...(a.curve||[]).map(c=>c[1]));
+    const f=a.first||{};
+    h+=`<article class="an">
+      <div class="meta">${LV[a.level]?LV[a.level].t:""}<span class="st ${VS[a.vstatus]||"s-unv"}">${esc(a.vstatus||"غير متحقق")}</span><span>${a.n_sources} جهة · ${a.n_items} مادة · آخر نشر ${esc(ago(a.last_time))}</span></div>
+      <h3 data-id="${esc(a.id)}">${esc(a.title)}</h3>
+      <div class="stats"><div><b>${esc(srcName(f.source)||"—")}</b><small>أول ناشر · ${esc(whenA(f.time))}</small></div><div><b>${a.reach10_min==null?"—":fmtDelay(a.reach10_min)}</b><small>حتى 10 جهات</small></div><div><b>${a.reach20_min==null?"—":fmtDelay(a.reach20_min)}</b><small>حتى 20 جهة</small></div></div>
+      <div class="spark" title="النشر بالساعة">${(a.curve||[]).map(c=>`<i style="height:${Math.round(c[1]/mx*100)}%" title="${esc(hm(c[0]))}: ${c[1]}"></i>`).join("")}</div>
+      <div class="kchips">${Object.entries(a.kinds||{}).map(([k,v])=>`<span>${esc(k)} ${v}</span>`).join("")}${(a.people||[]).map(p=>`<span>👤 ${esc(p)}</span>`).join("")}</div>
+      <details><summary>التفاصيل والروايات</summary>
+        <h4>أول من نشر (ضمن المرصود)</h4><ul>${(a.launchers||[]).map(l=>`<li>${esc(whenA(l.time))} — ${l.url?`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(srcName(l.source))}</a>`:esc(srcName(l.source))}</li>`).join("")}</ul>
+        ${(a.narratives||[]).length>1?`<h4>صياغات مختلفة للحدث</h4><ul>${a.narratives.map(n=>`<li>«${esc(n.title)}» — <a href="${esc(n.url||"#")}" target="_blank" rel="noopener">${esc(srcName(n.source))}</a></li>`).join("")}</ul>`:""}
+        ${(a.denial||[]).length?`<h4>نفي أو تصحيح ظهر بالتغطية</h4><ul>${a.denial.map(n=>`<li>«${esc(n.title)}» — <a href="${esc(n.url||"#")}" target="_blank" rel="noopener">${esc(srcName(n.source))}</a></li>`).join("")}</ul>`:""}
+        <h4>ما لم يتأكد</h4><ul>${(a.open||[]).map(q=>`<li>${esc(q)}</li>`).join("")}</ul>
+        ${a.vwhy?`<h4>أساس حالة التحقق</h4><ul><li>${esc(a.vwhy)}</li></ul>`:""}
+        ${a.reading?`<h4>قراءة تحريرية <span class="tag t-mt">صياغة آلية</span></h4><p style="font-size:.86rem;line-height:1.8;margin:0">${esc(a.reading)}</p>`:""}
+      </details></article>`;
+  }
+  return h;
+}
+
 function render(keepScroll){
   $("#today").textContent=(()=>{const d=new Date(Date.now()+3*3600e3);return`${DAYS[d.getUTCDay()]}، ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`})();
   const all=news.filter(n=>mins(n.latest_utc)<=1440);
@@ -621,6 +670,7 @@ function render(keepScroll){
   else if(view==="world") h=vWorld(all);
   else if(view==="watch") h=vWatch(all);
   else if(view==="tools") h=vTools();
+  else if(view==="analysis") h=vAnalysis();
   else if(view==="search") h=listView(`نتائج البحث`,all);
   const y=scrollY; $("#view").innerHTML=h; if(keepScroll) scrollTo(0,y);
 }
@@ -634,7 +684,7 @@ async function load(manual){
     const first=!news.length;
     fresh=new Set(first&&!seen.size?[]:n.filter(x=>!seen.has(x.id)).map(x=>x.id));
     n.forEach(x=>seen.add(x.id)); store.set("hobi_seen2",[...seen].slice(-6000));
-    news=n; meta=m; health=hl||[];
+    news=n; meta=m; health=hl||[]; if(view!=="analysis") analysisD=null; else fetch("analysis.json?t="+t,{cache:"no-store"}).then(r=>r.ok?r.json():analysisD).then(j=>{analysisD=j;render(true)}).catch(()=>{});
     render(!first);
     runAlerts(first);
     if(manual) toast(fresh.size?`${fresh.size} خبر جديد`:"ما كو جديد من آخر تحديث");

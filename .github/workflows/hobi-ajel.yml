@@ -49,7 +49,7 @@ jobs:
       - name: translation model cache (Argos en→ar، مجاني)
         uses: actions/cache@v4
         with: {path: ~/argos, key: argos-en-ar-fa-tr-v2}
-      - run: pip install -q ctranslate2 sentencepiece pillow arabic-reshaper python-bidi
+      - run: pip install -q ctranslate2 sentencepiece pillow arabic-reshaper python-bidi imageio-ffmpeg
         continue-on-error: true
       - name: arabic font cache (بطاقات منشورات تلغرام)
         uses: actions/cache@v4
