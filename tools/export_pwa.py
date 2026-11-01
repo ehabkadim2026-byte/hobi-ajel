@@ -173,7 +173,7 @@ def readings(analysis):
     print(f"::notice title=analysis agent::{json.dumps({'calls': calls, 'readings': sum(1 for a in analysis if a.get('reading'))}, ensure_ascii=False)}")
 
 
-LLM_PER_RUN = 10  # حماية الحصة المجانية لـ Gemini (حد الطلبات بالدقيقة)
+LLM_PER_RUN = 0  # التطبيق: قواعد + أنظف صياغة فقط؛ حصة Gemini محجوزة لوكيل القناة والتحليل والمسار السريع
 
 
 def edit_titles(out):

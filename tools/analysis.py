@@ -146,3 +146,47 @@ def write_reading(a):
     if not all(h in out for h in ("ما الذي حدث", "لماذا يهم")) or len(out.split()) < 70:
         return None
     return out
+
+
+POSITIVE = re.compile(r"(افتتاح|يفتتح|إنجاز|انجاز|اكتمال|إكمال|ارتفاع|نمو|زيادة|توقيع|اتفاقية|مذكرة تفاهم|استثمار|إطلاق|اطلاق|تحسن|تحسّن|"
+                      r"انخفاض البطالة|تشغيل|تأهيل|إعمار|اعمار|مشروع|جسر|محطة|مستشفى|مدرسة|تصدير|إيرادات|فائض|تعيين|تثبيت|منحة|دعم|شراكة|تعاون|"
+                      r"رفع|تخفيض الأسعار|خفض|توسعة|إنتاج|انتاج|قياسي|ميغاواط|الطاقة الشمسية|تطوير|أول مرة|لأول مرة)")
+NEGATIVE = re.compile(r"(مقتل|قتلى|انفجار|اغتيال|اعتقال|القبض|اشتباك|حريق|غرق|سرقة|فساد|اتهام|أزمة|ازمة|تظاهر|احتجاج|إضراب|عجز|انهيار|"
+                      r"توقف|انقطاع|تحذير|كارثة|وفاة|إصابة|ينفي|نفي|تأجيل|رفض|خلاف)")
+POS_PROMPT = ("أنت محلل اقتصادي وسياسي عراقي رصين. اكتب «تحليلاً خبرياً» قصيراً (90–150 كلمة) عن هذا التطور الإيجابي في العراق، "
+              "بثلاث فقرات قصيرة تبدأ بهذه العناوين حرفياً:\nما الذي حدث:\nلماذا هو تطور إيجابي:\nما الذي يحتاجه ليكتمل أثره:\n"
+              "قواعد صارمة: استند فقط إلى المعطيات المرفقة؛ لا تضف رقماً أو اسماً أو وعداً غير موجود؛ لا مبالغة ولا دعاية؛ "
+              "اذكر بموضوعية ما يحتاجه التطور (تنفيذ، متابعة، شفافية) دون اتهام أحد. بلا مقدمة ولا رموز.\n\nالمعطيات:\n")
+
+
+def pick_positive(news, exclude, now_iso_24h):
+    pool = []
+    for n in news:
+        t = n.get("title") or ""
+        if not (n.get("about_iraq") and n.get("origin") != "أجنبي") or n["id"] in exclude:
+            continue
+        if (n.get("latest_utc") or "") < now_iso_24h or n.get("ctype") == "تحليل/رأي":
+            continue
+        if not POSITIVE.search(t) or NEGATIVE.search(t):
+            continue
+        if n.get("topic") not in ("اقتصاد", "سياسة", "خدمات", "طاقة", "استثمار", "عام", None) and not re.search(r"اقتصا|استثمار|طاقة|نفط|كهرباء|مشروع", t):
+            continue
+        if (n.get("n_sources") or 1) < 3:
+            continue
+        pool.append(n)
+    pool.sort(key=lambda n: (-(n.get("n_sources") or 1), n.get("vstatus") != "منسوب لمصدر رسمي"))
+    return pool[0] if pool else None
+
+
+def write_positive(n):
+    from tools.editorial import gemini, DIGITS
+    facts = f"العنوان: {n['title']}\nالنص: {(n.get('lead') or '')[:500]}\nعدد الجهات الناشرة: {n.get('n_sources')}\nحالة التحقق: {n.get('vstatus') or 'غير متحقق'}"
+    out = gemini(POS_PROMPT + facts, max_tokens=500, temperature=0.3)
+    if not out:
+        return None
+    out = out.strip()
+    if not set(DIGITS.findall(out)) <= set(DIGITS.findall(facts)) or ACCUSE.search(out):
+        return None
+    if "ما الذي حدث" not in out or "إيجابي" not in out or len(out.split()) < 60:
+        return None
+    return out

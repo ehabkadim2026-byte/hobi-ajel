@@ -773,6 +773,27 @@ def main():
             ap[a["id"]] = {"d": day, "t": now.timestamp()}
             status["analysis_post"] = a["id"]
         sent["_ana_posted"] = dict(list(ap.items())[-200:])
+        # تحليل خبر إيجابي عن العراق: مرتان يومياً (12 ظهراً و6 مساءً بغداد)
+        bh = (now + timedelta(hours=3)).hour
+        slot = "noon" if 12 <= bh < 15 else "eve" if 18 <= bh < 21 else None
+        pp = sent.get("_pos") or {}
+        if slot and pp.get(day + slot) is None:
+            from tools import analysis as A
+            n = A.pick_positive(news, set(pp.get("ids", [])), (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S"))
+            r = A.write_positive(n) if n else None
+            if r:
+                body = H.escape(r)
+                for h in ("ما الذي حدث:", "لماذا هو تطور إيجابي:", "ما الذي يحتاجه ليكتمل أثره:"):
+                    body = body.replace(h, f"<b>{h}</b>")
+                pend.append({"id": "pos_" + n["id"], "textonly": True, "b": False, "reply_to": n["id"],
+                             "text": f"🌱 <b>تحليل خبري | {H.escape(n['title'][:150])}</b>\n\n{body}\n\n"
+                                     f"<i>قراءة آلية استناداً إلى ما نشرته {n.get('n_sources') or 1} جهة رصدتها «هسة وصل».</i>\n\n{CHANNEL}"})
+                pp[day + slot] = n["id"]
+                pp["ids"] = (pp.get("ids", []) + [n["id"]])[-100:]
+                status["positive_post"] = n["id"]
+            elif n is None:
+                status["positive_post"] = "لا يوجد خبر إيجابي مناسب الآن"
+        sent["_pos"] = pp
         from tools.editorial import LLM_STATS
         status["editor_llm"] = LLM_STATS
         PENDING.write_text(json.dumps(pend, ensure_ascii=False), encoding="utf-8")
