@@ -45,10 +45,20 @@ def main():
             sent["_editors_t"] = now.timestamp()
         editors = sent.get("_editors", {})
         ups = api(token, "getUpdates", offset=sent.get("_offset", 0), timeout=0,
-                  allowed_updates=json.dumps(["message"])).get("result", [])
+                  allowed_updates=json.dumps(["message", "channel_post"])).get("result", [])
         manual = []
         for u in ups:
             sent["_offset"] = u["update_id"] + 1
+            cp = u.get("channel_post")
+            if cp:
+                from tools import tv_source
+                if tv_source.is_source(cp.get("chat") or {}):
+                    try:
+                        why = tv_source.handle(token, chat_id, cp, sent, sent.get("_editor_chats", {}))
+                    except Exception as e:  # noqa: BLE001
+                        why = f"خطأ: {type(e).__name__}"
+                    stats.setdefault("tv_source", []).append(why)
+                continue
             m = u.get("message") or {}
             if (m.get("chat") or {}).get("type") != "private":
                 continue

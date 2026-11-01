@@ -207,7 +207,7 @@ def main():
     st.pop("_posted_run", None)
     st["done"] = st["done"][-500:]
     st["last"] = time.time()
-    cut = (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%S")
+    cut = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S")  # آخر 24 ساعة فقط
     clips = [c for c in clips if (c.get("posted") or c["transcribed_utc"]) >= cut][-60:]
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({"updated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "channels": [n for _, n in CHANNELS],
