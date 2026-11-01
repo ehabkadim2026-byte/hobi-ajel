@@ -1,0 +1,30 @@
+name: gemini-test
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: test
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python3 - <<'PY'
+          import sys, json; sys.path.insert(0, '.')
+          from tools import editorial as E
+          tests = ["عاجل | شاهد.. الداخلية تكشف تفاصيل القبض على عصابة بيها 5 متهمين ببغداد!!",
+                   "🚨البنك المركزي العراقي • \"ينفي\" صدور قرار بتخفيض رؤوس أموال شركات تجارة الذهب",
+                   "لجنة التربية النيابية تصوت رسمياً على قانون التعليم الأهلي",
+                   "هسه وصل.. الكهرباء ترجع للمنظومة 1200 ميغا خلال اسبوع"]
+          for t in tests:
+              try:
+                  raw = E._llm(E.formal_rules(E.clean_headline(t)))
+              except Exception as e:
+                  raw = f"ERR {type(e).__name__}: {str(e)[:150]}"
+              out = E.edit_headline(t)
+              print("::notice title=gemini::" + json.dumps({"in": t, "llm": raw, "final": out}, ensure_ascii=False))
+          print("::notice title=stats::" + json.dumps(E.LLM_STATS))
+          PY
