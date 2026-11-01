@@ -598,7 +598,7 @@ function openDrawer(id){
   const hmap={}; health.forEach(h=>{hmap[srcName(h.name)]=h});
   const s0=(n.sources||[])[0]||{}, h0=hmap[srcName(s0.name)];
   const why=[...(n.why||[])]; if(n.source_flag) why.unshift("المصدر نفسه وسم الخبر «عاجل»"); if(n.trending_unconfirmed) why.push("متداول لدى جهات كثيرة بدون تأكيد مستقل"); if(n.about_iraq) why.push("يخص العراق");
-  $("#drawer").innerHTML=`<div class="grab"></div><div class="tags">${tagsOf(n)}</div><h2 class="d-title">${esc(n.title)}</h2>${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p><p class="note">العنوان العربي ترجمة آلية للعنوان الأصلي.</p>`:""}
+  $("#drawer").innerHTML=`<div class="grab"></div><div class="tags">${tagsOf(n)}</div><h2 class="d-title">${esc(n.title)}</h2>${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p><p class="note">العنوان العربي ترجمة آلية للعنوان الأصلي.</p>`:""}${n.title_src&&!n.title_orig?`<details style="margin:6px 0 2px"><summary class="note" style="cursor:pointer">العنوان كما نشره المصدر</summary><p class="orig">${esc(n.title_src)}</p></details>`:""}
     ${why.length?`<div class="why"><b>سبب التصنيف:</b> ${esc(why.join(" · "))}</div>`:""}
     <div class="why"><b>حالة التحقق: <span class="st ${VS[n.vstatus]||"s-unv"}">${esc(n.vstatus||"غير متحقق")}</span></b> ${esc(n.vwhy||"")}${n.cited?` · يستند إلى: «${esc(n.cited)}»`:""}${n.independent?` · مصادر مستقلة: ${n.independent}`:""}</div>
     ${n.origin_rec?`<div class="sec minor"><h2>أقدم نشر رصدته المنظومة</h2><span>مو بالضرورة أول نشر بالإنترنت</span></div>

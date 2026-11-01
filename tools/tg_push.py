@@ -128,9 +128,14 @@ def is_important(n):
 
 
 def headline(n):
+    """العنوان المحرَّر: إذا حرّره التطبيق مسبقاً (نفس الصياغة الرصينة) نستعمله كما هو، بلا استدعاء ثانٍ لـ Gemini."""
     if "_hl" not in n:
-        from tools.editorial import edit_headline
-        n["_hl"] = edit_headline(n["title"])
+        if n.get("edited_title"):
+            from tools.editorial import clean_headline
+            n["_hl"] = clean_headline(n["title"])
+        else:
+            from tools.editorial import edit_headline
+            n["_hl"] = edit_headline(n["title"])
     return n["_hl"]
 
 

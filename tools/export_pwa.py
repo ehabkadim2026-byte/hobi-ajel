@@ -141,6 +141,46 @@ def delay_stats(con, now):
     return res or None
 
 
+
+LLM_PER_RUN = 25  # حماية الحصة المجانية لـ Gemini
+
+
+def edit_titles(out):
+    """تحرير العناوين للتطبيق: القواعد المجانية لكل الأخبار، وإعادة الصياغة الرصينة (Gemini) لعاجل ومهم العراق.
+    كل حدث يُصاغ مرة واحدة ويُحفظ في data/tg_sent.json تحت «_hl» (نفس الملف المحفوظ بين الجولات) ويستعمله التلغرام أيضاً."""
+    from tools import editorial as E
+    p = ROOT / "data" / "tg_sent.json"
+    try:
+        sent = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        sent = {}
+    cache = sent.get("_hl") or {}
+    calls = 0
+    for n in out:
+        raw = n["title"]
+        if n.get("title_orig"):  # مترجم آلياً: نكتفي بالقواعد
+            n["title"] = E.formal_rules(E.clean_headline(raw, max_len=200)) or raw
+            continue
+        hit = cache.get(n["id"])
+        if hit and hit.get("src") == raw:
+            new = hit["t"]
+        else:
+            important = (n.get("about_iraq") or n.get("pmf")) and (n.get("source_flag") or n.get("level") in ("عاجل", "مهم"))
+            if important and calls < LLM_PER_RUN and E.os_key():
+                calls += 1
+                new = E.edit_headline(raw, max_len=200)
+                cache[n["id"]] = {"src": raw, "t": new, "at": n.get("latest_utc")}
+            else:
+                new = E.formal_rules(E.clean_headline(raw, max_len=200)) or raw
+        if new and new != raw:
+            n["title_src"] = raw
+            n["title"] = new
+        n["edited_title"] = True
+    keep = sorted(cache.items(), key=lambda kv: kv[1].get("at") or "", reverse=True)[:3000]
+    sent["_hl"] = dict(keep)
+    p.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
+    print(f"::notice title=editorial::{json.dumps({'llm_calls': calls, **E.LLM_STATS, 'cache': len(keep)}, ensure_ascii=False)}")
+
 def main(hours=24):
     con = core.connect()
     now = now_utc()
@@ -269,6 +309,7 @@ def main(hours=24):
                     "timeline": [{"source": r["source_name"], "url": r["url"], "pub": r["published_utc"], "seen": r["collected_utc"],
                                   "cited": V.cited_source((r["title"] or "") + " " + (r["text"] or "")), "manual": r["platform"] == "manual"} for r in irows][:12]})
     V.cross_disputes(out)
+    edit_titles(out)
     analysis.sort(key=lambda x: (x["last_time"] or ""), reverse=True)
     (ROOT / "pwa" / "analysis.json").write_text(json.dumps({"updated_utc": iso(now), "min_sources": A.MIN_SOURCES, "items": analysis[:40]},
                                                            ensure_ascii=False), encoding="utf-8")

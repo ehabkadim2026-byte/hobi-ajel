@@ -73,6 +73,10 @@ PROMPT = ("أنت محرر أخبار في قناة إخبارية عراقية 
           "أعد العنوان فقط بلا مقدمة ولا علامات تنصيص.\n\nالعنوان: ")
 
 
+def os_key():
+    return bool(_os.environ.get("GEMINI_API_KEY", "").strip())
+
+
 def _llm(title):
     key = _os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
