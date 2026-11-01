@@ -5682,6 +5682,76 @@
    "added_by": "اختبار القبول 30/10",
    "priority": 1,
    "notes": "اختبار عزل منتهٍ 30/10: عُزل بعد 3 إخفاقات واستمر الجمع"
+  },
+  {
+   "id": "telegram:t.me/AutoNewsUTU",
+   "name": "اوتو نيوز UTU — telegram",
+   "url": "https://t.me/AutoNewsUTU",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "قنوات تلغرام",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "إيهاب 2026-11-01"
+  },
+  {
+   "id": "telegram:t.me/Miliqnews",
+   "name": "ميل - Mil — telegram",
+   "url": "https://t.me/Miliqnews",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "قنوات تلغرام",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "إيهاب 2026-11-01"
+  },
+  {
+   "id": "telegram:t.me/aynaliraq",
+   "name": "عين العراق — telegram",
+   "url": "https://t.me/aynaliraq",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "قنوات تلغرام",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "إيهاب 2026-11-01"
+  },
+  {
+   "id": "telegram:t.me/waatantv",
+   "name": "قناة وطن WTV — telegram",
+   "url": "https://t.me/waatantv",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "قنوات تلغرام",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "إيهاب 2026-11-01"
+  },
+  {
+   "id": "telegram:t.me/WarLeaks24",
+   "name": "تسريبات الحرب (مجمّع إقليمي غير معروف الإدارة) — telegram",
+   "url": "https://t.me/WarLeaks24",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "قنوات تلغرام",
+   "region": "إقليمي",
+   "lang": "ar",
+   "official": false,
+   "added_by": "إيهاب 2026-11-01"
   }
  ]
 }
