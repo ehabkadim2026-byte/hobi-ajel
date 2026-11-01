@@ -5751,7 +5751,53 @@
    "region": "إقليمي",
    "lang": "ar",
    "official": false,
-   "added_by": "إيهاب 2026-11-01"
+   "added_by": "إيهاب 2026-11-01",
+   "iraq_only": true
+  },
+  {
+   "id": "telegram:t.me/intelslava",
+   "name": "Intel Slava (مجمّع روسي، إنكليزي) — telegram",
+   "url": "https://t.me/intelslava",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "قنوات تلغرام",
+   "region": "إقليمي",
+   "lang": "en",
+   "official": false,
+   "added_by": "إيهاب 2026-11-01",
+   "iraq_only": true
+  },
+  {
+   "id": "telegram:t.me/khataam313",
+   "name": "مركز خاتم الأنبياء للإعلام المقاوم (إعلام تعبوي منحاز) — telegram",
+   "url": "https://t.me/khataam313",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "قنوات تلغرام",
+   "region": "إقليمي",
+   "lang": "ar",
+   "official": false,
+   "added_by": "إيهاب 2026-11-01",
+   "iraq_only": true
+  },
+  {
+   "id": "telegram:t.me/Shahadyasiri",
+   "name": "شهد الياسري (حساب شخصي — رأي منحاز) — telegram",
+   "url": "https://t.me/Shahadyasiri",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "قنوات تلغرام",
+   "region": "إقليمي",
+   "lang": "ar",
+   "official": false,
+   "added_by": "إيهاب 2026-11-01",
+   "iraq_only": true
   }
  ]
 }

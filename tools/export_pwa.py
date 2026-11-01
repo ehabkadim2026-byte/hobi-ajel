@@ -11,6 +11,10 @@ from marsad.report import cluster_dossier  # noqa: E402
 from marsad.textnorm import iso, now_utc  # noqa: E402
 from tools.export_app import status_of  # noqa: E402
 from tools import verify as V, watch as W, analysis as A  # noqa: E402
+try:
+    IRAQ_ONLY = {x["id"] for x in json.loads((ROOT / "config" / "sources.json").read_text(encoding="utf-8"))["sources"] if x.get("iraq_only")}
+except Exception:  # noqa: BLE001
+    IRAQ_ONLY = set()
 WNAMES = {f["id"]: f.get("name", f["id"]) for f in W.load()}
 WKIND = {f["id"]: f.get("kind") for f in W.load()}
 from marsad.collect import IRAQ_RX as IRAQ_MULTI  # noqa: E402
@@ -231,6 +235,8 @@ def main(hours=24):
         about_iraq = iraq_kw or (origin == "عراقي" and not foreign_kw)
         if origin == "أجنبي" and not iraq_kw:
             continue  # الإعلام الأجنبي: ما يخص العراق فقط
+        if not iraq_kw and IRAQ_ONLY and all(r[0] in IRAQ_ONLY for r in con.execute("SELECT DISTINCT source_id FROM items WHERE cluster_id=?", (c["id"],))):
+            continue  # مصادر «العراق فقط» (مجمّعات إقليمية/منحازة أضافها إيهاب): نأخذ منها ما يخص العراق فقط
         scope = ("أجنبي" if regs and all(r.startswith("أجنبي") for r in regs)
                  else "إقليمي" if regs and all(r.startswith("إقليمي") or r.startswith("أجنبي") for r in regs) else "العراق")
         latest = max((e["time"] for e in ev if e["time"]), default=None)
