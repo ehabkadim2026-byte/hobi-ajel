@@ -119,7 +119,9 @@ def main():
                 def skip(why):
                     stats["skipped"][why] = stats["skipped"].get(why, 0) + 1
                 age = (now - p["t"]).total_seconds() / 60
-                first = next((ln.strip() for ln in p["text"].split("\n") if len(ln.strip().split()) >= 6), "")
+                from tools.editorial import complete_line
+                first = complete_line(p["text"])
+                first = first if len(first.split()) >= 6 and not T.PROMO_RX.search(first) else ""
                 if age > CFG["max_age_min"]:
                     skip("قديم"); continue
                 if not first or PROMO.search(first) or ROUTINE.search(first):

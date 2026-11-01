@@ -25,19 +25,25 @@ import re  # noqa: E402
 URL_RX = re.compile(r"https?://\S+|t\.me/\S+|www\.\S+")
 SIG_RX = re.compile(r"(الدائرة الاعلامية|المكتب الاعلامي|المكتب الإعلامي|الدائرة الإعلامية|تابعونا|للاشتراك|رابط القناة)")
 FLAG_RX = re.compile(r"(^|\s|[🔴🚨⭕️🔻])عاجل")
+FLAG_SPAM = set()
+
+
+from tools.editorial import complete_line  # noqa: E402
 
 
 def clean_title(label, texts):
-    """عنوان مقروء: يتجاهل الروابط وتواقيع القنوات، ويأخذ أول سطر له معنى."""
+    """عنوان مقروء: يتجاهل الروابط وتواقيع القنوات، ويأخذ أول سطر له معنى (مع ضم سطر المتحدث للكلام)."""
     def ok(line):
         line = URL_RX.sub("", line).strip(" -–|:🔻🔴📌⭕️🚨•")
         return line if len(line) >= 20 and not (SIG_RX.search(line) and len(line) < 45) else ""
+    for t in texts:
+        c = complete_line(t)
+        if ok(c) and len(c.split()) >= 6:
+            if ok(label or "") and len((label or "").split()) >= 7 and not (label or "").strip().startswith("•"):
+                return ok(label)
+            return ok(c)[:220]
     if ok(label or ""):
         return ok(label)
-    for t in texts:
-        for line in (t or "").split("\n"):
-            if ok(line):
-                return ok(line)[:200]
     joined = URL_RX.sub("", " ".join((texts[0] if texts else label or "").split())).strip()
     return (joined or label or "")[:200]
 
@@ -231,6 +237,12 @@ def main(hours=24):
     now = now_utc()
     out = []
     analysis = []
+    global FLAG_SPAM
+    # قنوات تضع «عاجل» على أغلب منشوراتها (حتى المنوعات): وسمها لا يُعتمد (أكثر من 40% من منشوراتها خلال 24 ساعة)
+    rates = con.execute("SELECT source_id, COUNT(*), SUM(CASE WHEN substr(COALESCE(title,''),1,12) LIKE '%عاجل%' THEN 1 ELSE 0 END) FROM items "
+                        "WHERE collected_utc >= ? GROUP BY source_id", (iso(now - timedelta(hours=24)),)).fetchall()
+    FLAG_SPAM = {r[0] for r in rates if r[1] >= 10 and (r[2] or 0) / r[1] > 0.4}
+    print(f"::notice title=flag_spam::{len(FLAG_SPAM)} مصدر وسم «عاجل» لديه لا يُعتمد")
     matcher = W.Matcher()
     try:
         verdicts = json.loads((ROOT / "data" / "tg_sent.json").read_text(encoding="utf-8")).get("_verdicts", {})
@@ -302,7 +314,7 @@ def main(hours=24):
                             "FROM items i LEFT JOIN sources s ON s.id=i.source_id WHERE i.cluster_id=? ORDER BY COALESCE(i.published_utc, i.collected_utc)",
                             (c["id"],)).fetchall()
         edited = con.execute("SELECT COUNT(*) FROM item_versions v JOIN items i ON i.id=v.item_id WHERE i.cluster_id=?", (c["id"],)).fetchone()[0]
-        flag_names = [r["source_name"] or "" for r in irows if FLAG_RX.search((r["title"] or "")[:80])]
+        flag_names = [r["source_name"] or "" for r in irows if FLAG_RX.search((r["title"] or "")[:80]) and r["source_id"] not in FLAG_SPAM]
         source_flag = any("عاجل" not in n for n in flag_names)
         official_any = any(r["official"] for r in irows)
         if any(k == "رأي/تحليل" for k in (r["kind"] for r in irows)) or kind:
@@ -345,7 +357,7 @@ def main(hours=24):
             seen_a = set()
             alts = []
             for r in irows:
-                ln = next((x.strip() for x in (r["title"] or r["text"] or "").split("\n") if len(x.strip()) >= 25), "")[:220]
+                ln = complete_line(r["text"] or r["title"] or "")[:220]
                 k = ln[:40]
                 if ln and k not in seen_a:
                     seen_a.add(k)

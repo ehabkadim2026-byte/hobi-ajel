@@ -29,8 +29,8 @@ DEBUG = []
 CHANNEL = "https://t.me/hassawassal"
 RANK = {"عاجل": 3, "مهم": 2, "متابعة": 1}
 MAX_PER_HOUR = 20
-REGION_MIN_SOURCES = 5
-REGION_PER_HOUR = 6
+REGION_MIN_SOURCES = 8
+REGION_PER_HOUR = 4
 
 
 def api(token, method, files=None, **params):
@@ -122,6 +122,27 @@ def iraq_title(title):
 
 
 JUNK = re.compile(r"^[#\s\W]*$|^(?:#\S+\s*)+$")
+# ترويج قنوات ومناشدات ومنوعات: ليست أخباراً للقناة
+PROMO_RX = re.compile(r"(تابعونا|اشترك|انضموا|رابط القناة|قناتنا|ميمز|ميمات|نكت|مسابقة|سحب على|هدية|كود خصم|إعلان ممول|"
+                      r"قناة\s+\S+\s+(?:توفر|تطلق|تقدم)|مناشدة|يناشد|تناشد|نناشد|صباح الخير|مساء الخير|جمعة مباركة)")
+ME_RX = None
+# أخبار إقليمية روتينية لا تخص جمهور قناة عراقية: أسواق الأسهم، رياضة، طقس دول أخرى
+MINOR_RX = re.compile(r"(مؤشر السوق|البورصة|الأسهم|سوق الأسهم|تداول السعودية|الدوري|مباراة|المنتخب السعودي|المنتخب المصري|كأس الخليج|حالة الطقس)")
+
+
+def me_title(title):
+    """إشارة إيجابية للشرق الأوسط: بلد أو جهة أو مدينة من المنطقة صراحة (لا يكفي غياب الدول البعيدة)."""
+    global ME_RX
+    from marsad.textnorm import norm_ar
+    if ME_RX is None:
+        ws = ["إيران", "الإيراني", "الإيرانية", "طهران", "عراقجي", "خامنئي", "بزشكيان", "سوريا", "السوري", "السورية", "دمشق", "الشرع", "لبنان", "اللبناني",
+              "بيروت", "إسرائيل", "الإسرائيلي", "الإسرائيلية", "نتنياهو", "تل أبيب", "غزة", "الضفة", "فلسطين", "الفلسطيني", "تركيا", "التركي", "التركية",
+              "أنقرة", "أردوغان", "السعودية", "السعودي", "الرياض", "بن سلمان", "الإمارات", "الإماراتي", "أبوظبي", "دبي", "قطر", "القطري", "الدوحة",
+              "الكويت", "الكويتي", "البحرين", "عمان", "مسقط", "الأردن", "الأردني", "عمّان", "مصر", "المصري", "القاهرة", "السيسي", "اليمن", "اليمني",
+              "الحوثي", "صنعاء", "الخليج", "هرمز", "البحر الأحمر", "ترامب", "واشنطن", "البيت الأبيض", "البنتاغون", "أوبك", "النفط", "برنت"]
+        ME_RX = [norm_ar(w) for w in ws]
+    t = " " + norm_ar(title or "") + " "
+    return any(w in t for w in ME_RX)
 
 
 def worthy(n, now):
@@ -135,7 +156,7 @@ def worthy(n, now):
     t = n.get("title") or ""
     from tools.editorial import clean_headline
     ct = clean_headline(t)
-    if JUNK.match(ct or "") or len((ct or "").split()) < 5:
+    if JUNK.match(ct or "") or len((ct or "").split()) < 6 or PROMO_RX.search(ct) or ct.lstrip().startswith(("•", "-", "▪")):
         return False
     if n.get("ctype") == "تحليل/رأي":
         return False
@@ -149,7 +170,7 @@ def is_regional(n):
     t = n.get("title") or ""
     if iraq_title(t) and (n.get("about_iraq") or n.get("pmf")):
         return False
-    if far_title(t):
+    if far_title(t) or not me_title(t) or MINOR_RX.search(t):
         return False
     return (bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم")) and (n.get("n_sources") or 1) >= REGION_MIN_SOURCES
 
@@ -170,7 +191,8 @@ def is_breaking(n):
         return False
     if iraq_title(n.get("title") or "") and (n.get("about_iraq") or n.get("pmf")):
         return True
-    return not far_title(n.get("title") or "") and (n.get("n_sources") or 1) >= 8
+    t = n.get("title") or ""
+    return not far_title(t) and me_title(t) and (n.get("n_sources") or 1) >= 12
 
 
 VAGUE_RX = re.compile(r"(شاهد|بالفيديو|بالصور|فيديو|التفاصيل|تفاصيل|إليكم|اليكم|هذا ما|ماذا|لماذا|كيف|هكذا|إليك|اليك|تعرف|الكشف عن|كشف عن|مفاجأة|\?|؟|…|\.\.\.?$)")
@@ -238,6 +260,9 @@ def same_story(sig, prev):
     pd = set(prev.get("d") if isinstance(prev, dict) else prev[1])
     if not w or not pw:
         return False
+    shared0 = w & pw
+    if len(shared0) / len(w | pw) >= 0.7:
+        return True  # نفس الصياغة تقريباً = نفس الخبر حتى لو اختلف رقم (تحديث يُنشر كرد لا كمنشور جديد)
     if d and pd and not (d & pd) and len(d) == len(pd) == 1 and min(len(w), len(pw)) >= 6:
         return False  # رقم مختلف بنفس الصياغة (حصيلة جديدة، هزة أخرى) = خبر مختلف
     shared = w & pw
@@ -324,13 +349,13 @@ def buttons(n):
 MSGS = DATA / "tg_msgs.json"
 
 
-def fastlane_sigs():
+def fastlane_sigs(name="fast_sigs.json"):
     import subprocess
     import tempfile
     try:
         with tempfile.TemporaryDirectory() as td:
-            r = subprocess.run(["gh", "release", "download", "fastlane", "-p", "fast_sigs.json", "-D", td, "--clobber"], capture_output=True, timeout=25)
-            return json.loads((Path(td) / "fast_sigs.json").read_text(encoding="utf-8")) if r.returncode == 0 else []
+            r = subprocess.run(["gh", "release", "download", "fastlane", "-p", name, "-D", td, "--clobber"], capture_output=True, timeout=25)
+            return json.loads((Path(td) / name).read_text(encoding="utf-8")) if r.returncode == 0 else []
     except Exception:  # noqa: BLE001
         return []
 
@@ -693,6 +718,9 @@ def main():
         posted = [x for x in sent.get("_titles", []) if x.get("ts", 0) >= now.timestamp() - 12 * 3600]
         fast = fastlane_sigs()  # ما نشره المسار السريع: لا نكرره، ويُحسب بالسقف الساعي
         posted_all = posted + [x for x in fast if x.get("ts", 0) >= now.timestamp() - 12 * 3600]
+        # نسخة البصمات المنشورة على الإصدار: حماية من ذاكرة مخبأة قديمة (جولتان متوازيتان أو كاش لم يُحفظ)
+        mine_ts = {round(x.get("ts", 0)) for x in posted}
+        posted_all += [x for x in fastlane_sigs("main_sigs.json") if x.get("ts", 0) >= now.timestamp() - 12 * 3600 and round(x.get("ts", 0)) not in mine_ts]
         hour_n = sum(1 for x in posted_all if x.get("id") and x.get("ts", 0) >= now.timestamp() - 3600)  # منشورات النظام الجديد + السريع
         reg_n = sum(1 for x in posted if x.get("reg") and x.get("ts", 0) >= now.timestamp() - 3600)
         dup_skipped = 0

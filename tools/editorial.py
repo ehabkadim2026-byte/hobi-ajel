@@ -253,3 +253,25 @@ def agent_write(title, context):
     if lead in ("لا", "لا يوجد") or len(lead.split()) < 8 or not _safe(ref, lead, need="") or lead[:30] in head:
         lead = ""
     return head, lead.rstrip(".") + ("." if lead else "")
+
+
+_URL = re.compile(r"https?://\S+|t\.me/\S+|www\.\S+")
+_SIG = re.compile(r"(الدائرة الاعلامية|المكتب الاعلامي|المكتب الإعلامي|الدائرة الإعلامية|تابعونا|للاشتراك|رابط القناة)")
+
+
+def complete_line(text):
+    """العنوان الكامل من منشور متعدد الأسطر: إذا السطر الأول اسم متحدث/جهة فقط («رئيس الوزراء علي الزيدي» أو ينتهي بـ«:»)
+    أو شذرة تبدأ بنقطة «•»، نضمه للسطر التالي («الجهة: الكلام»)."""
+    lines = [_URL.sub("", ln).strip(" -–|🔻🔴📌⭕️🚨•▪️◾️") for ln in (text or "").split("\n")]
+    lines = [ln for ln in lines if ln and not _SIG.search(ln[:40]) and not re.fullmatch(r"[#\W\d]*(عاجل|عــاجل)?[#\W]*", ln)]
+    if not lines:
+        return ""
+    lines = [re.sub(r"^\W*(عاجل|عــاجل|خاص|متابعة)\s*[|:\-–_/]*\s*", "", ln).strip() for ln in lines]
+    lines = [ln for ln in lines if ln]
+    if not lines:
+        return ""
+    first = lines[0]
+    if (len(first.split()) < 7 or first.endswith(":")) and len(lines) > 1:
+        nxt = lines[1]
+        return (first.rstrip(":： ") + ": " + nxt)[:240] if len(nxt.split()) >= 3 else first
+    return first
