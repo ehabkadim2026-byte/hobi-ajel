@@ -1,0 +1,37 @@
+name: tg-probe
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: probe
+        run: |
+          python3 - <<'PY'
+          import re, html, urllib.request, sys, json
+          from datetime import datetime, timezone, timedelta
+          sys.path.insert(0, '.')
+          from tools.discover import EXCLUDE
+          from tools.tg_video import CITED_EXCL
+          from marsad.collect import IRAQ_RX
+          UA={"User-Agent":"Mozilla/5.0"}
+          now=datetime.now(timezone.utc)
+          for ch in "WarLeaks24 intelslava Miliqnews AutoNewsUTU aynaliraq khataam313 waatantv Shahadyasiri".split():
+              try:
+                  page=urllib.request.urlopen(urllib.request.Request(f"https://t.me/s/{ch}",headers=UA),timeout=20).read().decode("utf-8","replace")
+              except Exception as e:
+                  print(f"::notice title={ch}::ERR {e}"); continue
+              g=lambda p: (lambda m: html.unescape(m.group(1)) if m else "")(re.search(p,page,re.S))
+              title=g(r'<meta property="og:title" content="([^"]*)"'); desc=g(r'<meta property="og:description" content="([^"]*)"')
+              subs=g(r'tgme_header_counter">([^<]*)<') or g(r'counter_value">([^<]*)</span>\s*<span class="counter_type">subscribers')
+              texts=[re.sub(r"<[^>]+>"," ",t) for t in re.findall(r'tgme_widget_message_text[^>]*>(.*?)</div>',page,re.S)]
+              times=re.findall(r'<time[^>]+datetime="([^"]+)"',page)
+              n24=sum(1 for t in times if datetime.fromisoformat(t)>=now-timedelta(hours=24))
+              iraq=sum(1 for t in texts if IRAQ_RX.search(t))
+              exc=bool(EXCLUDE.search(ch+" "+title+" "+desc)); cited=sum(1 for t in texts if CITED_EXCL.search(t))
+              sample=" || ".join(html.unescape(t).strip()[:70] for t in texts[-3:])
+              print(f"::notice title={ch}::"+json.dumps({"title":title,"desc":desc[:160],"subs":subs,"posts_page":len(texts),"last":times[-1] if times else None,"n24_on_page":n24,"iraq":f"{iraq}/{len(texts)}","excluded":exc,"cites_excluded":cited,"sample":sample},ensure_ascii=False))
+          PY
