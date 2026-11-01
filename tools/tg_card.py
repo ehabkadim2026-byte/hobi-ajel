@@ -546,3 +546,185 @@ def breaking_anim(photo_jpg, title, when_utc=None):
                         "-c:v", "libx264", "-preset", "veryfast", "-crf", "26", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", out],
                        check=True, timeout=60)
         return open(out, "rb").read()
+
+
+# ───────────────────── v4: ثلاثة اتجاهات بعنوان مسيطر ─────────────────────
+def split_kicker(title):
+    """«الجهة: الخبر» ← (الجهة، الخبر). الجهة تظهر سطراً أحمر صغيراً فوق العنوان الكبير."""
+    m = re.match(r"^\s*([^:«»]{3,34}?)\s*:\s*(.{12,})$", title or "")
+    if m and len(m.group(1).split()) <= 5:
+        return m.group(1).strip(), m.group(2).strip()
+    return None, (title or "").strip()
+
+
+def _fit(d, text, font_name, width, max_lines, sizes, max_h=None, lh_k=1.38):
+    for sz in sizes:
+        f = _ff(font_name, sz)
+        lines = _wrap(d, text, f, width)
+        if len(lines) <= max_lines and (max_h is None or len(lines) * int(sz * lh_k) <= max_h):
+            return f, sz, lines
+    f = _ff(font_name, sizes[-1])
+    lines = _wrap(d, text, f, width)[:max_lines]
+    lines[-1] = lines[-1].rstrip("،.") + " …"
+    return f, sizes[-1], lines
+
+
+def _when(when_utc):
+    from datetime import datetime, timedelta
+    try:
+        t = datetime.fromisoformat(when_utc.replace("Z", "+00:00")) + timedelta(hours=3)
+        return f"{t.strftime('%H:%M')} بغداد · {t.day} {AR_MONTHS[t.month - 1]}"
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _tag(d, x_right, y, breaking, size=34):
+    """شارة عاجل/خبر بنقطة وأشعة الشعار. ترجع (x0, x1)."""
+    tag = "عاجل" if breaking else "خبر"
+    ft = _ff("Alexandria-Black.ttf", size)
+    kw = {"direction": "rtl", "language": "ar"} if RAQM else {}
+    tw = d.textlength(_shape(tag), font=ft, **kw)
+    h = int(size * 1.75)
+    x0 = int(x_right - tw - 34 - (46 if breaking else 0))
+    d.rectangle([x0, y, x_right, y + h], fill=BRAND_RED if breaking else PAPER)
+    _draw_rtl(d, x_right - 17, y + int(h * 0.1), tag, ft, PAPER if breaking else BRAND_NAVY)
+    if breaking:
+        _rays(d, x0 + 20, y + h * 0.64, 26, PAPER, width=4, dot=True)
+    return x0, x_right
+
+
+def _logo(im, x, y, h):
+    if LOGO.exists():
+        lg = Image.open(LOGO).convert("RGB")
+        lg = lg.resize((int(lg.width * h / lg.height), h), Image.LANCZOS)
+        pad = 10
+        badge = Image.new("RGB", (lg.width + 2 * pad, h + 2 * pad), PAPER)
+        badge.paste(lg, (pad, pad))
+        im.paste(badge, (x, y))
+        return badge.width
+    return 0
+
+
+def _photo_or_brand(photo_jpg, W, H):
+    from PIL import ImageDraw as _D, ImageEnhance
+    if photo_jpg:
+        ph = _cover(Image.open(io.BytesIO(photo_jpg)).convert("RGB"), W, H)
+        return ImageEnhance.Contrast(ph).enhance(1.05), True
+    ph = Image.new("RGB", (W, H), BRAND_NAVY)
+    d0 = _D.Draw(ph)
+    for i, x in enumerate(range(-H, W + H, 46)):  # خطوط مائلة رفيعة جداً
+        d0.line([(x, H), (x + H, 0)], fill=(18, 42, 82), width=2)
+    _rays(d0, W * 0.16, H * 0.62, min(W, H) * 0.42, (30, 58, 104), width=int(min(W, H) * 0.05), dot=True)
+    return ph, False
+
+
+def card_a(photo_jpg, title, breaking=True, when_utc=None):
+    """A — بث تلفزيوني: صورة كاملة، تدرّج كحلي عميق، عنوان أبيض ضخم، شارة عاجل، الشعار أعلى اليسار."""
+    from PIL import ImageDraw as _D
+    W, H, P = 1280, 720, 64
+    im, has = _photo_or_brand(photo_jpg, W, H)
+    g = Image.new("L", (1, H))
+    for y in range(H):
+        k = max(0.0, (y - H * 0.22) / (H * 0.78))
+        g.putpixel((0, y), int(250 * min(1, k ** 1.15)))
+    im.paste(Image.new("RGB", (W, H), (6, 16, 36)), (0, 0), g.resize((W, H)))
+    top = Image.new("L", (1, 130))
+    for y in range(130):
+        top.putpixel((0, y), int(150 * (1 - y / 130) ** 1.5))
+    im.paste(Image.new("RGB", (W, 130), (6, 16, 36)), (0, 0), top.resize((W, 130)))
+    d = _D.Draw(im)
+    kick, head = split_kicker(title)
+    f, sz, lines = _fit(d, head, "Alexandria-Black.ttf", W - 2 * P, 3, [92, 86, 80, 74, 68, 62, 56], max_h=420)
+    lh = int(sz * 1.38)
+    y = H - 54 - lh * len(lines)
+    if kick:
+        y -= 60
+        _draw_rtl(d, W - P, y, kick, _ff("Alexandria-Bold.ttf", 40), (255, 96, 104))
+        tag_y = y - 82
+        y += 60
+    else:
+        tag_y = y - 84
+    _tag(d, W - P, tag_y, breaking)
+    for ln in lines:
+        _draw_rtl(d, W - P, y, ln, f, PAPER)
+        y += lh
+    d.rectangle([0, H - 10, W, H], fill=BRAND_RED)
+    _logo(im, P - 24, 30, 64)
+    w = _when(when_utc)
+    if w:
+        _draw_rtl(d, W - P, 40, w, _ff("ReadexPro-Medium.ttf", 26), (235, 238, 245))
+    return _jpg(im)
+
+
+def card_b(photo_jpg, title, breaking=True, when_utc=None):
+    """B — تقسيم جريء: لوح كحلي يمين بعنوان أبيض ضخم، الصورة يسار بكامل الارتفاع، فاصل أحمر عمودي."""
+    from PIL import ImageDraw as _D
+    W, H, P = 1280, 720, 58
+    split = 560
+    im = Image.new("RGB", (W, H), BRAND_NAVY)
+    ph, has = _photo_or_brand(photo_jpg, split, H)
+    im.paste(ph, (0, 0))
+    d = _D.Draw(im)
+    d.rectangle([split, 0, split + 10, H], fill=BRAND_RED)
+    x_r, x_l = W - P, split + 10 + P
+    kick, head = split_kicker(title)
+    f, sz, lines = _fit(d, head, "Alexandria-Black.ttf", x_r - x_l, 4, [72, 66, 60, 56, 52, 48, 44],
+                        max_h=H - 150 - 110 - (70 if kick else 0), lh_k=1.4)
+    lh = int(sz * 1.4)
+    block = lh * len(lines) + (70 if kick else 0)
+    y = 140 + max(0, (H - 140 - 110 - block) // 2)
+    _tag(d, x_r, 52, breaking, size=30)
+    if kick:
+        _draw_rtl(d, x_r, y, kick, _ff("Alexandria-Bold.ttf", 38), (255, 92, 100))
+        y += 70
+    for ln in lines:
+        _draw_rtl(d, x_r, y, ln, f, PAPER)
+        y += lh
+    fy = H - 92
+    lw = _logo(im, x_l - 10, fy, 56)
+    w = _when(when_utc)
+    if w:
+        _draw_rtl(d, x_r, fy + 22, w, _ff("ReadexPro-Medium.ttf", 24), (160, 176, 205))
+    return _jpg(im)
+
+
+def card_c(photo_jpg, title, breaking=True, when_utc=None):
+    """C — تحريري أبيض: صورة أعلى، الجهة بالأحمر، عنوان كحلي ضخم، تذييل نظيف بالشعار."""
+    from PIL import ImageDraw as _D
+    W, H, P = 1280, 720, 64
+    top = 300
+    im = Image.new("RGB", (W, H), PAPER)
+    ph, has = _photo_or_brand(photo_jpg, W, top)
+    im.paste(ph, (0, 0))
+    d = _D.Draw(im)
+    d.rectangle([0, top, W, top + 8], fill=BRAND_RED if breaking else BRAND_NAVY)
+    _tag(d, W - P, top - 40, breaking, size=32)
+    kick, head = split_kicker(title)
+    avail = H - top - 8 - 96
+    f, sz, lines = _fit(d, head, "Alexandria-Black.ttf", W - 2 * P, 3 if not kick else 2, [76, 70, 64, 58, 54, 50, 46],
+                        max_h=avail - 40 - (56 if kick else 0), lh_k=1.36)
+    lh = int(sz * 1.36)
+    block = lh * len(lines) + (56 if kick else 0)
+    y = top + 8 + max(28, (avail - block) // 2)
+    if kick:
+        _draw_rtl(d, W - P, y, kick, _ff("Alexandria-Bold.ttf", 36), BRAND_RED)
+        y += 56
+    for ln in lines:
+        _draw_rtl(d, W - P, y, ln, f, INK)
+        y += lh
+    fy = H - 84
+    d.line([(P, fy), (W - P, fy)], fill=(230, 233, 238), width=2)
+    if LOGO.exists():
+        lg = Image.open(LOGO).convert("RGB")
+        lg = lg.resize((int(lg.width * 60 / lg.height), 60), Image.LANCZOS)
+        im.paste(lg, (P - 6, fy + 12))
+    w = _when(when_utc)
+    if w:
+        _draw_rtl(d, W - P, fy + 26, w, _ff("ReadexPro-Medium.ttf", 24), MUTED)
+    return _jpg(im)
+
+
+def _jpg(im):
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=92, subsampling=0)
+    return buf.getvalue()
