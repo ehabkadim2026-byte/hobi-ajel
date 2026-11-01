@@ -190,3 +190,64 @@ def write_positive(n):
     if "ما الذي حدث" not in out or "إيجابي" not in out or len(out.split()) < 60:
         return None
     return out
+
+
+# ───────────── «تداول غير مؤكد»: مؤشر نمط الانتشار ─────────────
+# الغرض: أن يعرف الراصد أن الخبر منتشر لكنه غير مؤكد، وما مدى تشابه نمط انتشاره مع حملة منسّقة.
+# هذا مؤشر آلي لنمط الانتشار فقط، وليس حكماً بوجود حملة أو تنسيق (تشابه النصوص وحده لا يثبت تنسيقاً).
+SPREAD_MIN = 8
+
+
+def spread_eligible(n_sources, va, official_any):
+    vs = va.get("vstatus")
+    return (n_sources or 0) >= SPREAD_MIN and (vs == "متنازع عليه" or (vs in (None, "غير متحقق") and not official_any))
+
+
+def spread(cid, title, irows, va):
+    rows = sorted([r for r in irows if (r["published_utc"] or r["collected_utc"])], key=lambda r: r["published_utc"] or r["collected_utc"])
+    seen, firsts = set(), []
+    for r in rows:
+        k = r["source_id"] or r["source_name"]
+        if k not in seen:
+            seen.add(k)
+            firsts.append(r)
+    n = len(firsts)
+    if n < SPREAD_MIN:
+        return None
+    ws = [_words(r["title"] or (r["text"] or "")[:200]) for r in firsts]
+    # 1) نسخ ولصق: نسبة الجهات التي يطابق نصها (≥70%) نص جهة أخرى
+    copy = sum(1 for i, w in enumerate(ws) if w and any(j != i and x and len(w & x) / len(w | x) >= 0.7 for j, x in enumerate(ws))) / n
+    # 2) اندفاع: نسبة الجهات التي نشرت خلال أول 30 دقيقة من أول ظهور
+    t0 = _t(firsts[0]["published_utc"] or firsts[0]["collected_utc"])
+    burst = sum(1 for r in firsts if (_t(r["published_utc"] or r["collected_utc"]) - t0).total_seconds() <= 1800) / n if t0 else 0
+    # 3) مصادر مجهولة: «مصدر مطلع/أمني…»
+    texts = [(r["title"] or "") + " " + (r["text"] or "")[:300] for r in firsts]
+    anon = sum(1 for t in texts if V.ANON_RX.search(t)) / n
+    # 4) قنوات تلغرام غير رسمية من مجموع الناشرين
+    tg = sum(1 for r in firsts if _kind(r) == "تلغرام") / n
+    denial = sum(1 for r in rows if V.is_denial(r["title"] or ""))
+    official = any(r["official"] for r in firsts)
+    score = 100 * (0.30 * copy + 0.25 * burst + 0.15 * anon + 0.15 * tg + (0 if official else 0.15))  # +0.15 لغياب أي مصدر رسمي
+    score = round(min(95, score))
+    band = "مرتفع" if score >= 60 else "متوسط" if score >= 35 else "منخفض"
+    why = []
+    if copy >= 0.5:
+        why.append(f"{round(copy * 100)}% من الجهات نشرت نصاً شبه متطابق")
+    if burst >= 0.5:
+        why.append(f"{round(burst * 100)}% من الجهات نشرت خلال أول نصف ساعة")
+    if anon >= 0.3:
+        why.append(f"{round(anon * 100)}% تستند إلى «مصادر» غير مسمّاة")
+    if tg >= 0.6:
+        why.append(f"{round(tg * 100)}% من الناشرين قنوات تلغرام")
+    why.append("يوجد مصدر رسمي ضمن الناشرين (الخبر متنازع عليه)" if official else "لا يوجد مصدر رسمي ضمن الناشرين المرصودين")
+    if denial:
+        why.append(f"ظهر نفي أو تصحيح ({denial})")
+    return {
+        "id": cid, "title": title, "vstatus": va.get("vstatus") or "غير متحقق", "n_sources": n, "n_items": len(rows),
+        "first": {"source": firsts[0]["source_name"], "time": firsts[0]["published_utc"] or firsts[0]["collected_utc"], "url": firsts[0]["url"]},
+        "last_time": rows[-1]["published_utc"] or rows[-1]["collected_utc"],
+        "score": score, "band": band,
+        "parts": {"نص متطابق": round(copy * 100), "اندفاع أول 30 د": round(burst * 100), "مصادر مجهولة": round(anon * 100), "تلغرام": round(tg * 100)},
+        "why": why, "denial": denial,
+        "note": "مؤشر آلي لنمط الانتشار ضمن المصادر المرصودة، ليس حكماً بوجود حملة منظمة ولا بصحة الخبر أو كذبه.",
+    }

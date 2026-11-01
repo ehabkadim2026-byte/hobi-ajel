@@ -237,6 +237,7 @@ def main(hours=24):
     now = now_utc()
     out = []
     analysis = []
+    spreads = []
     global FLAG_SPAM
     # قنوات تضع «عاجل» على أغلب منشوراتها (حتى المنوعات): وسمها لا يُعتمد (أكثر من 40% من منشوراتها خلال 24 ساعة)
     rates = con.execute("SELECT source_id, COUNT(*), SUM(CASE WHEN substr(COALESCE(title,''),1,12) LIKE '%عاجل%' THEN 1 ELSE 0 END) FROM items "
@@ -351,6 +352,16 @@ def main(hours=24):
                                         [WNAMES.get(w["id"], w["id"]) for w in watch_hits if WKIND.get(w["id"]) != "topic"]))
             except Exception as e:  # noqa: BLE001
                 print("::warning title=analysis::", type(e).__name__, str(e)[:100])
+        if about_iraq and A.spread_eligible(d["n_sources"], va, official_any):
+            try:
+                from tools.tg_push import iraq_title, far_title
+                from tools.editorial import clean_headline
+                st = clean_headline(title_ar or title)
+                sp = A.spread(c["id"], st, irows, va) if iraq_title(st) and not far_title(st) else None
+                if sp:
+                    spreads.append(sp)
+            except Exception as e:  # noqa: BLE001
+                print("::warning title=spread::", type(e).__name__, str(e)[:100])
         recent_n = sum(1 for r in irows if r["collected_utc"] and r["collected_utc"] >= iso(now - timedelta(minutes=60)))
         alts, lead = None, None
         if not title_ar and (about_iraq or pmf) and (level in ("عاجل", "مهم", "متابعة") or source_flag):
@@ -396,6 +407,10 @@ def main(hours=24):
     (ROOT / "pwa" / "analysis.json").write_text(json.dumps({"updated_utc": iso(now), "min_sources": A.MIN_SOURCES, "items": analysis[:40]},
                                                            ensure_ascii=False), encoding="utf-8")
     print(f"::notice title=analysis::{len(analysis)} حدث كبير (20+ جهة)")
+    spreads.sort(key=lambda x: (x["last_time"] or ""), reverse=True)
+    (ROOT / "pwa" / "spread.json").write_text(json.dumps({"updated_utc": iso(now), "min_sources": A.SPREAD_MIN, "items": spreads[:40]},
+                                                         ensure_ascii=False), encoding="utf-8")
+    print(f"::notice title=spread::{len(spreads)} خبر متداول غير مؤكد")
     out.sort(key=lambda x: x["latest_utc"] or "", reverse=True)
     pwa = ROOT / "pwa"
     (pwa / "news.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")

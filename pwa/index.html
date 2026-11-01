@@ -246,6 +246,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   <button role="tab" type="button" data-v="watch" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>المتابعة<span class="badge" hidden></span></button>
   <button role="tab" type="button" data-v="world" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>العالم</button>
   <button role="tab" type="button" data-v="analysis" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M6 16v-4M11 16V8M16 16v-6M21 16V5"/></svg>تحليل خبري</button>
+  <button role="tab" type="button" data-v="spread" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/><path d="M12 10v2.5"/></svg>متداول غير مؤكد</button>
   <button role="tab" type="button" data-v="tools" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/></svg>الأدوات</button>
 </div></nav>
 
@@ -664,6 +665,28 @@ function vAnalysis(){
   return h;
 }
 
+let spreadD=null;
+const BAND={"مرتفع":"#c62828","متوسط":"#e08a00","منخفض":"#2e7d32"};
+function vSpread(){
+  if(!spreadD){ fetch("spread.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():{items:[]}).then(j=>{spreadD=j;render(true)}).catch(()=>{spreadD={items:[]};render(true)}); return `<div class="note-box" style="margin-top:16px">جارِ التحميل…</div>`; }
+  const A=spreadD.items||[];
+  let h=`<div class="sec"><h2>متداول غير مؤكد</h2><span>أخبار عراقية نشرتها ${spreadD.min_sources||8} جهات فأكثر بلا مصدر رسمي ولم تتأكد · ${A.length}</span></div>
+  <div class="note-box"><b>تنبيه للراصد:</b> هذه الأخبار <b>منتشرة لكنها غير مؤكدة</b>. «مؤشر نمط الانتشار» نسبة آلية تقيس تشابه انتشار الخبر مع حملة منسّقة (نص متطابق، اندفاع في وقت قصير، مصادر مجهولة، غياب مصدر رسمي). المؤشر <b>ليس حكماً</b> بوجود حملة، ولا بصحة الخبر أو كذبه — هو إشارة لأولوية التحقق.</div>`;
+  if(!A.length) return h+`<div class="empty">ما كو خبر متداول غير مؤكد حالياً.</div>`;
+  for(const a of A){
+    const f=a.first||{}, c=BAND[a.band]||"#777";
+    h+=`<article class="an">
+      <div class="meta"><span class="st s-unv">${esc(a.vstatus)}</span><span>${a.n_sources} جهة · ${a.n_items} مادة · آخر نشر ${esc(ago(a.last_time))}</span></div>
+      <h3 data-id="${esc(a.id)}">${esc(a.title)}</h3>
+      <div style="display:flex;align-items:center;gap:10px;margin:10px 0 6px"><b style="font-size:1.5rem;color:${c}">${a.score}%</b><div style="flex:1"><div style="height:8px;border-radius:6px;background:rgba(127,127,127,.18);overflow:hidden"><i style="display:block;height:100%;width:${a.score}%;background:${c}"></i></div><small>مؤشر نمط الانتشار المنسّق: <b style="color:${c}">${esc(a.band)}</b></small></div></div>
+      <div class="kchips">${Object.entries(a.parts||{}).map(([k,v])=>`<span>${esc(k)} ${v}%</span>`).join("")}</div>
+      <details><summary>لماذا هذه النسبة؟</summary><ul>${(a.why||[]).map(q=>`<li>${esc(q)}</li>`).join("")}</ul>
+        <h4>أول ظهور ضمن المرصود</h4><ul><li>${esc(whenA(f.time))} — ${f.url?`<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(srcName(f.source))}</a>`:esc(srcName(f.source))}</li></ul>
+        <p style="font-size:.8rem;opacity:.8">${esc(a.note)}</p></details></article>`;
+  }
+  return h;
+}
+
 function render(keepScroll){
   $("#today").textContent=(()=>{const d=new Date(Date.now()+3*3600e3);return`${DAYS[d.getUTCDay()]}، ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`})();
   const all=news.filter(n=>mins(n.latest_utc)<=1440);
@@ -684,6 +707,7 @@ function render(keepScroll){
   else if(view==="watch") h=vWatch(all);
   else if(view==="tools") h=vTools();
   else if(view==="analysis") h=vAnalysis();
+  else if(view==="spread") h=vSpread();
   else if(view==="search") h=listView(`نتائج البحث`,all);
   const y=scrollY; $("#view").innerHTML=h; if(keepScroll) scrollTo(0,y);
 }
@@ -697,7 +721,7 @@ async function load(manual){
     const first=!news.length;
     fresh=new Set(first&&!seen.size?[]:n.filter(x=>!seen.has(x.id)).map(x=>x.id));
     n.forEach(x=>seen.add(x.id)); store.set("hobi_seen2",[...seen].slice(-6000));
-    news=n; meta=m; health=hl||[]; if(view!=="analysis") analysisD=null; else fetch("analysis.json?t="+t,{cache:"no-store"}).then(r=>r.ok?r.json():analysisD).then(j=>{analysisD=j;render(true)}).catch(()=>{});
+    news=n; meta=m; health=hl||[]; if(view!=="spread") spreadD=null; else fetch("spread.json?t="+t,{cache:"no-store"}).then(r=>r.ok?r.json():spreadD).then(j=>{spreadD=j;render(true)}).catch(()=>{}); if(view!=="analysis") analysisD=null; else fetch("analysis.json?t="+t,{cache:"no-store"}).then(r=>r.ok?r.json():analysisD).then(j=>{analysisD=j;render(true)}).catch(()=>{});
     render(!first);
     runAlerts(first);
     if(manual) toast(fresh.size?`${fresh.size} خبر جديد`:"ما كو جديد من آخر تحديث");
