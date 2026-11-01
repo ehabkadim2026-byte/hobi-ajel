@@ -97,7 +97,7 @@ def _llm(title):
 STYLE_OK = set("""أعلن أعلنت يعلن تعلن أكد أكدت يؤكد تؤكد قال قالت يقول تقول ذكر ذكرت أفاد أفادت أوضح أوضحت كشف كشفت تكشف يكشف
 نفى نفت ينفي تنفي أن إن التي الذي الذين اللذين أي يقضي تقضي بشأن حول خلال إلى على في من عن مع بعد قبل وزارة وزير رسميا رسمياً
 عن صدور اليوم هذا هذه ذلك تلك كما وفق وفقاً بحسب حسب عبر لدى بين نحو قرابة ضمن تم جرى
-تضم يضم تشمل يشمل عقب إثر جراء بسبب لها له فيها فيه منها منه""".split())
+تضم يضم تشمل يشمل عقب إثر جراء بسبب لها له فيها فيه منها منه عدم انطلاق إطلاق بدء إجراء""".split())
 
 
 def _stem(w):
@@ -133,8 +133,13 @@ def _safe(orig, new):
         st = _stem(w)
         if len(st) < 3 or st in have or st in ok_style or norm_ar(w.strip("«»،.:؛\"'")) in ok_style:
             continue
-        if any(len(st) >= 4 and (st in h or h in st) and abs(len(st) - len(h)) <= 2 for h in have if len(h) >= 4):
-            continue  # نفس الجذر بصيغة صرفية قريبة (ينفي/نفى، تصوت/التصويت)
+        core = lambda x: x[1:] if len(x) >= 4 and x[0] in "نيتأا" else x  # نرفض/يرفض/ترفض ← رفض
+        if any(len(st) >= 3 and (core(st) in core(h) or core(h) in core(st)) and abs(len(core(st)) - len(core(h))) <= 2
+               for h in have if len(h) >= 3):
+            continue  # نفس الجذر بصيغة صرفية قريبة (ينفي/نفى، تصوت/التصويت، نرفض/رفض)
+        skel = lambda x: re.sub("[اويى]", "", core(x))
+        if len(skel(st)) >= 3 and any(skel(st) == skel(h) for h in have if len(h) >= 3):
+            continue  # نقبل/قبول، يواجه/مواجهة (نفس الحروف الأصلية)
         return False
     return True
 
