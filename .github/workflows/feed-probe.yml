@@ -1,0 +1,39 @@
+name: feed-probe
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 - <<'PY'
+          import urllib.request, re, json, email.utils
+          from datetime import datetime, timezone
+          from concurrent.futures import ThreadPoolExecutor
+          UA={"User-Agent":"Mozilla/5.0 (compatible; HobiAjel/1.0)"}
+          C=json.load(open("data_cands.json"))
+          def probe(c):
+              n,u=c
+              try:
+                  b=urllib.request.urlopen(urllib.request.Request(u,headers=UA),timeout=20).read(3_000_000).decode("utf-8","replace")
+                  items=len(re.findall(r"<item[\s>]|<entry[\s>]",b))
+                  newest=None
+                  for d in re.findall(r"<(?:pubDate|published|updated|dc:date)>([^<]+)<",b)[:6]:
+                      try:
+                          t=email.utils.parsedate_to_datetime(d.strip()) if "," in d else datetime.fromisoformat(d.strip().replace("Z","+00:00"))
+                          if t.tzinfo is None: t=t.replace(tzinfo=timezone.utc)
+                          newest=max(newest,t) if newest else t
+                      except Exception: pass
+                  age=round((datetime.now(timezone.utc)-newest).total_seconds()/60) if newest else None
+                  return f"{n}|{'OK' if items else 'EMPTY'}|items={items}|newest_min={age}|{u}"
+              except Exception as e:
+                  return f"{n}|FAIL|{type(e).__name__}:{str(e)[:50]}|{u}"
+          with ThreadPoolExecutor(12) as ex:
+              open("probe.txt","w").write("\n".join(ex.map(probe,C))+"\n")
+          PY
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload probe probe.txt --clobber
