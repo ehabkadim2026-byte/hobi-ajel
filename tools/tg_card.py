@@ -533,7 +533,7 @@ def breaking_anim(photo_jpg, title, when_utc=None, style="v3"):
     import subprocess
     import tempfile
     import imageio_ffmpeg
-    fn = {"a": card_a, "b": card_b, "c": card_c}.get(style)
+    fn = {"a": card_a, "b": card_b, "c": card_c, "lux": globals().get("card_lux")}.get(style)
     if fn:
         a = Image.open(io.BytesIO(fn(photo_jpg, title, True, when_utc)))
         _DIM[0] = True

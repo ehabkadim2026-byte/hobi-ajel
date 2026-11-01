@@ -121,7 +121,7 @@ def main():
                     except Exception:  # noqa: BLE001
                         pass
                 loud = ch in CFG["loud"] or "عاجل" in p["text"][:60]
-                card = tg_card.card_a(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"))
+                card = tg_card.card_lux(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"))
                 tags = T.province_tags(first)
                 cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}" + \
                       (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"

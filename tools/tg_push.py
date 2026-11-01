@@ -353,7 +353,7 @@ def publish_main_sigs(titles):
 
 CARDS = PWA / "cards"
 ANIM = DATA / "anim"
-CARD_STYLE = "a"  # «أ — بث تلفزيوني» اختارها إيهاب 2026-11-01 (قبلها v3)
+CARD_STYLE = "lux"  # «أ» الفاخر (زجاج مغبّش + معالجة سينمائية) — طلب إيهاب قالباً أفخم 2026-11-01 (قبلها «a»)
 PENDING = DATA / "tg_pending.json"
 
 
@@ -369,7 +369,7 @@ def prepare_card(n):
             photo = tg_card.fetch_jpeg(img)
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"imgfail:{type(e).__name__}")
-    maker = {"a": tg_card.card_a, "b": tg_card.card_b, "c": tg_card.card_c, "v3": tg_card.news_card3}.get(CARD_STYLE, tg_card.news_card2)
+    maker = {"lux": tg_card.card_lux, "a": tg_card.card_a, "b": tg_card.card_b, "c": tg_card.card_c, "v3": tg_card.news_card3}.get(CARD_STYLE, tg_card.news_card2)
     jpg = maker(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"))
     CARDS.mkdir(parents=True, exist_ok=True)
     cut = datetime.now(timezone.utc).timestamp() - 5 * 86400  # البطاقات تبقى متاحة 5 أيام (تُحفظ بين الجولات)
@@ -378,7 +378,7 @@ def prepare_card(n):
             f.unlink()
     name = re.sub(r"[^A-Za-z0-9_]", "", n["id"])[:40] + f"_{int(datetime.now(timezone.utc).timestamp())}.jpg"
     (CARDS / name).write_bytes(jpg)
-    if is_breaking(n) and CARD_STYLE in ("v3", "a", "b", "c"):  # العاجل: بطاقة متحركة بوميض شارة «عاجل»
+    if is_breaking(n) and CARD_STYLE in ("v3", "a", "b", "c", "lux"):  # العاجل: بطاقة متحركة بوميض شارة «عاجل»
         try:
             ANIM.mkdir(parents=True, exist_ok=True)
             for f in ANIM.glob("*.mp4"):
