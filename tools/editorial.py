@@ -14,14 +14,18 @@ URL = re.compile(r"https?://\S+|t\.me/\S+|www\.\S+|@[A-Za-z0-9_]{4,}")
 SIGN = re.compile(r"\s*[|\-–—]\s*(?:[؀-ۿA-Za-z0-9 .]{2,30})\s*(?:نيوز|news|نت|net|tv|تي ?في|الإخبارية|الاخبارية|الفضائية|برس|press|24|للأنباء|عراق)\s*$", re.I)
 FOLLOW = re.compile(r"\s*(?:تابعونا|للمزيد من الأخبار|للمزيد|اشترك|رابط القناة|انضموا|التفاصيل في الرابط|التفاصيل بالرابط)\b.*$")
 DIGITS = re.compile(r"\d+")
+PREFIX = re.compile(r"^(?:وكالة\s+)?[\w\u0600-\u06FF .]{2,28}?(?:نيوز|news|برس|press|الإخبارية|الاخبارية|للأنباء|تي في|TV)\s*[-–—|:]\s+", re.I)
 
 
 def clean_headline(title, max_len=170):
     if not title:
         return title
     t = re.sub(r"ـ*[.*]+ـ*(?=[\u0600-\u06FF])", "", title)  # «القبـ.ـض» و«يـ*ـهدد» ← القبض، يهدد (تمويه الكلمات لتفادي الحظر)
-    t = re.sub(r"ـ+\s?(?=ـ)", "", t).replace("ـ", "")  # التطويل لا مكان له بعنوان خبري
+    t = re.sub(r"ـ+\s?(?=ـ)", "", t)
+    t = re.sub(r"(?<=[\u0621-\u064A])ـ+(?=[\u0621-\u064A])", "", t)  # التطويل بين الحروف يُحذف؛ «بـ6» و«لـ كوردستان» تبقى
     t = URL.sub(" ", t)
+    t = t.replace(",,", "").replace("،،", "")
+    t = PREFIX.sub("", t.strip())
     t = EMOJI.sub(" ", t)
     t = HASHTAG.sub(" ", t)
     t = FOLLOW.sub("", t)
@@ -68,7 +72,7 @@ def formal_rules(t):
 
 
 PROMPT = ("أنت محرر أخبار في قناة إخبارية عراقية رصينة. أعد صياغة العنوان التالي بعربية فصحى إخبارية رصينة وموجزة "
-          "(سطر واحد، 10 إلى 24 كلمة)، بصيغة الإسناد المهنية (مثل: «وزارة الداخلية: ...» أو «أعلنت ... أن ...»).\n"
+          "(سطر واحد، 9 إلى 18 كلمة؛ إذا كان العنوان فقرة طويلة فاختصره إلى جوهر الخبر)، بصيغة الإسناد المهنية (مثل: «وزارة الداخلية: ...» أو «أعلنت ... أن ...»).\n"
           "قواعد صارمة: لا تضف أي معلومة أو رقم أو اسم أو صفة أو كلمة توضيحية غير موجودة في العنوان (لا تضف مكاناً ولا جهة ولا تفصيلاً)؛ "
           "اكتب الأرقام بالأرقام كما وردت تماماً؛ احتفظ بكل الأسماء كما هي؛ لا تحوّل «قانون» إلى «مشروع قانون» ولا العكس؛ "
           "احذف الإثارة والعامية وعلامات التعجب والهاشتاغات؛ لا تحكم على صحة الخبر؛ إذا كان العنوان رأياً أو ادعاءً فانسبه لقائله.\n"
@@ -79,12 +83,13 @@ def os_key():
     return bool(_os.environ.get("GEMINI_API_KEY", "").strip())
 
 
-def _llm(title):
+def _llm(title, context=""):
     key = _os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         return None
     model = _os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
-    body = _json.dumps({"contents": [{"parts": [{"text": PROMPT + title}]}],
+    extra = ("\n\nنص الخبر للمرجع فقط (استعمله لتوضيح العنوان دون إضافة تفاصيل ثانوية): " + context[:500]) if context else ""
+    body = _json.dumps({"contents": [{"parts": [{"text": PROMPT + title + extra}]}],
                         "generationConfig": {"temperature": 0.2, "maxOutputTokens": 120}}).encode()
     req = _ur.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
                       data=body, headers={"Content-Type": "application/json", "x-goog-api-key": key})
@@ -148,10 +153,10 @@ LLM_STATS = {"ok": 0, "rejected": 0, "error": 0, "off": 0}
 REJECTS = []
 
 
-def edit_headline(title, max_len=170):
+def edit_headline(title, max_len=170, context=""):
     base = formal_rules(clean_headline(title, max_len=max_len))
     try:
-        new = _llm(base)
+        new = _llm(base, context)
     except Exception:  # noqa: BLE001
         LLM_STATS["error"] += 1
         return base
@@ -159,10 +164,33 @@ def edit_headline(title, max_len=170):
         LLM_STATS["off"] += 1
         return base
     new = formal_rules(clean_headline(new, max_len=max_len))
-    if _safe(base, new):
+    if _safe(base + " " + clean_headline(context or "", max_len=600), new):
         LLM_STATS["ok"] += 1
         return new
     LLM_STATS["rejected"] += 1
     if len(REJECTS) < 4:
         REJECTS.append({"in": base[:120], "out": new[:140], "why": _why(base, new)})
     return base
+
+
+BAD_FRAG = re.compile(r"(،\s?\S{1,3}\s)|(\S{1,3}،\s?\S)|[#@]|عاجل|متداول|شاهد")
+
+
+def title_score(t):
+    """أفضل عنوان بين صياغات المصادر: طول خبري (9–20 كلمة)، بلا تمويه أو هاشتاغ أو «عاجل»، ويبدأ بالجهة أو الحدث."""
+    c = clean_headline(t or "")
+    w = len(c.split())
+    if w < 5:
+        return -99
+    sc = -abs(w - 14) * 0.6
+    sc -= 6 * len(BAD_FRAG.findall(t or ""))
+    if ":" in c[:40]:
+        sc += 2  # صيغة «الجهة: الخبر»
+    if c.endswith("؟") or c.endswith("…"):
+        sc -= 3
+    return sc
+
+
+def pick_best(titles):
+    titles = [t for t in titles if t]
+    return max(titles, key=title_score) if titles else ""

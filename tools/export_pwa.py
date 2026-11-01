@@ -163,8 +163,13 @@ def edit_titles(out):
     for n in out:
         raw = n["title"]
         if n.get("title_orig"):  # مترجم آلياً: نكتفي بالقواعد
+            n.pop("alts", None); n.pop("lead", None)
             n["title"] = E.formal_rules(E.clean_headline(raw, max_len=200)) or raw
             continue
+        alts = n.pop("alts", None) or []
+        lead = n.pop("lead", None) or ""
+        if alts:
+            raw = E.pick_best([raw] + alts)  # أنظف صياغة بين المصادر (بلا تمويه أو هاشتاغ أو فقرة طويلة)
         hit = cache.get(n["id"])
         if hit and hit.get("src") == raw:
             new = hit["t"]
@@ -176,7 +181,7 @@ def edit_titles(out):
                     _tm.sleep(1.5)
                 calls += 1
                 err0 = E.LLM_STATS["error"]
-                new = E.edit_headline(raw, max_len=200)
+                new = E.edit_headline(raw, max_len=200, context=lead)
                 if E.LLM_STATS["error"] == err0:  # لا نخزن نتيجة خطأ مؤقت (حد الطلبات): يُعاد المحاولة بالجولة الجاية
                     cache[n["id"]] = {"src": raw, "t": new, "at": n.get("latest_utc")}
             else:
@@ -306,7 +311,20 @@ def main(hours=24):
             except Exception as e:  # noqa: BLE001
                 print("::warning title=analysis::", type(e).__name__, str(e)[:100])
         recent_n = sum(1 for r in irows if r["collected_utc"] and r["collected_utc"] >= iso(now - timedelta(minutes=60)))
-        out.append({"id": c["id"], "title": title_ar or title, "title_orig": title if title_ar else None, "status": st, "basis": basis, "level": level, "scope": scope, "origin": origin, "about_iraq": about_iraq, "kind": kind, "agency": agency,
+        alts, lead = None, None
+        if not title_ar and (about_iraq or pmf) and (level in ("عاجل", "مهم", "متابعة") or source_flag):
+            seen_a = set()
+            alts = []
+            for r in irows:
+                ln = next((x.strip() for x in (r["title"] or r["text"] or "").split("\n") if len(x.strip()) >= 25), "")[:220]
+                k = ln[:40]
+                if ln and k not in seen_a:
+                    seen_a.add(k)
+                    alts.append(ln)
+                if len(alts) >= 6:
+                    break
+            lead = next((URL_RX.sub("", r["text"] or "").strip()[:400] for r in irows if len((r["text"] or "")) > 80), None)
+        out.append({"id": c["id"], "alts": alts, "lead": lead, "title": title_ar or title, "title_orig": title if title_ar else None, "status": st, "basis": basis, "level": level, "scope": scope, "origin": origin, "about_iraq": about_iraq, "kind": kind, "agency": agency,
                     "n_items": c["n_items"], "views": views or None,
                     "first_src": ({"name": first_ev["source"], "time": first_ev["time"]} if first_ev else None),
                     "topic": topic_of(ntext + " " + norm_ar(title_ar or ""), alltext),

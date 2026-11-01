@@ -28,6 +28,7 @@ MAX_PER_RUN = 15
 DEBUG = []
 CHANNEL = "https://t.me/hassawassal"
 RANK = {"عاجل": 3, "مهم": 2, "متابعة": 1}
+MAX_PER_HOUR = 20
 
 
 def api(token, method, files=None, **params):
@@ -73,17 +74,56 @@ def rank(n):
     return 3 if n.get("source_flag") else RANK.get(n.get("level"), 0)
 
 
+IRAQ_T = None
+
+
+def _markers():
+    global IRAQ_T
+    if IRAQ_T is None:
+        from tools.export_pwa import IRAQ_AR, FOREIGN_AR
+        from marsad.textnorm import norm_ar
+        extra_f = [norm_ar(w) for w in ["حمص", "حلب", "إدلب", "ادلب", "دير الزور", "خانيونس", "خان يونس", "رفح", "بيروت", "الجنوب اللبناني", "صنعاء", "عدن",
+                                         "اليمنية", "اليمني", "السورية", "اللبنانية", "الإسرائيلية", "الاسرائيلي", "الاحتلال", "نتنياهو", "تل أبيب",
+                                         "بولندا", "البولندي", "المجر", "أوربان", "كييف", "موسكو", "بوتين", "زيلينسكي", "الأوكرانية", "الروسية", "الكرملين",
+                                         "السودان", "الخرطوم", "ليبيا", "تونس", "المغرب", "الجزائر", "باكستان", "الهند", "أفغانستان", "طالبان", "كوريا", "اليابان", "ألمانيا"]]
+        extra_i = [norm_ar(w) for w in ["الرافدين", "كوردستان", "كردستان", "الكرد", "الأكراد", "حكومة الإقليم", "النزاهة", "المنافذ", "الرواتب",
+                                         "التربية النيابية", "النيابية", "النائب", "النائبة", "المحافظة", "محافظ", "المرسومي", "الحلبوسي", "المالكي", "الصدر",
+                                         "الحكيم", "العبادي", "بارزاني", "طالباني", "الحشد", "خلية الإعلام الأمني", "الداخلية", "البنك المركزي"]]
+        IRAQ_T = (IRAQ_AR + extra_i, FOREIGN_AR + extra_f)
+    return IRAQ_T
+
+
+def iraq_title(title):
+    """فحص على مستوى العنوان نفسه: عنوان فيه بلد/جهة أجنبية بلا أي إشارة عراقية = خبر غير عراقي (لا يُنشر بقناة أخبار العراق)."""
+    from marsad.textnorm import norm_ar
+    iq, fr = _markers()
+    t = " " + norm_ar(title or "") + " "
+    has_iq = any(w and w in t for w in iq)
+    has_fr = any(w and w in t for w in fr)
+    return has_iq or not has_fr
+
+
+JUNK = re.compile(r"^[#\s\W]*$|^(?:#\S+\s*)+$")
+
+
 def worthy(n, now):
-    """مرآة لما يظهر بالتطبيق كعاجل/مهم: العراق والحشد بكل مستويات عاجل ومهم، والمنطقة إذا المصدر نفسه وسمه عاجل."""
+    """قناة «هسة وصل» = أخبار العراق: عاجل ومهم العراق والحشد فقط، بعنوان صالح، وليس رأياً."""
     seen = n.get("collected_utc")
     if not seen or datetime.fromisoformat(seen.replace("Z", "+00:00")) < now - timedelta(minutes=12):
         return False
     first = n.get("first_utc")  # أول نشر للخبر لدى أي مصدر مرصود: إذا انتشر قبل أكثر من 25 دقيقة فهو ليس «جديداً» للقناة
     if first and datetime.fromisoformat(first.replace("Z", "+00:00")) < now - timedelta(minutes=25):
         return False
-    if n.get("about_iraq") or n.get("pmf"):
-        return bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم", "متابعة")
-    return n.get("origin") != "أجنبي" and (bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم"))
+    t = n.get("title") or ""
+    from tools.editorial import clean_headline
+    ct = clean_headline(t)
+    if JUNK.match(ct or "") or len((ct or "").split()) < 5:
+        return False
+    if n.get("ctype") == "تحليل/رأي" or n.get("origin") == "أجنبي":
+        return False
+    if not (n.get("about_iraq") or n.get("pmf")) or not iraq_title(t):
+        return False
+    return bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم")
 
 
 def meta_line(n):
@@ -97,8 +137,8 @@ def meta_line(n):
 
 
 def is_breaking(n):
-    """عاجل: وسمه المصدر عاجل، أو صنّفه النظام عاجل، أو تكرر نشره لدى 3 جهات فأكثر."""
-    return rank(n) >= 3 or (n.get("n_sources") or 1) >= 3
+    """عاجل: خبر عراقي وسمه المصدر عاجل أو صنّفه النظام عاجل (لا يكفي تكرار النشر وحده)."""
+    return rank(n) >= 3 and iraq_title(n.get("title") or "") and bool(n.get("about_iraq") or n.get("pmf"))
 
 
 VAGUE_RX = re.compile(r"(شاهد|بالفيديو|بالصور|فيديو|التفاصيل|تفاصيل|إليكم|اليكم|هذا ما|ماذا|لماذا|كيف|هكذا|إليك|اليك|تعرف|الكشف عن|كشف عن|مفاجأة|\?|؟|…|\.\.\.?$)")
@@ -132,16 +172,52 @@ def title_sig(t):
     return ({w for w in words if len(w) >= 3 and w not in stop}, set(DIGITS.findall(t)))
 
 
+IDF = {}
+RARE = 5.0
+GENERIC = set()
+
+
+def _generic():
+    from tools.editorial import _stem
+    return {_stem(w) for w in """جاري رفع اطلاق إطلاق تمويل يبحث بحث يبحثان يستقبل استقبل يلتقي التقى لقاء وزير وزيرة سفير السفير رئيس يعلن أعلن تعلن أعلنت
+يؤكد أكد أكدت مدير عام العامة دائرة شركة الشركة وزارة محافظ مجلس لجنة يزور زار زيارة اجتماع يترأس ترأس بشأن ملف عن جديد جديدة""".split()}
+
+
+def build_idf(titles):
+    """ندرة كل كلمة بين عناوين اليوم: الكلمات النادرة (أسماء، أماكن، أرقام، موضوع محدد) تحدد «نفس الخبر» أكثر من الشائعة."""
+    import math
+    if not GENERIC:
+        GENERIC.update(_generic())
+    df = {}
+    for t in titles:
+        for w in title_sig(t)[0]:
+            df[w] = df.get(w, 0) + 1
+    n = max(1, len(titles))
+    IDF.clear()
+    IDF.update({w: math.log((n + 1) / (c + 0.5)) for w, c in df.items()})
+    for g in GENERIC:  # أفعال وصفات إخبارية شائعة لا تميّز الخبر (يبحث، جاري رفع، وزير…)
+        if g in IDF:
+            IDF[g] = min(IDF[g], 2.5)
+
+
 def same_story(sig, prev):
     w, d = sig
-    pw, pd = set(prev.get("w") if isinstance(prev, dict) else prev[0]), set(prev.get("d") if isinstance(prev, dict) else prev[1])
+    pw = set(prev.get("w") if isinstance(prev, dict) else prev[0])
+    pd = set(prev.get("d") if isinstance(prev, dict) else prev[1])
     if not w or not pw:
         return False
-    j = len(w & pw) / len(w | pw)
-    small = len(w & pw) / min(len(w), len(pw))
-    if d and pd and d != pd and not (d & pd):
-        return False  # أرقام مختلفة تماماً = خبر مختلف (حصيلة جديدة، تاريخ آخر)
-    return j >= 0.45 or (small >= 0.7 and len(w & pw) >= 4) or (bool(d & pd) and j >= 0.3)
+    if d and pd and not (d & pd) and len(d) == len(pd) == 1 and min(len(w), len(pw)) >= 6:
+        return False  # رقم مختلف بنفس الصياغة (حصيلة جديدة، هزة أخرى) = خبر مختلف
+    shared = w & pw
+    j = len(shared) / len(w | pw)
+    if j >= 0.45 or (bool(d & pd) and j >= 0.3):
+        return True
+    if IDF:  # تشابه موزون بالندرة: نفس الأسماء والمفردات النادرة بصياغة مختلفة
+        idf = lambda x: IDF.get(x, 6.0)
+        sw = sum(idf(x) for x in shared)
+        rare = sum(1 for x in shared if idf(x) >= RARE)  # كلمتان نادرتان مشتركتان على الأقل (اسم/مكان/موضوع محدد)
+        return rare >= 2 and len(shared) >= 3 and sw / max(1e-6, min(sum(idf(x) for x in w), sum(idf(x) for x in pw))) >= 0.38
+    return len(shared) / min(len(w), len(pw)) >= 0.7 and len(shared) >= 4
 
 
 def is_important(n):
@@ -379,7 +455,9 @@ def main():
         sent = load(SENT, {})
         first_run = not sent.get("_init")
         out = []
+        build_idf([x.get("title") or "" for x in news])
         posted = [x for x in sent.get("_titles", []) if x.get("ts", 0) >= now.timestamp() - 12 * 3600]
+        hour_n = sum(1 for x in posted if x.get("ts", 0) >= now.timestamp() - 3600)
         dup_skipped = 0
         for n in sorted(news, key=lambda n: n.get("collected_utc") or ""):
             if n["id"] in sent or not worthy(n, now):
@@ -389,7 +467,11 @@ def main():
                 dup_skipped += 1
                 sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "dup": True}
                 continue
+            if hour_n >= MAX_PER_HOUR and not is_breaking(n):
+                status["hour_cap"] = status.get("hour_cap", 0) + 1
+                continue  # سقف ساعي: بعده العاجل فقط (القناة لا تُغرق)
             posted.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp()})
+            hour_n += 1
             out.append((n, False))
         sent["_titles"] = posted[-400:]
         status["dup_skipped"] = dup_skipped
