@@ -340,7 +340,13 @@ def main(hours=24):
                     "timeline": [{"source": r["source_name"], "url": r["url"], "pub": r["published_utc"], "seen": r["collected_utc"],
                                   "cited": V.cited_source((r["title"] or "") + " " + (r["text"] or "")), "manual": r["platform"] == "manual"} for r in irows][:12]})
     V.cross_disputes(out)
-    edit_titles(out)
+    try:
+        edit_titles(out)  # التحرير تحسين، لا يجوز أن يوقف نشر الأخبار أبداً
+    except Exception as e:  # noqa: BLE001
+        print(f"::error title=editorial failed (الأخبار تُنشر بعناوينها الأصلية)::{type(e).__name__}: {str(e)[:150]}")
+        for n in out:
+            n.pop("alts", None)
+            n.pop("lead", None)
     analysis.sort(key=lambda x: (x["last_time"] or ""), reverse=True)
     (ROOT / "pwa" / "analysis.json").write_text(json.dumps({"updated_utc": iso(now), "min_sources": A.MIN_SOURCES, "items": analysis[:40]},
                                                            ensure_ascii=False), encoding="utf-8")
