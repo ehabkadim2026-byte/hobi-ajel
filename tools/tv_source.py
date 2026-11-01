@@ -40,20 +40,13 @@ def is_source(chat):
 
 
 def important(cap):
-    key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if key:
-        try:
-            import urllib.request
-            body = json.dumps({"contents": [{"parts": [{"text": GATE_PROMPT + cap[:600]}]}],
-                               "generationConfig": {"temperature": 0, "maxOutputTokens": 5}}).encode()
-            model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
-            req = urllib.request.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent", data=body,
-                                         headers={"Content-Type": "application/json", "x-goog-api-key": key})
-            with urllib.request.urlopen(req, timeout=12) as r:
-                ans = json.loads(r.read().decode())["candidates"][0]["content"]["parts"][0]["text"]
+    try:
+        from tools.editorial import gemini
+        ans = gemini(GATE_PROMPT + cap[:600], max_tokens=5, temperature=0)
+        if ans is not None:
             return "نعم" in ans, "Gemini"
-        except Exception:  # noqa: BLE001
-            pass
+    except Exception:  # noqa: BLE001
+        pass
     return bool(IMPORTANT.search(cap)), "كلمات"
 
 

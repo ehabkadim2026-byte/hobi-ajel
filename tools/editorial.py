@@ -84,39 +84,42 @@ def os_key():
     return bool(_os.environ.get("GEMINI_API_KEY", "").strip())
 
 
-def _llm(title, context=""):
+MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest"]
+_EXHAUSTED = set()  # نموذج خلصت حصته اليومية بهذه الجولة: ننتقل للتالي (لكل نموذج حصة مجانية مستقلة)
+
+
+def gemini(prompt, max_tokens=120, temperature=0.2):
     key = _os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         return None
-    model = _os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    import urllib.error as _ue
+    last = None
+    for model in ([_os.environ["GEMINI_MODEL"]] if _os.environ.get("GEMINI_MODEL") else MODELS):
+        if model in _EXHAUSTED:
+            continue
+        body = _json.dumps({"contents": [{"parts": [{"text": prompt}]}],
+                            "generationConfig": {"temperature": temperature, "maxOutputTokens": max_tokens}}).encode()
+        req = _ur.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                          data=body, headers={"Content-Type": "application/json", "x-goog-api-key": key})
+        try:
+            with _ur.urlopen(req, timeout=12) as r:
+                d = _json.loads(r.read().decode())
+            return d["candidates"][0]["content"]["parts"][0]["text"]
+        except _ue.HTTPError as e:
+            last = e
+            if e.code in (429, 404, 403):
+                _EXHAUSTED.add(model)
+                continue
+            raise
+    raise last or RuntimeError("no model")
+
+
+def _llm(title, context=""):
     extra = ("\n\nنص الخبر للمرجع فقط (استعمله لتوضيح العنوان دون إضافة تفاصيل ثانوية): " + context[:500]) if context else ""
-    body = _json.dumps({"contents": [{"parts": [{"text": PROMPT + title + extra}]}],
-                        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 120}}).encode()
-    req = _ur.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                      data=body, headers={"Content-Type": "application/json", "x-goog-api-key": key})
-    with _ur.urlopen(req, timeout=12) as r:
-        d = _json.loads(r.read().decode())
-    return d["candidates"][0]["content"]["parts"][0]["text"].strip().strip('"«»').split("\n")[0].strip()
-
-
-# كلمات الصياغة المسموح للنموذج إضافتها (إسناد وربط فقط) — أي كلمة جديدة غيرها = رفض الصياغة
-STYLE_OK = set("""أعلن أعلنت يعلن تعلن أكد أكدت يؤكد تؤكد قال قالت يقول تقول ذكر ذكرت أفاد أفادت أوضح أوضحت كشف كشفت تكشف يكشف
-نفى نفت ينفي تنفي أن إن التي الذي الذين اللذين أي يقضي تقضي بشأن حول خلال إلى على في من عن مع بعد قبل وزارة وزير رسميا رسمياً
-عن صدور اليوم هذا هذه ذلك تلك كما وفق وفقاً بحسب حسب عبر لدى بين نحو قرابة ضمن تم جرى
-تضم يضم تشمل يشمل عقب إثر جراء بسبب لها له فيها فيه منها منه عدم انطلاق إطلاق بدء إجراء""".split())
-
-
-def _stem(w):
-    w = norm_ar(w.strip("«»،.:؛\"'()!؟?-–—"))
-    for p in ("وال", "بال", "لل", "فال", "كال", "ال", "و", "ب", "ل", "ف"):
-        if w.startswith(p) and len(w) - len(p) >= 3:
-            w = w[len(p):]
-            break
-    for suf in ("ات", "ين", "ون", "ها", "هم", "ه", "ة"):
-        if w.endswith(suf) and len(w) - len(suf) >= 3:
-            w = w[:-len(suf)]
-            break
-    return w
+    out = gemini(PROMPT + title + extra)
+    if out is None:
+        return None
+    return out.strip().strip('"«»').split("\n")[0].strip()
 
 
 def _why(orig, new):
