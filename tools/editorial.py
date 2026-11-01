@@ -30,6 +30,7 @@ def clean_headline(title, max_len=170):
     t = HASHTAG.sub(" ", t)
     t = FOLLOW.sub("", t)
     t = TAGS.sub("", t.strip())
+    t = re.sub(r"^\s*(?:عاجل|خاص|هام|مهم)\s+(?=\S)", "", t)
     t = TAGS_END.sub("", t)
     t = SIGN.sub("", t)
     t = t.replace('"', "«", 1).replace('"', "»", 1) if t.count('"') >= 2 else t
