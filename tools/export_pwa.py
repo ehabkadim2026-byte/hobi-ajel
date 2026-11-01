@@ -185,6 +185,8 @@ def edit_titles(out):
     sent["_hl"] = dict(keep)
     p.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
     print(f"::notice title=editorial::{json.dumps({'llm_calls': calls, **E.LLM_STATS, 'cache': len(keep)}, ensure_ascii=False)}")
+    for r in E.REJECTS:
+        print(f"::notice title=editorial_reject::{json.dumps(r, ensure_ascii=False)}")
 
 def main(hours=24):
     con = core.connect()

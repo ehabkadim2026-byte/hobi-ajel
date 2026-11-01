@@ -113,6 +113,14 @@ def _stem(w):
     return w
 
 
+def _why(orig, new):
+    if sorted(DIGITS.findall(orig)) != sorted(DIGITS.findall(new)):
+        return "أرقام"
+    have = {_stem(w) for w in orig.split()}
+    ok_style = {_stem(w) for w in STYLE_OK} | {norm_ar(w) for w in STYLE_OK}
+    return " ".join(w for w in new.split() if _stem(w) not in have and _stem(w) not in ok_style and len(_stem(w)) >= 3)[:80]
+
+
 def _safe(orig, new):
     """حارس الحقائق: نفس الأرقام، طول معقول، ولا كلمة مضمونية جديدة غير موجودة في الأصل (عدا كلمات الإسناد والربط)."""
     if not new or len(new) < 15 or len(new) > 220:
@@ -132,6 +140,7 @@ def _safe(orig, new):
 
 
 LLM_STATS = {"ok": 0, "rejected": 0, "error": 0, "off": 0}
+REJECTS = []
 
 
 def edit_headline(title, max_len=170):
@@ -149,4 +158,6 @@ def edit_headline(title, max_len=170):
         LLM_STATS["ok"] += 1
         return new
     LLM_STATS["rejected"] += 1
+    if len(REJECTS) < 4:
+        REJECTS.append({"in": base[:120], "out": new[:140], "why": _why(base, new)})
     return base
