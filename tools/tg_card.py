@@ -751,7 +751,10 @@ def card_lux(photo_jpg, title, breaking=True, when_utc=None):
     from PIL import ImageDraw as _D, ImageFilter, ImageEnhance, ImageOps
     W, H, P = 1280, 720, 70
     if photo_jpg:
-        ph = _cover(Image.open(io.BytesIO(photo_jpg)).convert("RGB"), W, H)
+        src = Image.open(io.BytesIO(photo_jpg)).convert("RGB")
+        mx, my = int(src.width * 0.03), int(src.height * 0.03)  # كثير من صور المواقع بإطار/شريط ملون على الحافة
+        src = src.crop((mx, my, src.width - mx, src.height - my))
+        ph = _cover(src, W, H)
         ph = ImageEnhance.Contrast(ImageEnhance.Color(ph).enhance(0.82)).enhance(1.08)
         g = ImageOps.grayscale(ph)
         duo = ImageOps.colorize(g, black=(4, 14, 34), white=(246, 240, 232), mid=(96, 104, 120))
@@ -765,16 +768,29 @@ def card_lux(photo_jpg, title, breaking=True, when_utc=None):
     im.paste(Image.new("RGB", (W, H), (2, 8, 20)), (0, 0), vig.filter(ImageFilter.GaussianBlur(40)))
     d = _D.Draw(im)
     kick, head = split_kicker(title)
-    f, sz, lines = _fit(d, head, "Alexandria-Black.ttf", W - 2 * P - 26, 3, [86, 80, 74, 68, 62, 56, 52], max_h=360, lh_k=1.34)
-    lh = int(sz * 1.34)
+    f, sz, lines = _fit(d, head, "Alexandria-Black.ttf", W - 2 * P - 26, 3, [80, 74, 68, 62, 58, 54, 50], max_h=330, lh_k=1.32)
+    if len(lines) > 1 and len(lines[-1].split()) <= 1:  # لا كلمة يتيمة بالسطر الأخير
+        for s2 in range(sz - 2, 46, -2):
+            f2 = _ff("Alexandria-Black.ttf", s2)
+            l2 = _wrap(d, head, f2, W - 2 * P - 26)
+            if len(l2) < len(lines) or (len(l2) == len(lines) and len(l2[-1].split()) > 1):
+                f, sz, lines = f2, s2, l2
+                break
+    lh = int(sz * 1.32)
     block_h = lh * len(lines) + (58 if kick else 0)
-    top = H - 70 - block_h - 34
+    bottom = H - 112  # مساحة محجوزة لسطر الشعار تحت العنوان
+    top = bottom - block_h - 40
     glass = im.crop((0, top, W, H)).filter(ImageFilter.GaussianBlur(28))
-    glass = Image.blend(glass, Image.new("RGB", glass.size, (5, 14, 34)), 0.58)
-    fade = Image.new("L", (1, H - top))
-    for y in range(H - top):
-        fade.putpixel((0, y), int(255 * min(1, (y / 70) ** 1.3)))
-    im.paste(glass, (0, top), fade.resize((W, H - top)))
+    glass = Image.blend(glass, Image.new("RGB", glass.size, (5, 14, 34)), 0.64)
+    ext = 170  # تدرّج طويل ناعم فوق الزجاج بلا حافة ظاهرة
+    top2 = max(0, top - ext)
+    glass = im.crop((0, top2, W, H)).filter(ImageFilter.GaussianBlur(28))
+    glass = Image.blend(glass, Image.new("RGB", glass.size, (5, 14, 34)), 0.64)
+    fade = Image.new("L", (1, H - top2))
+    for y in range(H - top2):
+        k = min(1.0, y / max(1, (top - top2) + 30))
+        fade.putpixel((0, y), int(255 * (k * k * (3 - 2 * k))))
+    im.paste(glass, (0, top2), fade.resize((W, H - top2)))
     d = _D.Draw(im)
     y = top + 34
     d.rectangle([W - P + 14, y + 6, W - P + 22, y + block_h - 10], fill=BRAND_RED)
@@ -810,8 +826,11 @@ def card_lux(photo_jpg, title, breaking=True, when_utc=None):
         cap.paste(lg, (14, 8))
         cm = Image.new("L", cap.size, 0)
         _D.Draw(cm).rounded_rectangle([0, 0, cap.width - 1, cap.height - 1], radius=14, fill=255)
-        im.paste(cap, (P - 26, H - 30 - cap.height), cm)
-        d.text((P - 26 + cap.width + 16, H - 30 - cap.height + 20), "t.me/hassawassal", font=_ff("ReadexPro-Medium.ttf", 22), fill=(220, 226, 238))
-    noise = Image.effect_noise((W // 2, H // 2), 22).resize((W, H)).convert("L").point(lambda v: 16 if v > 150 else 0)
+        cy = H - 34 - cap.height
+        im.paste(cap, (W - P + 22 - cap.width, cy), cm)
+        d = _D.Draw(im)
+        d.line([(P, cy + cap.height // 2), (W - P + 22 - cap.width - 24, cy + cap.height // 2)], fill=(70, 84, 112), width=1)
+        d.text((P, cy + 20), "t.me/hassawassal", font=_ff("ReadexPro-Medium.ttf", 22), fill=(200, 208, 224))
+    noise = Image.effect_noise((W, H), 40).convert("L").point(lambda v: 7 if v > 175 else 0)  # ملمس خفيف جداً لا يُرى كنقاط
     im.paste(Image.new("RGB", (W, H), (255, 255, 255)), (0, 0), noise)
     return _jpg(im)
