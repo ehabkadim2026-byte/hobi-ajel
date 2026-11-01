@@ -1,0 +1,19 @@
+name: fetch-fonts
+on: {workflow_dispatch: {}}
+permissions: {contents: write}
+jobs:
+  fonts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cd assets/fonts
+          G=https://raw.githubusercontent.com/google/fonts/main/ofl
+          P=https://raw.githubusercontent.com/IBM/plex/master/packages/plex-sans-arabic/fonts/complete/ttf
+          curl -fsSL "$G/cairo/Cairo%5Bslnt%2Cwght%5D.ttf" -o Cairo-VF.ttf || true
+          for w in Bold ExtraBold Black Medium; do curl -fsSL "$G/tajawal/Tajawal-$w.ttf" -o Tajawal-$w.ttf || true; done
+          for w in Bold SemiBold Medium; do curl -fsSL "$P/IBMPlexSansArabic-$w.ttf" -o IBMPlexSansArabic-$w.ttf || true; done
+          find . -size -10k -delete; ls -la
+      - run: |
+          git config user.name "hobi-bot"; git config user.email "bot@users.noreply.github.com"
+          git add assets/fonts && git commit -m "خطوط عربية واضحة للبطاقات" && git push || echo "no change"
