@@ -527,14 +527,23 @@ def news_card3(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hass
     return buf.getvalue()
 
 
-def breaking_anim(photo_jpg, title, when_utc=None):
+def breaking_anim(photo_jpg, title, when_utc=None, style="v3"):
     """بطاقة عاجل متحركة (MP4 صامت يتكرر تلقائياً في تلغرام): شارة «عاجل» تومض وأشعة الإشارة تنبض. ~2 ثانية."""
     import os
     import subprocess
     import tempfile
     import imageio_ffmpeg
-    a = Image.open(io.BytesIO(news_card3(photo_jpg, title, True, when_utc)))
-    b = Image.open(io.BytesIO(news_card3(photo_jpg, title, True, when_utc, dim=True)))
+    fn = {"a": card_a, "b": card_b, "c": card_c}.get(style)
+    if fn:
+        a = Image.open(io.BytesIO(fn(photo_jpg, title, True, when_utc)))
+        _DIM[0] = True
+        try:
+            b = Image.open(io.BytesIO(fn(photo_jpg, title, True, when_utc)))
+        finally:
+            _DIM[0] = False
+    else:
+        a = Image.open(io.BytesIO(news_card3(photo_jpg, title, True, when_utc)))
+        b = Image.open(io.BytesIO(news_card3(photo_jpg, title, True, when_utc, dim=True)))
     fps, n = 12, 24
     # منحنى الوميض: مضيء 0.6ث، انطفاء سريع، مطفأ 0.35ث، رجوع سريع
     curve = [0, 0, 0, 0, 0, 0, 0, 0.5, 1, 1, 1, 1, 0.5, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 1, 0.5]
@@ -549,6 +558,9 @@ def breaking_anim(photo_jpg, title, when_utc=None):
 
 
 # ───────────────────── v4: ثلاثة اتجاهات بعنوان مسيطر ─────────────────────
+_DIM = [False]
+
+
 def split_kicker(title):
     """«الجهة: الخبر» ← (الجهة، الخبر). الجهة تظهر سطراً أحمر صغيراً فوق العنوان الكبير."""
     m = re.match(r"^\s*([^:«»]{3,34}?)\s*:\s*(.{12,})$", title or "")
@@ -586,10 +598,13 @@ def _tag(d, x_right, y, breaking, size=34):
     tw = d.textlength(_shape(tag), font=ft, **kw)
     h = int(size * 1.75)
     x0 = int(x_right - tw - 34 - (46 if breaking else 0))
-    d.rectangle([x0, y, x_right, y + h], fill=BRAND_RED if breaking else PAPER)
-    _draw_rtl(d, x_right - 17, y + int(h * 0.1), tag, ft, PAPER if breaking else BRAND_NAVY)
-    if breaking:
+    dim = breaking and _DIM[0]
+    d.rectangle([x0, y, x_right, y + h], fill=((92, 8, 16) if dim else BRAND_RED) if breaking else PAPER)
+    _draw_rtl(d, x_right - 17, y + int(h * 0.1), tag, ft, ((255, 150, 155) if dim else PAPER) if breaking else BRAND_NAVY)
+    if breaking and not dim:
         _rays(d, x0 + 20, y + h * 0.64, 26, PAPER, width=4, dot=True)
+    elif breaking:
+        d.ellipse([x0 + 14, y + h * 0.64 - 6, x0 + 26, y + h * 0.64 + 6], fill=(255, 150, 155))
     return x0, x_right
 
 

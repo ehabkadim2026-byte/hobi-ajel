@@ -29,6 +29,8 @@ DEBUG = []
 CHANNEL = "https://t.me/hassawassal"
 RANK = {"عاجل": 3, "مهم": 2, "متابعة": 1}
 MAX_PER_HOUR = 20
+REGION_MIN_SOURCES = 5
+REGION_PER_HOUR = 6
 
 
 def api(token, method, files=None, **params):
@@ -93,6 +95,22 @@ def _markers():
     return IRAQ_T
 
 
+FAR = None
+
+
+def far_title(title):
+    """خبر بعيد عن الشرق الأوسط (روسيا/أوكرانيا/أوروبا/آسيا البعيدة) ولا يذكر العراق ولا المنطقة."""
+    global FAR
+    from marsad.textnorm import norm_ar
+    if FAR is None:
+        FAR = [norm_ar(w) for w in ["روسيا", "الروسية", "الروسي", "موسكو", "بوتين", "الكرملين", "أوكرانيا", "الأوكرانية", "الأوكراني", "كييف", "زيلينسكي",
+                                     "بولندا", "البولندي", "المجر", "أوربان", "ألمانيا", "فرنسا", "بريطانيا", "إيطاليا", "إسبانيا", "أوروبا", "الأوروبي",
+                                     "الصين", "اليابان", "كوريا", "الهند", "باكستان", "أفغانستان", "طالبان", "أستراليا", "البرازيل", "المكسيك", "كندا",
+                                     "السودان", "الخرطوم", "ليبيا", "تونس", "الجزائر", "المغرب", "الدوري الإسباني", "برشلونة", "ريال مدريد"]]
+    t = " " + norm_ar(title or "") + " "
+    return any(w in t for w in FAR)
+
+
 def iraq_title(title):
     """فحص على مستوى العنوان نفسه: عنوان فيه بلد/جهة أجنبية بلا أي إشارة عراقية = خبر غير عراقي (لا يُنشر بقناة أخبار العراق)."""
     from marsad.textnorm import norm_ar
@@ -119,11 +137,21 @@ def worthy(n, now):
     ct = clean_headline(t)
     if JUNK.match(ct or "") or len((ct or "").split()) < 5:
         return False
-    if n.get("ctype") == "تحليل/رأي" or n.get("origin") == "أجنبي":
+    if n.get("ctype") == "تحليل/رأي":
         return False
-    if not (n.get("about_iraq") or n.get("pmf")) or not iraq_title(t):
+    if (n.get("about_iraq") or n.get("pmf")) and iraq_title(t) and n.get("origin") != "أجنبي":
+        return bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم")
+    return is_regional(n)
+
+
+def is_regional(n):
+    """الشرق الأوسط والمنطقة: فقط المهم والمتداول على نطاق واسع (عاجل/مهم ونشرته 5 جهات فأكثر)، لا الأخبار البعيدة عن المنطقة."""
+    t = n.get("title") or ""
+    if iraq_title(t) and (n.get("about_iraq") or n.get("pmf")):
         return False
-    return bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم")
+    if far_title(t):
+        return False
+    return (bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم")) and (n.get("n_sources") or 1) >= REGION_MIN_SOURCES
 
 
 def meta_line(n):
@@ -137,8 +165,12 @@ def meta_line(n):
 
 
 def is_breaking(n):
-    """عاجل: خبر عراقي وسمه المصدر عاجل أو صنّفه النظام عاجل (لا يكفي تكرار النشر وحده)."""
-    return rank(n) >= 3 and iraq_title(n.get("title") or "") and bool(n.get("about_iraq") or n.get("pmf"))
+    """عاجل: خبر عراقي عاجل، أو خبر إقليمي عاجل كبير جداً (8 جهات فأكثر). لا يكفي تكرار النشر وحده."""
+    if rank(n) < 3:
+        return False
+    if iraq_title(n.get("title") or "") and (n.get("about_iraq") or n.get("pmf")):
+        return True
+    return not far_title(n.get("title") or "") and (n.get("n_sources") or 1) >= 8
 
 
 VAGUE_RX = re.compile(r"(شاهد|بالفيديو|بالصور|فيديو|التفاصيل|تفاصيل|إليكم|اليكم|هذا ما|ماذا|لماذا|كيف|هكذا|إليك|اليك|تعرف|الكشف عن|كشف عن|مفاجأة|\?|؟|…|\.\.\.?$)")
@@ -246,7 +278,7 @@ def fmt(n, update=False):
 
 CARDS = PWA / "cards"
 ANIM = DATA / "anim"
-CARD_STYLE = "v3"  # هوية هسة وصل الجديدة — اعتمدها إيهاب 2026-11-01
+CARD_STYLE = "a"  # «أ — بث تلفزيوني» اختارها إيهاب 2026-11-01 (قبلها v3)
 PENDING = DATA / "tg_pending.json"
 
 
@@ -262,7 +294,7 @@ def prepare_card(n):
             photo = tg_card.fetch_jpeg(img)
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"imgfail:{type(e).__name__}")
-    maker = tg_card.news_card3 if CARD_STYLE == "v3" else tg_card.news_card2
+    maker = {"a": tg_card.card_a, "b": tg_card.card_b, "c": tg_card.card_c, "v3": tg_card.news_card3}.get(CARD_STYLE, tg_card.news_card2)
     jpg = maker(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"))
     CARDS.mkdir(parents=True, exist_ok=True)
     cut = datetime.now(timezone.utc).timestamp() - 5 * 86400  # البطاقات تبقى متاحة 5 أيام (تُحفظ بين الجولات)
@@ -271,13 +303,13 @@ def prepare_card(n):
             f.unlink()
     name = re.sub(r"[^A-Za-z0-9_]", "", n["id"])[:40] + f"_{int(datetime.now(timezone.utc).timestamp())}.jpg"
     (CARDS / name).write_bytes(jpg)
-    if is_breaking(n) and CARD_STYLE == "v3":  # العاجل: بطاقة متحركة بوميض شارة «عاجل»
+    if is_breaking(n) and CARD_STYLE in ("v3", "a", "b", "c"):  # العاجل: بطاقة متحركة بوميض شارة «عاجل»
         try:
             ANIM.mkdir(parents=True, exist_ok=True)
             for f in ANIM.glob("*.mp4"):
                 if f.stat().st_mtime < cut:
                     f.unlink()
-            (ANIM / name.replace(".jpg", ".mp4")).write_bytes(tg_card.breaking_anim(photo, headline(n), n.get("first_utc") or n.get("latest_utc")))
+            (ANIM / name.replace(".jpg", ".mp4")).write_bytes(tg_card.breaking_anim(photo, headline(n), n.get("first_utc") or n.get("latest_utc"), style=CARD_STYLE))
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"animfail:{type(e).__name__}:{str(e)[:40]}")
     return name, "source" if photo else "card"
@@ -458,6 +490,7 @@ def main():
         build_idf([x.get("title") or "" for x in news])
         posted = [x for x in sent.get("_titles", []) if x.get("ts", 0) >= now.timestamp() - 12 * 3600]
         hour_n = sum(1 for x in posted if x.get("ts", 0) >= now.timestamp() - 3600)
+        reg_n = sum(1 for x in posted if x.get("reg") and x.get("ts", 0) >= now.timestamp() - 3600)
         dup_skipped = 0
         for n in sorted(news, key=lambda n: n.get("collected_utc") or ""):
             if n["id"] in sent or not worthy(n, now):
@@ -467,11 +500,16 @@ def main():
                 dup_skipped += 1
                 sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "dup": True}
                 continue
+            reg = is_regional(n)
+            if reg and reg_n >= REGION_PER_HOUR and not is_breaking(n):
+                status["region_cap"] = status.get("region_cap", 0) + 1
+                continue
             if hour_n >= MAX_PER_HOUR and not is_breaking(n):
                 status["hour_cap"] = status.get("hour_cap", 0) + 1
                 continue  # سقف ساعي: بعده العاجل فقط (القناة لا تُغرق)
-            posted.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp()})
+            posted.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp(), "reg": reg})
             hour_n += 1
+            reg_n += reg
             out.append((n, False))
         sent["_titles"] = posted[-400:]
         status["dup_skipped"] = dup_skipped
