@@ -1,0 +1,63 @@
+name: feed-probe
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: probe feeds + gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python3 - <<'PY'
+          import urllib.request, re, json, os, email.utils
+          from datetime import datetime, timezone
+          from concurrent.futures import ThreadPoolExecutor
+          UA={"User-Agent":"Mozilla/5.0 (compatible; HobiAjel/1.0)"}
+          C=[("BBC عربي","https://feeds.bbci.co.uk/arabic/rss.xml"),("BBC World","https://feeds.bbci.co.uk/news/world/rss.xml"),
+             ("سكاي نيوز عربية","https://www.skynewsarabia.com/rss"),("سكاي نيوز عربية 2","https://www.skynewsarabia.com/web/rss"),
+             ("العربية","https://www.alarabiya.net/feed/rss2/ar.xml"),("CNN بالعربية","https://arabic.cnn.com/api/v1/rss/rss.xml"),
+             ("DW عربية","https://rss.dw.com/rdf/rss-ar-all"),("الأناضول عربي","https://www.aa.com.tr/ar/rss/default?cat=guncel"),
+             ("Anadolu English","https://www.aa.com.tr/en/rss/default?cat=world"),("إندبندنت عربية","https://www.independentarabia.com/rss"),
+             ("يورونيوز عربي","https://arabic.euronews.com/rss"),("أخبار الأمم المتحدة عربي","https://news.un.org/feed/subscribe/ar/news/all/rss.xml"),
+             ("UN News Middle East","https://news.un.org/feed/subscribe/en/news/region/middle-east/feed/rss.xml"),
+             ("الحرة","https://www.alhurra.com/rss"),("روداو عربي","https://www.rudaw.net/arabic/rss"),("روداو عربي 2","https://www.rudaw.net/rss/arabic"),
+             ("واع","https://www.ina.iq/rss.xml"),("واع 2","https://ina.iq/rss"),("The Guardian World","https://www.theguardian.com/world/rss"),
+             ("NPR World","https://feeds.npr.org/1004/rss.xml"),("Al-Monitor","https://www.al-monitor.com/rss"),
+             ("Washington Post World","https://feeds.washingtonpost.com/rss/world"),("France 24 عربي — الشرق الأوسط","https://www.france24.com/ar/%D8%A7%D9%84%D8%B4%D8%B1%D9%82-%D8%A7%D9%84%D8%A3%D9%88%D8%B3%D8%B7/rss"),
+             ("Euronews English","https://www.euronews.com/rss?level=theme&name=news"),("الشرق بلومبرغ","https://asharq.com/rss/"),
+             ("سبوتنيك عربي","https://sarabic.ae/export/rss2/archive/index.xml"),("شينخوا عربي","https://arabic.news.cn/rss/news.xml"),
+             ("CBS News World","https://www.cbsnews.com/latest/rss/world"),("ABC News International","https://abcnews.go.com/abcnews/internationalheadlines"),
+             ("الجزيرة نت — عاجل","https://www.aljazeera.net/aljazeerarss/a7c186be-1baa-4bd4-9d80-a84db769f779/73d0e1b4-532f-45ef-b135-bfdff8b8cab9"),
+             ("Kurdistan24 English","https://www.kurdistan24.net/en/rss.xml"),("The New Arab","https://www.newarab.com/rss"),("العربي الجديد","https://www.alaraby.co.uk/rss")]
+          def probe(c):
+              n,u=c
+              try:
+                  b=urllib.request.urlopen(urllib.request.Request(u,headers=UA),timeout=20).read(3_000_000).decode("utf-8","replace")
+                  items=re.findall(r"<item[\s>]|<entry[\s>]",b)
+                  dates=re.findall(r"<(?:pubDate|published|updated|dc:date)>([^<]+)<",b)
+                  newest=None
+                  for d in dates[:5]:
+                      try:
+                          t=email.utils.parsedate_to_datetime(d) if "," in d else datetime.fromisoformat(d.strip().replace("Z","+00:00"))
+                          newest=max(newest,t) if newest else t
+                      except Exception: pass
+                  age=round((datetime.now(timezone.utc)-newest).total_seconds()/60) if newest else None
+                  iq=len(re.findall(r"العراق|عراقي|Iraq|بغداد",b))
+                  return f"{n}|OK|items={len(items)}|newest_min={age}|iraq_mentions={iq}|{u}"
+              except Exception as e:
+                  return f"{n}|FAIL|{type(e).__name__}:{str(e)[:60]}|{u}"
+          with ThreadPoolExecutor(12) as ex:
+              for r in ex.map(probe,C): print("::notice title=feed::"+r)
+          k=os.environ.get("GEMINI_API_KEY","")
+          for m in ("gemini-3.5-flash-lite","gemini-flash-lite-latest","gemini-3.1-flash-lite","gemini-2.5-flash"):
+              try:
+                  body=json.dumps({"contents":[{"parts":[{"text":"قل: نعم"}]}],"generationConfig":{"maxOutputTokens":5}}).encode()
+                  r=urllib.request.urlopen(urllib.request.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent",data=body,headers={"Content-Type":"application/json","x-goog-api-key":k}),timeout=20)
+                  print(f"::notice title=gemini::{m} OK")
+              except urllib.error.HTTPError as e:
+                  print(f"::notice title=gemini::{m} HTTP {e.code} {e.read().decode()[:200]}")
+          PY
