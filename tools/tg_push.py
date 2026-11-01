@@ -399,11 +399,15 @@ def url_ok(u, timeout=6):
         return False
 
 
-def send_pending(token, chat_id):
+def send_pending(token, chat_id, only_breaking=False):
     """بعد نشر الموقع: رسالة نصية قابلة للنسخ، والبطاقة كبيرة فوقها (معاينة الرابط)، وزر التفاصيل والمشاركة تحتها.
     غير العاجل يصل بإشعار صامت. التحديث والتصحيح يُرسلان كرد على المنشور الأصلي. معرّفات الرسائل تُحفظ في tg_msgs.json."""
     import time as _t
     pend = load(PENDING, [])
+    later = []
+    if only_breaking:  # العاجل يُرسل فوراً بمرحلة التحضير (رفع البطاقة مباشرة) بلا انتظار نشر الموقع
+        later = [p for p in pend if not (p.get("b") and not p.get("textonly"))]
+        pend = [p for p in pend if p.get("b") and not p.get("textonly")]
     msgs = load(MSGS, {})
     done = {"preview": 0, "photo": 0, "text": 0, "anim": 0, "replies": 0}
     deadline = _t.time() + 60
@@ -446,7 +450,7 @@ def send_pending(token, chat_id):
                 DEBUG.append(f"animsend:{type(e).__name__}:{str(e)[:50]}")
         cu = APP_URL + "cards/" + p["card"]
         ok = False
-        while _t.time() < deadline:
+        while not only_breaking and _t.time() < deadline:
             if url_ok(cu):
                 ok = True
                 break
@@ -469,7 +473,10 @@ def send_pending(token, chat_id):
                 done["text"] += 1
             except Exception:  # noqa: BLE001
                 pass
-    PENDING.write_text("[]", encoding="utf-8")
+    PENDING.write_text(json.dumps(later, ensure_ascii=False), encoding="utf-8")
+    if only_breaking:
+        MSGS.write_text(json.dumps(msgs, ensure_ascii=False), encoding="utf-8")
+        return done
     try:
         done.update(evening_digest(token, chat_id, msgs) or {})
     except Exception as e:  # noqa: BLE001
@@ -798,6 +805,11 @@ def main():
         status["editor_llm"] = LLM_STATS
         PENDING.write_text(json.dumps(pend, ensure_ascii=False), encoding="utf-8")
         SENT.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
+        if any(p.get("b") and not p.get("textonly") for p in pend):
+            try:
+                status["breaking_now"] = send_pending(token, chat_id, only_breaking=True)
+            except Exception as e:  # noqa: BLE001
+                DEBUG.append(f"breaking_now:{type(e).__name__}")
         # موجز 8 صباحاً بغداد، مرة واحدة يومياً
         bgd = now + timedelta(hours=3)
         today = bgd.strftime("%Y-%m-%d")

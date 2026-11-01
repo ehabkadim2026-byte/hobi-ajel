@@ -21,6 +21,9 @@ from tools.tv_source import important, PROMO  # noqa: E402
 
 CFG = json.loads((ROOT / "config" / "fastlane.json").read_text(encoding="utf-8"))
 UA = {"User-Agent": "Mozilla/5.0 (Linux; Android 14) Chrome/126 Mobile"}
+STRICT = re.compile(r"(عاجل|مقتل|قتلى|استشهاد|انفجار|قصف|استهداف|اشتباك|اغتيال|القبض|اعتقال|حريق|غرق|زلزال|هزة|سيول|تعطيل|عطلة|الدوام|"
+                    r"رواتب|الرواتب|قرار|يقرر|تقرر|إقالة|استقالة|تعيين|إعفاء|حظر|منع|إغلاق|فتح|الموازنة|سعر الصرف|الدولار|انتخابات|المفوضية|حكم|يقضي|الإعدام|السجن)")
+FLAG = re.compile(r"^\W{0,6}(عاجل|عــاجل|عاااجل|⚡|🔴|🚨)")
 ROUTINE = re.compile(r"(يهنئ|تهنئة|يعزي|تعزية|ينعى|نعى|بمناسبة|ذكرى|عيد|يستذكر|صباح الخير|جمعة مباركة|رحم الله|إنا لله|تابعونا|رابط القناة)")
 STATE = ROOT / "data" / "fastlane_state.json"
 
@@ -62,6 +65,13 @@ def latest_posts(ch):
     return out, H.unescape(name.group(1)) if name else ch
 
 
+def iraq_strong(t):
+    from marsad.textnorm import norm_ar
+    iq, _ = T._markers()
+    x = " " + norm_ar(t) + " "
+    return any(w and w in x for w in iq)
+
+
 def main():
     token = os.environ.get("MARSAD_TG_BOT_TOKEN", "").strip()
     if not token:
@@ -84,12 +94,21 @@ def main():
         now = datetime.now(timezone.utc)
         mine = [x for x in mine if x.get("ts", 0) >= time.time() - 12 * 3600]
         T.build_idf([x.get("title", "") for x in mine] + [x.get("title", "") for x in main_sigs][-400:]) if stats["loops"] % 20 == 1 else None
-        for ch in CFG["channels"]:
+        from concurrent.futures import ThreadPoolExecutor
+        chans = [(c, "official") for c in CFG["channels"]] + [(c, "breaking") for c in CFG.get("breaking", [])]
+
+        def fetch(c):
             try:
-                posts, cname = latest_posts(ch)
+                return c, latest_posts(c[0])
             except Exception:  # noqa: BLE001
+                return c, None
+        with ThreadPoolExecutor(10) as ex:
+            results = list(ex.map(fetch, chans))
+        for (ch, tier), res in results:
+            if res is None:
                 stats["errors"] += 1
                 continue
+            posts, cname = res
             seen = last.get(ch, 0)
             new = [p for p in posts if p["id"] > seen]
             if posts:
@@ -110,7 +129,15 @@ def main():
                 sig = T.title_sig(first)
                 if any(T.same_story(sig, x) for x in mine + main_sigs):
                     skip("مكرر"); continue
-                ok, by = important(p["text"][:600])
+                if tier == "breaking":
+                    # قنوات الأخبار السريعة: فقط ما وسمته «عاجل» ويذكر العراق صراحة
+                    if not FLAG.search(p["text"][:40]) or not T.iraq_title(first) or not iraq_strong(first):
+                        skip("ليس عاجلاً عراقياً"); continue
+                    ok = True
+                else:
+                    ok, by = important(p["text"][:600])
+                    if by != "Gemini":
+                        ok = bool(STRICT.search(p["text"][:400]))  # بلا نموذج لغوي: كلمات الحدث المهم فقط (لا «يلتقي/يستقبل»)
                 if not ok:
                     skip("غير مهم"); continue
                 head = edit_headline(first, context=p["text"][:500])
@@ -120,7 +147,7 @@ def main():
                         photo = tg_card.fetch_jpeg(p["img"])
                     except Exception:  # noqa: BLE001
                         pass
-                loud = ch in CFG["loud"] or "عاجل" in p["text"][:60]
+                loud = ch in CFG["loud"] or bool(FLAG.search(p["text"][:40]))
                 card = tg_card.card_lux(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"))
                 tags = T.province_tags(first)
                 cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}" + \
@@ -139,6 +166,8 @@ def main():
                                  "lag_min": round(age, 1)})
                     gh_put("fast_sigs.json", mine)
                     print(f"::notice title=fastlane posted::{ch}/{p['id']} بعد {age:.1f} د من نشر المصدر — {head[:80]}")
+        if stats["loops"] % 10 == 0:
+            gh_put("fast_status.json", {**stats, "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")})
         STATE.parent.mkdir(exist_ok=True)
         STATE.write_text(json.dumps({"last": last}, ensure_ascii=False), encoding="utf-8")
         time.sleep(max(3, CFG["every_sec"] - (time.time() - t0)))
