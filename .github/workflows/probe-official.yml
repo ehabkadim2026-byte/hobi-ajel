@@ -1,0 +1,14 @@
+name: probe-official
+on: {workflow_dispatch: {}}
+permissions: {contents: write}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/probe_official.py config/official_candidates.txt official_probe.json
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh release view probe >/dev/null 2>&1 || gh release create probe --title probe --notes "فحوص مؤقتة" --prerelease
+          gh release upload probe official_probe.json --clobber
