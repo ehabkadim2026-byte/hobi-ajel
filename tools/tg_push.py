@@ -143,7 +143,7 @@ def fmt(n, update=False):
 
 
 CARDS = PWA / "cards"
-CARD_STYLE = "v2"  # يتحول إلى v3 (هوية هسة وصل الجديدة) بعد موافقة إيهاب على النموذج
+CARD_STYLE = "v3"  # هوية هسة وصل الجديدة — اعتمدها إيهاب 2026-11-01
 PENDING = DATA / "tg_pending.json"
 
 
