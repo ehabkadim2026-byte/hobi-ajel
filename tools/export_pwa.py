@@ -142,7 +142,7 @@ def delay_stats(con, now):
 
 
 
-LLM_PER_RUN = 25  # حماية الحصة المجانية لـ Gemini
+LLM_PER_RUN = 10  # حماية الحصة المجانية لـ Gemini (حد الطلبات بالدقيقة)
 
 
 def edit_titles(out):
@@ -166,10 +166,15 @@ def edit_titles(out):
             new = hit["t"]
         else:
             important = (n.get("about_iraq") or n.get("pmf")) and (n.get("source_flag") or n.get("level") in ("عاجل", "مهم"))
-            if important and calls < LLM_PER_RUN and E.os_key():
+            if important and calls < LLM_PER_RUN and E.os_key() and E.LLM_STATS["error"] < 2:
+                import time as _tm
+                if calls:
+                    _tm.sleep(1.5)
                 calls += 1
+                err0 = E.LLM_STATS["error"]
                 new = E.edit_headline(raw, max_len=200)
-                cache[n["id"]] = {"src": raw, "t": new, "at": n.get("latest_utc")}
+                if E.LLM_STATS["error"] == err0:  # لا نخزن نتيجة خطأ مؤقت (حد الطلبات): يُعاد المحاولة بالجولة الجاية
+                    cache[n["id"]] = {"src": raw, "t": new, "at": n.get("latest_utc")}
             else:
                 new = E.formal_rules(E.clean_headline(raw, max_len=200)) or raw
         if new and new != raw:
