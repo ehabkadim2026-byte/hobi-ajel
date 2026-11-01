@@ -24,6 +24,10 @@ jobs:
         run: pip install -q faster-whisper imageio-ffmpeg
       - if: steps.gate.outputs.due == 'true'
         run: python3 -m tools.tv_pilot
+        env:
+          MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
+          MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       - if: steps.gate.outputs.due == 'true'
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |

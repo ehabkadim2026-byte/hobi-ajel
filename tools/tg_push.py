@@ -123,6 +123,27 @@ def detail_url(n):
     return ""
 
 
+def title_sig(t):
+    """بصمة العنوان: جذور الكلمات المضمونية + الأرقام — لكشف الخبر نفسه بصياغة أخرى من جهة ثانية."""
+    from tools.editorial import _stem, DIGITS, clean_headline, STYLE_OK
+    t = clean_headline(t or "")
+    words = {_stem(w) for w in t.split()}
+    stop = {_stem(w) for w in STYLE_OK}
+    return ({w for w in words if len(w) >= 3 and w not in stop}, set(DIGITS.findall(t)))
+
+
+def same_story(sig, prev):
+    w, d = sig
+    pw, pd = set(prev.get("w") if isinstance(prev, dict) else prev[0]), set(prev.get("d") if isinstance(prev, dict) else prev[1])
+    if not w or not pw:
+        return False
+    j = len(w & pw) / len(w | pw)
+    small = len(w & pw) / min(len(w), len(pw))
+    if d and pd and d != pd and not (d & pd):
+        return False  # أرقام مختلفة تماماً = خبر مختلف (حصيلة جديدة، تاريخ آخر)
+    return j >= 0.45 or (small >= 0.7 and len(w & pw) >= 4) or (bool(d & pd) and j >= 0.3)
+
+
 def is_important(n):
     return is_breaking(n) or n.get("level") in ("عاجل", "مهم")
 
@@ -358,16 +379,20 @@ def main():
         sent = load(SENT, {})
         first_run = not sent.get("_init")
         out = []
+        posted = [x for x in sent.get("_titles", []) if x.get("ts", 0) >= now.timestamp() - 12 * 3600]
+        dup_skipped = 0
         for n in sorted(news, key=lambda n: n.get("collected_utc") or ""):
-            prev = sent.get(n["id"])
-            if prev is None:
-                if worthy(n, now):
-                    out.append((n, False))
-            elif is_breaking(n) and not prev.get("b", prev.get("r", 0) >= 3 or prev.get("n", 1) >= 3):
-                # خبر نُشر سابقاً ثم تكرر لدى 3 جهات فأكثر: يُعاد مرة واحدة بوسم عاجل
-                lu = n.get("latest_utc")
-                if lu and datetime.fromisoformat(lu.replace("Z", "+00:00")) >= now - timedelta(minutes=15):
-                    out.append((n, True))
+            if n["id"] in sent or not worthy(n, now):
+                continue  # كل خبر يُنشر مرة واحدة فقط (لا إعادة نشر حتى لو تكرر لدى جهات أكثر — طلب إيهاب 2026-11-01)
+            sig = title_sig(n["title"])
+            if any(same_story(sig, x) for x in posted):
+                dup_skipped += 1
+                sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "dup": True}
+                continue
+            posted.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp()})
+            out.append((n, False))
+        sent["_titles"] = posted[-400:]
+        status["dup_skipped"] = dup_skipped
         status["candidates"] = len(out)
         if first_run:  # أول تشغيل: لا نغرق القناة بالقديم؛ نرسل رسالة ترحيب ونعلّم الموجود كمُرسل
             for n, _ in out:

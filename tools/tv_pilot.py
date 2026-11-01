@@ -60,6 +60,67 @@ def find_clips(ch):
     return out
 
 
+PROMO = re.compile(r"(ترقبوا|ترقّبوا|يعرض|تعرض|الليلة|موعدكم|حلقة|الحلقة|برنامج|تابعونا|انتظرونا|قريباً|قريبا|إعلان|اعلان|رعاية|مسلسل|بث مباشر|البث المباشر)")
+POST_LIMIT = 2
+
+
+def auto_post(c, seg, data, st):
+    """نشر تلقائي للقناة (بتفويض إيهاب 2026-11-01) فقط للمقطع الذي يجتاز كل الشروط:
+    مصدر موثوق (قنوات التلفزيون العراقية الرسمية المدرجة) + مقطع تام + فيه هوك + غير مكرر. يرجع سبب القرار."""
+    token = os.environ.get("MARSAD_TG_BOT_TOKEN", "").strip()
+    if not token:
+        return "لا توكن"
+    cap = (c.get("caption") or "").strip()
+    words = sum(len(x["t"].split()) for x in seg)
+    low = sum(1 for x in seg if x["low"]) / len(seg) if seg else 1
+    why = []
+    if not 20 <= c["duration"] <= 180:
+        why.append("المدة خارج 20–180 ث")
+    if not seg or words < 25 or low > 0.3:
+        why.append("كلام قليل أو صوت غير واضح")
+    if seg and seg[-1]["e"] > c["duration"] - 0.4:
+        why.append("الكلام مقطوع بنهاية المقطع")
+    if not seg or seg[0]["s"] > 2.5:
+        why.append("بلا هوك: الكلام يبدأ متأخراً")
+    if len(cap.split()) < 5 or PROMO.search(cap):
+        why.append("وصف ترويجي أو ناقص")
+    if len(data) > 48 * 1024 * 1024:
+        why.append("أكبر من 48 ميغا")
+    from tools.tg_video import excluded
+    if excluded(c.get("channel_name", ""), cap):
+        why.append("جهة مستبعدة")
+    if st.get("posted_today", {}).get("n", 0) >= 40:
+        why.append("سقف يومي")
+    from tools.tg_push import title_sig, same_story, api, CHANNEL
+    sig = title_sig(cap)
+    prev = st.setdefault("posted_sigs", [])
+    if any(same_story(sig, x) for x in prev):
+        why.append("مكرر")
+    if why or st.get("_posted_run", 0) >= POST_LIMIT:
+        return "لم يُنشر: " + "، ".join(why or ["سقف الجولة"])
+    from tools.editorial import edit_headline
+    import html as H
+    first = next((ln.strip() for ln in cap.split("\n") if len(ln.strip()) >= 8), cap[:200])
+    head = edit_headline(first)
+    caption = (f"<b>{H.escape(head)}</b>\n\n🎥 المصدر: {H.escape(c['channel_name'])}\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}")
+    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or "@hassawassal"
+    try:
+        r = api(token, "sendVideo", files={"video": ("clip.mp4", data, "video/mp4")}, chat_id=chat_id, caption=caption[:1024],
+                parse_mode="HTML", supports_streaming="true")
+    except Exception as e:  # noqa: BLE001
+        return f"فشل النشر: {type(e).__name__}"
+    if not r.get("ok"):
+        return "فشل النشر: " + str(r.get("description"))[:80]
+    st["_posted_run"] = st.get("_posted_run", 0) + 1
+    day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    pt = st.get("posted_today") if (st.get("posted_today") or {}).get("d") == day else {"d": day, "n": 0}
+    pt["n"] += 1
+    st["posted_today"] = pt
+    prev.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time()})
+    st["posted_sigs"] = prev[-200:]
+    return "نُشر بالقناة"
+
+
 def due():
     st = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {"last": 0}
     return time.time() - st.get("last", 0) >= EVERY_MIN * 60
@@ -101,12 +162,16 @@ def main():
                     segs, info = model.transcribe(audio, language="ar", beam_size=3, vad_filter=True)
                     seg = [{"s": round(x.start, 1), "e": round(x.end, 1), "t": x.text.strip(),
                             "low": (x.avg_logprob < -1.0) or (x.no_speech_prob > 0.6)} for x in segs]
+                    try:
+                        auto = auto_post(c, seg, v.read_bytes(), st)
+                    except Exception as e:  # noqa: BLE001
+                        auto = f"خطأ: {type(e).__name__}"
                 low = sum(1 for x in seg if x["low"])
                 clips.append({"post_url": f"https://t.me/{c['post']}", "channel": c["channel_name"], "posted": c["posted"],
                               "caption": c["caption"], "duration": c["duration"], "segments": seg,
                               "low_ratio": round(low / len(seg), 2) if seg else None,
                               "flag": "تفريغ آلي يحتاج مراجعة" + (" — جودة صوت منخفضة" if seg and low / len(seg) > 0.3 else ""),
-                              "transcribed_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                              "transcribed_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "auto": auto,
                               "secs": round(time.time() - t0, 1)})
                 new += 1
                 st["done"].append(c["post"])
@@ -116,6 +181,7 @@ def main():
                 f[c["post"]] = f.get(c["post"], 0) + 1
                 if f[c["post"]] >= 2:
                     st["done"].append(c["post"])
+    st.pop("_posted_run", None)
     st["done"] = st["done"][-500:]
     st["last"] = time.time()
     cut = (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%S")
@@ -125,6 +191,7 @@ def main():
                                "limits": "مقاطع ≤5 دقائق تنشرها القنوات على تلغرام فقط؛ لا بث مباشر؛ تفريغ آلي بلا نسب لمتحدث.",
                                "clips": clips}, ensure_ascii=False), encoding="utf-8")
     STATE.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
+    print(f"::notice title=tv_auto::{json.dumps([c.get('auto') for c in clips[-new:]] if new else [], ensure_ascii=False)}")
     print(f"::notice title=tv_pilot::{json.dumps({'candidates': len(cand), 'seen': SEEN, 'new': new, 'total': len(clips), 'errors': errors, 'secs': [c.get('secs') for c in clips[-new:]] if new else []}, ensure_ascii=False)}")
 
 

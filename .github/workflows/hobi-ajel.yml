@@ -91,6 +91,8 @@ jobs:
         env: {GH_TOKEN: "${{ github.token }}"}
         run: gh release download tv-pilot -p tv.json -D pwa --clobber || echo "no tv yet"
       - run: python3 -m tools.export_pwa
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       - name: archive (لقطة كل 30 دقيقة + أرشيف يومي + اختبار استعادة + أرقام السعة)
         continue-on-error: true
         timeout-minutes: 4
