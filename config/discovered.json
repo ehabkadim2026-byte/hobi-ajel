@@ -94,6 +94,22 @@
    "added_by": "محرك الاكتشاف",
    "evidence": "درجة 72 · صلة 0.6 · أصالة 0.77 · 6/24س · https://www.pukmedia.com · كانت تصلنا عبر Google News (19/24س)",
    "priority": 1
+  },
+  {
+   "id": "rss:https://news.imn.iq/rss.xml",
+   "name": "شبكة الإعلام العراقي — RSS",
+   "url": "https://news.imn.iq/rss.xml",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مسار السرعة (بديل Google News)",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "محرك الاكتشاف",
+   "evidence": "درجة 52 · صلة 0.5 · أصالة 0.1 · 10/24س · https://news.imn.iq · كانت تصلنا عبر Google News (32/24س)",
+   "priority": 1
   }
  ]
 }
