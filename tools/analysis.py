@@ -114,3 +114,35 @@ def build(cid, title, irows, va, level, watch_names):
         "denial": [{"title": (r["title"] or "")[:200], "source": r["source_name"], "url": r["url"]} for r in denial[:3]],
         "official": official, "people": watch_names[:6], "open": open_q, "reading": None,
     }
+
+
+ANA_PROMPT = ("أنت محلل سياسي عراقي رصين ومحايد في قناة إخبارية. اكتب «تحليلاً خبرياً» قصيراً (110–170 كلمة) عن الحدث التالي، "
+              "مستنداً فقط إلى المعطيات المرفقة، بأربع فقرات قصيرة تبدأ بهذه العناوين حرفياً:\n"
+              "ما الذي حدث:\nلماذا يهم:\nالروايات والمواقف:\nما لم يتأكد وما يُرتقب:\n"
+              "قواعد صارمة: لا تضف أي رقم أو اسم أو واقعة غير موجودة في المعطيات؛ لا تتهم أي شخص أو جهة بفساد أو خيانة أو تضليل؛ "
+              "لا تنحز لطرف؛ ميّز الواقعة من التصريح من الادعاء؛ عبّر عن التوقعات بصيغة احتمال (قد، يُحتمل) لا يقين؛ "
+              "انتشار الخبر لا يعني صحته. بلا مقدمة ولا خاتمة ولا رموز.\n\nالمعطيات:\n")
+ACCUSE = re.compile(r"(فاسد|فساد|خيان|عميل|عمالة|متورط|تضليل|كاذب|مرتزق|إرهابي)")
+
+
+def write_reading(a):
+    from tools.editorial import gemini, DIGITS
+    facts = [f"العنوان: {a['title']}", f"عدد الجهات الناشرة المرصودة: {a['n_sources']}", f"حالة التحقق: {a.get('vstatus') or 'غير متحقق'} — {a.get('vwhy') or ''}"]
+    if a.get("first"):
+        facts.append(f"أقدم ظهور مرصود: {a['first'].get('source')} ({a['first'].get('time')})")
+    facts.append("أنواع الناشرين: " + "، ".join(f"{k} {v}" for k, v in (a.get("kinds") or {}).items()))
+    facts += [f"صياغة: «{n['title']}» — {n.get('source')}" for n in (a.get("narratives") or [])]
+    facts += [f"نفي/تصحيح: «{n['title']}» — {n.get('source')}" for n in (a.get("denial") or [])]
+    facts += [f"سؤال مفتوح: {q}" for q in (a.get("open") or [])]
+    ftxt = "\n".join(facts)
+    out = gemini(ANA_PROMPT + ftxt, max_tokens=600, temperature=0.3)
+    if not out:
+        return None
+    out = out.strip()
+    if not set(DIGITS.findall(out)) <= set(DIGITS.findall(ftxt)):
+        return None  # رقم غير موجود في المعطيات
+    if ACCUSE.search(out) and not ACCUSE.search(ftxt):
+        return None  # لغة اتهام لم ترد في المصادر
+    if not all(h in out for h in ("ما الذي حدث", "لماذا يهم")) or len(out.split()) < 70:
+        return None
+    return out

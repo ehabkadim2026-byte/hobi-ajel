@@ -150,11 +150,12 @@ def _why(orig, new):
     return " ".join(w for w in new.split() if _stem(w) not in have and _stem(w) not in ok_style and len(_stem(w)) >= 3)[:80]
 
 
-def _safe(orig, new):
-    """حارس الحقائق: نفس الأرقام، طول معقول، ولا كلمة مضمونية جديدة غير موجودة في الأصل (عدا كلمات الإسناد والربط)."""
-    if not new or len(new) < 15 or len(new) > 220:
+def _safe(orig, new, need=None):
+    """حارس الحقائق: كل رقم في الصياغة موجود في الأصل، وأرقام «need» (العنوان) كلها محفوظة، ولا كلمة مضمونية جديدة."""
+    if not new or len(new) < 15 or len(new) > 260:
         return False
-    if sorted(DIGITS.findall(orig)) != sorted(DIGITS.findall(new)):
+    nd, od = set(DIGITS.findall(new)), set(DIGITS.findall(orig))
+    if not nd <= od or not set(DIGITS.findall(orig if need is None else need)) <= nd:
         return False
     have = {_stem(w) for w in orig.split()}
     ok_style = {_stem(w) for w in STYLE_OK} | {norm_ar(w) for w in STYLE_OK}
@@ -188,7 +189,7 @@ def edit_headline(title, max_len=170, context=""):
         LLM_STATS["off"] += 1
         return base
     new = formal_rules(clean_headline(new, max_len=max_len))
-    if _safe(base + " " + clean_headline(context or "", max_len=600), new):
+    if _safe(base + " " + clean_headline(context or "", max_len=600), new, need=base):
         LLM_STATS["ok"] += 1
         return new
     LLM_STATS["rejected"] += 1
@@ -218,3 +219,36 @@ def title_score(t):
 def pick_best(titles):
     titles = [t for t in titles if t]
     return max(titles, key=title_score) if titles else ""
+
+
+AGENT_PROMPT = ("أنت محرر ديسك أخبار في قناة عراقية رصينة. من العنوان ونص الخبر التاليين اكتب سطرين فقط:\n"
+                "السطر 1: عنوان إخباري رصين موجز (9–16 كلمة) بصيغة الإسناد المهنية.\n"
+                "السطر 2: جملة مقدمة واحدة (12–28 كلمة) تضيف أهم تفصيل موجود في النص ولم يرد في العنوان (من/أين/متى/لماذا/الخطوة التالية).\n"
+                "قواعد صارمة: لا تضف أي معلومة أو رقم أو اسم غير موجود في النص؛ اكتب الأرقام كما وردت؛ لا رأي ولا تهويل ولا اتهام؛ "
+                "إذا كان ادعاءً فانسبه لقائله؛ إذا لم يوجد تفصيل إضافي مفيد فاكتب في السطر 2 كلمة: لا\n"
+                "أعد السطرين فقط بلا ترقيم ولا علامات تنصيص.\n\n")
+
+
+def agent_write(title, context):
+    """وكيل التحرير للقناة: عنوان + جملة مقدمة من نص الخبر، كلاهما يمر بحارس الحقائق. يرجع (عنوان، مقدمة أو "")."""
+    base = formal_rules(clean_headline(title, max_len=200))
+    ctx = clean_headline(context or "", max_len=700)
+    try:
+        out = gemini(AGENT_PROMPT + f"العنوان: {base}\nالنص: {ctx}", max_tokens=200)
+    except Exception:  # noqa: BLE001
+        LLM_STATS["error"] += 1
+        return base, ""
+    if not out:
+        return base, ""
+    lines = [ln.strip().strip('"«»').lstrip("0123456789.-) ").strip() for ln in out.strip().split("\n") if ln.strip()]
+    head = formal_rules(clean_headline(lines[0], max_len=200)) if lines else ""
+    lead = lines[1] if len(lines) > 1 else ""
+    ref = base + " " + ctx
+    if not (head and _safe(ref, head, need=base)):
+        LLM_STATS["rejected"] += 1
+        head = base
+    else:
+        LLM_STATS["ok"] += 1
+    if lead in ("لا", "لا يوجد") or len(lead.split()) < 8 or not _safe(ref, lead, need="") or lead[:30] in head:
+        lead = ""
+    return head, lead.rstrip(".") + ("." if lead else "")

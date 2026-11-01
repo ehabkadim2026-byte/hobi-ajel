@@ -257,14 +257,14 @@ def is_important(n):
 
 
 def headline(n):
-    """العنوان المحرَّر: إذا حرّره التطبيق مسبقاً (نفس الصياغة الرصينة) نستعمله كما هو، بلا استدعاء ثانٍ لـ Gemini."""
+    """وكيل التحرير: للخبر المهم الذي لدينا نصه نكتب عنواناً + جملة مقدمة (Gemini بحارس حقائق)؛ وإلا العنوان المحرر في التطبيق."""
     if "_hl" not in n:
-        if n.get("edited_title"):
-            from tools.editorial import clean_headline
-            n["_hl"] = clean_headline(n["title"])
+        from tools.editorial import clean_headline, agent_write, os_key
+        if n.get("lead") and os_key():
+            n["_hl"], n["_lead"] = agent_write(n["title"], n["lead"])
         else:
-            from tools.editorial import edit_headline
-            n["_hl"] = edit_headline(n["title"])
+            n["_hl"] = clean_headline(n["title"])
+            n["_lead"] = ""
     return n["_hl"]
 
 
@@ -299,6 +299,8 @@ def fmt(n, update=False, kind="news"):
     if kind == "update":
         mark = "🔄 تحديث | "
     lines = [f"<b>{mark}{H.escape(headline(n))}</b>"]
+    if n.get("_lead"):
+        lines[0] += "\n" + H.escape(n["_lead"])
     sl = src_label(n)
     if sl:
         lines.append(f"📌 المصدر: {H.escape(sl)}")
@@ -320,6 +322,33 @@ def buttons(n):
 
 
 MSGS = DATA / "tg_msgs.json"
+
+
+def fastlane_sigs():
+    import subprocess
+    import tempfile
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            r = subprocess.run(["gh", "release", "download", "fastlane", "-p", "fast_sigs.json", "-D", td, "--clobber"], capture_output=True, timeout=25)
+            return json.loads((Path(td) / "fast_sigs.json").read_text(encoding="utf-8")) if r.returncode == 0 else []
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def publish_main_sigs(titles):
+    """بصمات ما نشرته الجولة الرئيسية (آخر 12 ساعة) ليقرأها المسار السريع فلا يكرره."""
+    import subprocess
+    import tempfile
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "main_sigs.json"
+            p.write_text(json.dumps([x for x in titles if x.get("ts", 0) >= datetime.now(timezone.utc).timestamp() - 12 * 3600], ensure_ascii=False), encoding="utf-8")
+            if subprocess.run(["gh", "release", "view", "fastlane"], capture_output=True, timeout=25).returncode:
+                subprocess.run(["gh", "release", "create", "fastlane", "--title", "المسار السريع", "--notes", "بصمات المنشور بين المسارين", "--prerelease"],
+                               capture_output=True, timeout=25)
+            subprocess.run(["gh", "release", "upload", "fastlane", str(p), "--clobber"], capture_output=True, timeout=25)
+    except Exception:  # noqa: BLE001
+        pass
 
 
 CARDS = PWA / "cards"
@@ -655,7 +684,9 @@ def main():
         out = []
         build_idf([x.get("title") or "" for x in news])
         posted = [x for x in sent.get("_titles", []) if x.get("ts", 0) >= now.timestamp() - 12 * 3600]
-        hour_n = sum(1 for x in posted if x.get("id") and x.get("ts", 0) >= now.timestamp() - 3600)  # منشورات النظام الجديد فقط
+        fast = fastlane_sigs()  # ما نشره المسار السريع: لا نكرره، ويُحسب بالسقف الساعي
+        posted_all = posted + [x for x in fast if x.get("ts", 0) >= now.timestamp() - 12 * 3600]
+        hour_n = sum(1 for x in posted_all if x.get("id") and x.get("ts", 0) >= now.timestamp() - 3600)  # منشورات النظام الجديد + السريع
         reg_n = sum(1 for x in posted if x.get("reg") and x.get("ts", 0) >= now.timestamp() - 3600)
         dup_skipped = 0
         msgs = load(MSGS, {})
@@ -664,7 +695,7 @@ def main():
             if n["id"] in sent or not worthy(n, now):
                 continue  # كل خبر يُنشر مرة واحدة فقط (لا إعادة نشر حتى لو تكرر لدى جهات أكثر — طلب إيهاب 2026-11-01)
             sig = title_sig(n["title"])
-            prev = next((x for x in posted if same_story(sig, x)), None)
+            prev = next((x for x in posted_all if same_story(sig, x)), None)
             if prev:
                 dup_skipped += 1
                 sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "dup": True}
@@ -683,11 +714,14 @@ def main():
             if hour_n >= MAX_PER_HOUR and not is_breaking(n):
                 status["hour_cap"] = status.get("hour_cap", 0) + 1
                 continue  # سقف ساعي: بعده العاجل فقط (القناة لا تُغرق)
-            posted.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp(), "reg": reg, "id": n["id"]})
+            entry = {"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp(), "reg": reg, "id": n["id"], "title": (n.get("title") or "")[:200]}
+            posted.append(entry)
+            posted_all.append(entry)
             hour_n += 1
             reg_n += reg
             out.append((n, False))
         sent["_titles"] = posted[-400:]
+        publish_main_sigs(sent["_titles"])
         status["dup_skipped"] = dup_skipped
         status["candidates"] = len(out)
         if first_run:  # أول تشغيل: لا نغرق القناة بالقديم؛ نرسل رسالة ترحيب ونعلّم الموجود كمُرسل
@@ -721,6 +755,24 @@ def main():
                 corrected.add(n["id"])
                 status["corrections"] = status.get("corrections", 0) + 1
         sent["_corrected"] = sorted(corrected)[-300:]
+        # تحليل خبري بالقناة: أكبر الأحداث (30+ جهة) التي كتب لها الوكيل قراءة — حتى 4 يومياً، وواحد كل ساعتين
+        ana = load(PWA / "analysis.json", {}).get("items", [])
+        ap = sent.get("_ana_posted") or {}
+        day = (now + timedelta(hours=3)).strftime("%Y-%m-%d")
+        today_n = sum(1 for v in ap.values() if v.get("d") == day)
+        last_t = max([v.get("t", 0) for v in ap.values()] or [0])
+        cand = [a for a in ana if a.get("reading") and a["n_sources"] >= 30 and a["id"] not in ap]
+        if cand and today_n < 4 and now.timestamp() - last_t > 7200:
+            a = max(cand, key=lambda x: x["n_sources"])
+            body = H.escape(a["reading"])
+            for h in ("ما الذي حدث:", "لماذا يهم:", "الروايات والمواقف:", "ما لم يتأكد وما يُرتقب:"):
+                body = body.replace(h, f"<b>{h}</b>")
+            pend.append({"id": "ana_" + a["id"], "textonly": True, "b": False, "reply_to": a["id"],
+                         "text": f"🧭 <b>تحليل خبري | {H.escape(a['title'][:150])}</b>\n\n{body}\n\n"
+                                 f"<i>قراءة آلية محايدة استناداً إلى تغطية {a['n_sources']} جهة رصدتها «هسة وصل». الانتشار لا يعني التأكيد.</i>\n\n{CHANNEL}"})
+            ap[a["id"]] = {"d": day, "t": now.timestamp()}
+            status["analysis_post"] = a["id"]
+        sent["_ana_posted"] = dict(list(ap.items())[-200:])
         from tools.editorial import LLM_STATS
         status["editor_llm"] = LLM_STATS
         PENDING.write_text(json.dumps(pend, ensure_ascii=False), encoding="utf-8")

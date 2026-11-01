@@ -1,0 +1,11 @@
+{
+ "_note": "المسار السريع: قنوات رسمية/أولية تُفحص كل 30 ثانية وتُنشر فوراً إذا كان الخبر مهماً. يُكمّل الجولة الرئيسية ولا يكررها.",
+ "every_sec": 30,
+ "max_age_min": 10,
+ "per_hour": 10,
+ "loud": ["SecMedCell", "iraqicts", "IraqiPMO"],
+ "channels": ["IraqiPMO", "SecMedCell", "cabinetmedia", "inainaiq", "iraqicts", "modiraq", "moiiraqi", "mohmedia", "parliament_iq",
+              "iraqipresidency", "sjc_iq", "IHECOfficail", "iqmofa", "ministry_of_oil", "mofiraq", "educationiq", "mohesr_official_channel",
+              "molsa2023", "baghdadboc", "CivilAviationAuthority", "newsnina", "teamsmediawar_1", "iraqcmc", "nourialmalki", "alhalbossii",
+              "ammar_alhakeem", "Salihaliraqi", "mediadt2", "mochchannel", "Media_Department_of_the_province"]
+}

@@ -146,6 +146,33 @@ def delay_stats(con, now):
 
 
 
+def readings(analysis):
+    """وكيل التحليل الخبري: قراءة سياسية محايدة لأكبر الأحداث (20+ جهة)، تُكتب مرة لكل حدث وتُحدَّث إذا زاد انتشاره كثيراً. حتى 2 بالجولة."""
+    p = ROOT / "data" / "tg_sent.json"
+    try:
+        sent = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        sent = {}
+    cache = sent.get("_ana") or {}
+    from tools.editorial import os_key
+    calls = 0
+    for a in sorted(analysis, key=lambda x: -x["n_sources"]):
+        hit = cache.get(a["id"])
+        if hit and a["n_sources"] < hit.get("n", 0) * 1.6:
+            a["reading"] = hit.get("r")
+            continue
+        if calls >= 2 or not os_key():
+            continue
+        calls += 1
+        r = A.write_reading(a)
+        if r:
+            cache[a["id"]] = {"r": r, "n": a["n_sources"], "t": a.get("last_time"), "title": a["title"]}
+            a["reading"] = r
+    sent["_ana"] = dict(sorted(cache.items(), key=lambda kv: kv[1].get("t") or "", reverse=True)[:200])
+    p.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
+    print(f"::notice title=analysis agent::{json.dumps({'calls': calls, 'readings': sum(1 for a in analysis if a.get('reading'))}, ensure_ascii=False)}")
+
+
 LLM_PER_RUN = 10  # حماية الحصة المجانية لـ Gemini (حد الطلبات بالدقيقة)
 
 
@@ -167,7 +194,9 @@ def edit_titles(out):
             n["title"] = E.formal_rules(E.clean_headline(raw, max_len=200)) or raw
             continue
         alts = n.pop("alts", None) or []
-        lead = n.pop("lead", None) or ""
+        lead = n.get("lead") or ""
+        if not lead:
+            n.pop("lead", None)
         if alts:
             raw = E.pick_best([raw] + alts)  # أنظف صياغة بين المصادر (بلا تمويه أو هاشتاغ أو فقرة طويلة)
         hit = cache.get(n["id"])
@@ -348,6 +377,10 @@ def main(hours=24):
             n.pop("alts", None)
             n.pop("lead", None)
     analysis.sort(key=lambda x: (x["last_time"] or ""), reverse=True)
+    try:
+        readings(analysis)
+    except Exception as e:  # noqa: BLE001
+        print(f"::warning title=analysis agent::{type(e).__name__}: {str(e)[:120]}")
     (ROOT / "pwa" / "analysis.json").write_text(json.dumps({"updated_utc": iso(now), "min_sources": A.MIN_SOURCES, "items": analysis[:40]},
                                                            ensure_ascii=False), encoding="utf-8")
     print(f"::notice title=analysis::{len(analysis)} حدث كبير (20+ جهة)")
