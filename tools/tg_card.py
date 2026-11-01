@@ -533,7 +533,7 @@ def breaking_anim(photo_jpg, title, when_utc=None, style="v3"):
     import subprocess
     import tempfile
     import imageio_ffmpeg
-    fn = {"a": card_a, "b": card_b, "c": card_c, "lux": globals().get("card_lux")}.get(style)
+    fn = {"a": card_a, "b": card_b, "c": card_c, "lux": globals().get("card_lux"), "news": globals().get("card_news")}.get(style)
     if fn:
         a = Image.open(io.BytesIO(fn(photo_jpg, title, True, when_utc)))
         _DIM[0] = True
@@ -833,4 +833,118 @@ def card_lux(photo_jpg, title, breaking=True, when_utc=None):
         d.text((P, cy + 20), "t.me/hassawassal", font=_ff("ReadexPro-Medium.ttf", 22), fill=(200, 208, 224))
     noise = Image.effect_noise((W, H), 40).convert("L").point(lambda v: 7 if v > 175 else 0)  # ملمس خفيف جداً لا يُرى كنقاط
     im.paste(Image.new("RGB", (W, H), (255, 255, 255)), (0, 0), noise)
+    return _jpg(im)
+
+
+# ───────────────────── «نشرة»: أسلوب قنوات الأخبار الكبرى (شريط سفلي) ─────────────────────
+NEWS_BLUE_A, NEWS_BLUE_B, NEWS_RED = (5, 22, 58), (10, 52, 118), (212, 17, 30)
+
+
+def _cairo(size, weight=800):
+    from PIL import ImageFont
+    p = FONTS_DIR / "Cairo-VF.ttf"
+    if not p.exists():
+        return _ff("Alexandria-Black.ttf", size)
+    f = ImageFont.truetype(str(p), size, layout_engine=ImageFont.Layout.RAQM if RAQM else ImageFont.Layout.BASIC)
+    try:
+        f.set_variation_by_axes([weight, 0])
+    except Exception:  # noqa: BLE001
+        pass
+    return f
+
+
+def _fit_cairo(d, text, width, max_lines, sizes, weight=800, lh_k=1.5):
+    for sz in sizes:
+        f = _cairo(sz, weight)
+        lines = _wrap(d, text, f, width)
+        if len(lines) <= max_lines and not (len(lines) > 1 and len(lines[-1].split()) <= 1 and sz > sizes[-1]):
+            return f, sz, lines
+    f = _cairo(sizes[-1], weight)
+    lines = _wrap(d, text, f, width)[:max_lines]
+    if len(_wrap(d, text, f, width)) > max_lines:
+        lines[-1] = lines[-1].rstrip("،.") + " …"
+    return f, sizes[-1], lines
+
+
+def card_news(photo_jpg, title, breaking=True, when_utc=None):
+    """«نشرة»: صورة كاملة واضحة + شريط سفلي أزرق عميق بعنوان أبيض كبير بخط Cairo (وضوح عالٍ على الهاتف)،
+    لسان «عاجل» أحمر على حافة الشريط، وسطر الجهة فوق العنوان، والوقت والشعار في شريط سفلي رفيع."""
+    from PIL import ImageDraw as _D, ImageFilter, ImageEnhance
+    W, H, P = 1280, 720, 56
+    if photo_jpg:
+        src = Image.open(io.BytesIO(photo_jpg)).convert("RGB")
+        mx, my = int(src.width * 0.03), int(src.height * 0.03)
+        src = src.crop((mx, my, src.width - mx, src.height - my))
+        im = ImageEnhance.Contrast(ImageEnhance.Color(_cover(src, W, H)).enhance(0.95)).enhance(1.06)
+    else:
+        im = Image.new("RGB", (W, H), NEWS_BLUE_A)
+        d0 = _D.Draw(im)
+        for y in range(H):  # تدرّج عمودي هادئ
+            k = y / H
+            d0.line([(0, y), (W, y)], fill=tuple(int(NEWS_BLUE_B[i] * (1 - k) + NEWS_BLUE_A[i] * k) for i in range(3)))
+        for x in range(-H, W + H, 54):
+            d0.line([(x, H), (x + H, 0)], fill=(14, 44, 96), width=2)
+        if LOGO.exists():  # الشعار باهتاً كبيراً في الخلفية
+            lg = Image.open(LOGO).convert("L")
+            hh = 300
+            lg = lg.resize((int(lg.width * hh / lg.height), hh), Image.LANCZOS)
+            im.paste(Image.new("RGB", lg.size, (40, 80, 150)), (W // 2 - lg.width // 2, 70), lg.point(lambda v: 60 if v < 128 else 0))
+    d = _D.Draw(im)
+    kick, head = split_kicker(title)
+    tw_max = W - 2 * P
+    f, sz, lines = _fit_cairo(d, head, tw_max, 3, [62, 58, 54, 50, 46, 42])
+    lh = int(sz * 1.5)
+    foot = 54
+    kick_h = 50 if kick else 0
+    panel_h = 34 + kick_h + lh * len(lines) + 18 + foot
+    top = H - panel_h
+    # ظل ناعم فوق الشريط ليفصل الصورة
+    sh = Image.new("L", (W, 120), 0)
+    for y in range(120):
+        _D.Draw(sh).line([(0, y), (W, y)], fill=int(150 * (y / 120) ** 2))
+    im.paste(Image.new("RGB", (W, 120), (0, 6, 20)), (0, top - 120), sh)
+    band = Image.new("RGB", (W, panel_h))
+    db = _D.Draw(band)
+    for x in range(W):  # تدرّج أفقي: أغمق يساراً
+        k = x / W
+        db.line([(x, 0), (x, panel_h)], fill=tuple(int(NEWS_BLUE_A[i] * (1 - k) + NEWS_BLUE_B[i] * k) for i in range(3)))
+    db.rectangle([0, panel_h - foot, W, panel_h], fill=(3, 12, 34))
+    im.paste(band, (0, top))
+    d = _D.Draw(im)
+    dim = breaking and _DIM[0]
+    accent = ((120, 10, 20) if dim else NEWS_RED) if breaking else (64, 150, 255)
+    d.rectangle([0, top, W, top + 5], fill=accent)
+    # لسان «عاجل/خبر» على الحافة اليمنى للشريط
+    tag = "عاجل" if breaking else "خبر"
+    ft = _cairo(34, 900)
+    kw = {"direction": "rtl", "language": "ar"} if RAQM else {}
+    tw = d.textlength(_shape(tag), font=ft, **kw)
+    tab_w, tab_h = int(tw + 64 + (30 if breaking else 0)), 60
+    x0 = W - P - tab_w + 20
+    d.rectangle([x0, top - tab_h, W - P + 20, top], fill=accent if breaking else PAPER)
+    _draw_rtl(d, W - P - 6, top - tab_h + 2, tag, ft, ((255, 170, 175) if dim else PAPER) if breaking else NEWS_BLUE_A)
+    if breaking:
+        c = (255, 170, 175) if dim else PAPER
+        d.ellipse([x0 + 18, top - tab_h / 2 - 8, x0 + 34, top - tab_h / 2 + 8], fill=c)
+    y = top + 26
+    if kick:
+        _draw_rtl(d, W - P, y, kick, _cairo(34, 700), (255, 196, 92) if breaking else (150, 200, 255))
+        y += kick_h
+    for ln in lines:
+        _draw_rtl(d, W - P, y, ln, f, PAPER)
+        y += lh
+    fy = H - foot
+    w = _when(when_utc)
+    if w:
+        _draw_rtl(d, P + d.textlength(_shape(w), font=_cairo(24, 600), **kw), fy + 5, w, _cairo(24, 600), (190, 204, 228))
+    if LOGO.exists():
+        lg = Image.open(LOGO).convert("RGB")
+        hh = 36
+        lg = lg.resize((int(lg.width * hh / lg.height), hh), Image.LANCZOS)
+        cap = Image.new("RGB", (lg.width + 20, hh + 10), PAPER)
+        cap.paste(lg, (10, 5))
+        im.paste(cap, (W - P - cap.width + 20, fy + (foot - cap.height) // 2))
+        d = _D.Draw(im)
+        hx = W - P - cap.width - 4
+        _draw_rtl(d, hx, fy + 6, "t.me/hassawassal", _cairo(22, 600), (150, 166, 196))
     return _jpg(im)

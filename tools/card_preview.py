@@ -26,10 +26,9 @@ for n in items:
     except Exception:  # noqa: BLE001
         continue
     h = headline(n)
-    (out / f"{done}_lux.jpg").write_bytes(tg_card.card_lux(ph, h, done == 0, n.get("first_utc")))
-    (out / f"{done}_a.jpg").write_bytes(tg_card.card_a(ph, h, done == 0, n.get("first_utc")))
+    (out / f"{done}_news.jpg").write_bytes(tg_card.card_news(ph, h, done % 2 == 0, n.get("first_utc")))
     print(done, n["title"][:80], "=>", h)
     done += 1
     if done >= 4:
         break
-(out / "nophoto_lux.jpg").write_bytes(tg_card.card_lux(None, headline(items[0]), False, items[0].get("first_utc")))
+(out / "nophoto_news.jpg").write_bytes(tg_card.card_news(None, headline(items[0]), True, items[0].get("first_utc")))
