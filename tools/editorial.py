@@ -56,6 +56,7 @@ QDUP = re.compile(r"([؟?]){2,}")
 
 
 def formal_rules(t):
+    t = re.sub(r"^\s*(?:هسه|هسة)\s+وصل\s*[.…:|\-–—]*\s*", "", t)
     t = BAIT.sub(" ", t)
     t = EXCL.sub("", t)
     t = QDUP.sub("؟", t)
