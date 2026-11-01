@@ -743,3 +743,75 @@ def _jpg(im):
     buf = io.BytesIO()
     im.save(buf, "JPEG", quality=92, subsampling=0)
     return buf.getvalue()
+
+
+def card_lux(photo_jpg, title, breaking=True, when_utc=None):
+    """«أ» الفاخر: معالجة لونية سينمائية للصورة + زجاج مُغبّش خلف العنوان + خط أحمر عمودي + شارة دقيقة + حبيبات خفيفة.
+    العنوان أبيض ضخم بخط Alexandria، والجهة فوقه بالأحمر الفاتح، والشعار في كبسولة بيضاء أسفل اليسار."""
+    from PIL import ImageDraw as _D, ImageFilter, ImageEnhance, ImageOps
+    W, H, P = 1280, 720, 70
+    if photo_jpg:
+        ph = _cover(Image.open(io.BytesIO(photo_jpg)).convert("RGB"), W, H)
+        ph = ImageEnhance.Contrast(ImageEnhance.Color(ph).enhance(0.82)).enhance(1.08)
+        g = ImageOps.grayscale(ph)
+        duo = ImageOps.colorize(g, black=(4, 14, 34), white=(246, 240, 232), mid=(96, 104, 120))
+        im = Image.blend(ph, duo, 0.38)
+    else:
+        im, _ = _photo_or_brand(None, W, H)
+    vig = Image.new("L", (W, H), 0)
+    dv = _D.Draw(vig)
+    for i in range(18):
+        dv.rectangle([i * 9, i * 6, W - i * 9, H - i * 6], outline=int(120 - i * 6.5), width=9)
+    im.paste(Image.new("RGB", (W, H), (2, 8, 20)), (0, 0), vig.filter(ImageFilter.GaussianBlur(40)))
+    d = _D.Draw(im)
+    kick, head = split_kicker(title)
+    f, sz, lines = _fit(d, head, "Alexandria-Black.ttf", W - 2 * P - 26, 3, [86, 80, 74, 68, 62, 56, 52], max_h=360, lh_k=1.34)
+    lh = int(sz * 1.34)
+    block_h = lh * len(lines) + (58 if kick else 0)
+    top = H - 70 - block_h - 34
+    glass = im.crop((0, top, W, H)).filter(ImageFilter.GaussianBlur(28))
+    glass = Image.blend(glass, Image.new("RGB", glass.size, (5, 14, 34)), 0.58)
+    fade = Image.new("L", (1, H - top))
+    for y in range(H - top):
+        fade.putpixel((0, y), int(255 * min(1, (y / 70) ** 1.3)))
+    im.paste(glass, (0, top), fade.resize((W, H - top)))
+    d = _D.Draw(im)
+    y = top + 34
+    d.rectangle([W - P + 14, y + 6, W - P + 22, y + block_h - 10], fill=BRAND_RED)
+    if kick:
+        _draw_rtl(d, W - P - 12, y, kick, _ff("Alexandria-Bold.ttf", 38), (255, 120, 126))
+        y += 58
+    for ln in lines:
+        _draw_rtl(d, W - P - 12, y, ln, f, PAPER)
+        y += lh
+    tag = "عاجل" if breaking else "خبر"
+    ft = _ff("Alexandria-Black.ttf", 30)
+    kw = {"direction": "rtl", "language": "ar"} if RAQM else {}
+    tw = d.textlength(_shape(tag), font=ft, **kw)
+    x1, y0 = W - P + 22, 44
+    x0 = int(x1 - tw - 70)
+    dim = breaking and _DIM[0]
+    pill_col = ((140, 10, 22) if dim else BRAND_RED) if breaking else PAPER
+    pm = Image.new("L", (x1 - x0, 54), 0)
+    _D.Draw(pm).rounded_rectangle([0, 0, x1 - x0 - 1, 53], radius=27, fill=255)
+    im.paste(Image.new("RGB", (x1 - x0, 54), pill_col), (x0, y0), pm)
+    d = _D.Draw(im)
+    dc = (255, 160, 165) if dim else (PAPER if breaking else BRAND_RED)
+    d.ellipse([x0 + 20, y0 + 20, x0 + 34, y0 + 34], fill=dc)
+    _draw_rtl(d, x1 - 22, y0 + 5, tag, ft, (255, 200, 204) if dim else (PAPER if breaking else BRAND_NAVY))
+    w = _when(when_utc)
+    if w:
+        _draw_rtl(d, x0 - 18, y0 + 12, w, _ff("ReadexPro-Medium.ttf", 24), (232, 236, 244))
+    if LOGO.exists():
+        lg = Image.open(LOGO).convert("RGB")
+        hh = 50
+        lg = lg.resize((int(lg.width * hh / lg.height), hh), Image.LANCZOS)
+        cap = Image.new("RGB", (lg.width + 28, hh + 16), PAPER)
+        cap.paste(lg, (14, 8))
+        cm = Image.new("L", cap.size, 0)
+        _D.Draw(cm).rounded_rectangle([0, 0, cap.width - 1, cap.height - 1], radius=14, fill=255)
+        im.paste(cap, (P - 26, H - 30 - cap.height), cm)
+        d.text((P - 26 + cap.width + 16, H - 30 - cap.height + 20), "t.me/hassawassal", font=_ff("ReadexPro-Medium.ttf", 22), fill=(220, 226, 238))
+    noise = Image.effect_noise((W // 2, H // 2), 22).resize((W, H)).convert("L").point(lambda v: 16 if v > 150 else 0)
+    im.paste(Image.new("RGB", (W, H), (255, 255, 255)), (0, 0), noise)
+    return _jpg(im)
