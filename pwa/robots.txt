@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://ehabkadim2026-byte.github.io/hobi-ajel/sitemap.xml
