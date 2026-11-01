@@ -6679,6 +6679,58 @@
    "official": false,
    "iraq_only": true,
    "added_by": "إيهاب 2026-11-01"
+  },
+  {
+   "id": "telegram:t.me/IraqiGov",
+   "name": "الحكومة العراقية — telegram",
+   "url": "https://t.me/IraqiGov",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مصادر رسمية وأولية",
+   "region": "العراق - اتحادي",
+   "lang": "ar",
+   "official": true
+  },
+  {
+   "id": "telegram:t.me/moys_iraq",
+   "name": "وزارة الشباب والرياضة — telegram",
+   "url": "https://t.me/moys_iraq",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مصادر رسمية وأولية",
+   "region": "العراق - اتحادي",
+   "lang": "ar",
+   "official": true
+  },
+  {
+   "id": "telegram:t.me/ninevehgov",
+   "name": "ديوان محافظة نينوى — telegram",
+   "url": "https://t.me/ninevehgov",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مصادر رسمية وأولية",
+   "region": "نينوى",
+   "lang": "ar",
+   "official": true
+  },
+  {
+   "id": "telegram:t.me/khamisalkhanjar",
+   "name": "خميس الخنجر — telegram",
+   "url": "https://t.me/khamisalkhanjar",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "شخصيات سياسية",
+   "region": "العراق - اتحادي",
+   "lang": "ar",
+   "official": true
   }
  ]
 }
