@@ -15,6 +15,16 @@ jobs:
           python3 - <<'PY'
           import sys, json; sys.path.insert(0, '.')
           from tools import editorial as E
+          import os, urllib.request
+          req = urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]})
+          ms = json.loads(urllib.request.urlopen(req, timeout=20).read())["models"]
+          names = [m["name"].split("/")[-1] for m in ms if "generateContent" in m.get("supportedGenerationMethods", [])]
+          print("::notice title=models::" + " ".join(n for n in names if "flash" in n or "gemma" in n)[:900])
+          lite = [n for n in names if "flash-lite" in n and "preview" not in n and "tts" not in n and "live" not in n]
+          lite.sort(key=lambda n: [int(x) if x.isdigit() else 0 for x in n.replace("gemini-","").replace("-",".").split(".")], reverse=True)
+          if lite:
+              os.environ["GEMINI_MODEL"] = lite[0]
+          print("::notice title=chosen::" + os.environ.get("GEMINI_MODEL", "-"))
           tests = ["عاجل | شاهد.. الداخلية تكشف تفاصيل القبض على عصابة بيها 5 متهمين ببغداد!!",
                    "🚨البنك المركزي العراقي • \"ينفي\" صدور قرار بتخفيض رؤوس أموال شركات تجارة الذهب",
                    "لجنة التربية النيابية تصوت رسمياً على قانون التعليم الأهلي",
