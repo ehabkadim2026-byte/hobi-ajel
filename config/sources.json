@@ -3145,7 +3145,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site:apnews.com%20when:2d",
@@ -3158,7 +3159,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20AFP%20when:2d",
@@ -3171,7 +3173,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site:bloomberg.com%20when:2d",
@@ -3184,7 +3187,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site:aa.com.tr%20when:2d",
@@ -3197,7 +3201,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site:english.news.cn%20OR%20site:xinhuanet.com%20when:2d",
@@ -3210,7 +3215,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20dpa%20when:2d",
@@ -3223,7 +3229,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site:ansa.it%20OR%20site:agenzianova.com%20when:2d",
@@ -3236,7 +3243,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site:nhk.or.jp%20OR%20site:kyodonews.net%20when:2d",
@@ -3249,7 +3257,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site:tass.com%20when:2d",
@@ -3262,7 +3271,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site:upi.com%20when:2d",
@@ -3275,7 +3285,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site:efe.com%20when:2d",
@@ -3288,7 +3299,8 @@
    "category": "وكالات عالمية",
    "region": "أجنبي — وكالة",
    "lang": "en",
-   "official": false
+   "official": false,
+   "iraq_only": true
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=site:ina.iq%20OR%20site:alsumaria.tv%20OR%20site:shafaq.com%20OR%20site:baghdadtoday.news%20when:1d",
@@ -5811,7 +5823,8 @@
    "region": "إقليمي — دولي",
    "lang": "ar",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:arabic.cnn.com/api/v1/rss/rss.xml",
@@ -5825,7 +5838,8 @@
    "region": "إقليمي — دولي",
    "lang": "ar",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:rss.dw.com/rdf/rss-ar-all",
@@ -5839,7 +5853,8 @@
    "region": "إقليمي — دولي",
    "lang": "ar",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:aa.com.tr/ar/rss/default?cat=guncel",
@@ -5853,7 +5868,8 @@
    "region": "إقليمي — دولي",
    "lang": "ar",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:arabic.euronews.com/rss",
@@ -5867,7 +5883,8 @@
    "region": "إقليمي — دولي",
    "lang": "ar",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.un.org/feed/subscribe/ar/news/all/rss.xml",
@@ -5881,7 +5898,8 @@
    "region": "إقليمي — دولي",
    "lang": "ar",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:alhurra.com/rss",
@@ -5895,7 +5913,8 @@
    "region": "إقليمي — دولي",
    "lang": "ar",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:feeds.bbci.co.uk/arabic/rss.xml",
@@ -5909,7 +5928,8 @@
    "region": "إقليمي — دولي",
    "lang": "ar",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:france24.com/ar/%D8%A7%D9%84%D8%B4%D8%B1%D9%82-%D8%A7%D9%84%D8%A3%D9%88%D8%B3%D8%B7/rss",
@@ -5923,7 +5943,8 @@
    "region": "إقليمي — دولي",
    "lang": "ar",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:sarabic.ae/export/rss2/archive/index.xml",
@@ -5937,7 +5958,8 @@
    "region": "إقليمي — دولي",
    "lang": "ar",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:feeds.bbci.co.uk/news/world/rss.xml",
@@ -5951,7 +5973,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:theguardian.com/world/rss",
@@ -5965,7 +5988,8 @@
    "region": "أجنبي — صحيفة",
    "lang": "en",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:cbsnews.com/latest/rss/world",
@@ -5979,7 +6003,8 @@
    "region": "أجنبي — قناة",
    "lang": "en",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:abcnews.go.com/abcnews/internationalheadlines",
@@ -5993,7 +6018,8 @@
    "region": "أجنبي — قناة",
    "lang": "en",
    "official": false,
-   "added_by": "فحص 2026-11-01"
+   "added_by": "فحص 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:kurdistan24.net/en/rss.xml",
@@ -6021,7 +6047,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:feeds.bloomberg.com/politics/news.rss",
@@ -6035,7 +6062,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:feeds.bloomberg.com/markets/news.rss",
@@ -6049,7 +6077,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:feeds.nbcnews.com/nbcnews/public/world",
@@ -6063,7 +6092,8 @@
    "region": "أجنبي — قناة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:moxie.foxnews.com/google-publisher/world.xml",
@@ -6077,7 +6107,8 @@
    "region": "أجنبي — قناة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:cnbc.com/id/100727362/device/rss/rss.html",
@@ -6091,7 +6122,8 @@
    "region": "أجنبي — قناة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:pbs.org/newshour/feeds/rss/world",
@@ -6105,7 +6137,8 @@
    "region": "أجنبي — قناة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:feeds.npr.org/1004/rss.xml",
@@ -6119,7 +6152,8 @@
    "region": "أجنبي — إذاعة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:thehill.com/policy/international/feed",
@@ -6133,7 +6167,8 @@
    "region": "أجنبي — صحيفة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:thehill.com/policy/defense/feed",
@@ -6147,7 +6182,8 @@
    "region": "أجنبي — صحيفة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:feeds.skynews.com/feeds/rss/world.xml",
@@ -6161,7 +6197,8 @@
    "region": "أجنبي — قناة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:ansa.it/english/news/english_nr_rss.xml",
@@ -6175,7 +6212,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:euronews.com/rss?level=theme&name=news",
@@ -6189,7 +6227,8 @@
    "region": "أجنبي — قناة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:france24.com/en/rss",
@@ -6203,7 +6242,8 @@
    "region": "أجنبي — قناة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:rfi.fr/en/rss",
@@ -6217,7 +6257,8 @@
    "region": "أجنبي — إذاعة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:tass.com/rss/v2.xml",
@@ -6231,7 +6272,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:sputnikglobe.com/export/rss2/archive/index.xml",
@@ -6245,7 +6287,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:aa.com.tr/en/rss/default?cat=world",
@@ -6259,7 +6302,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:cgtn.com/subscribe/rss/section/world.xml",
@@ -6273,7 +6317,8 @@
    "region": "أجنبي — قناة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:en.yna.co.kr/RSS/news.xml",
@@ -6287,7 +6332,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6311",
@@ -6301,7 +6347,8 @@
    "region": "أجنبي — قناة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:en.antaranews.com/rss/news.xml",
@@ -6315,7 +6362,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:bernama.com/en/rssfeed.php",
@@ -6329,7 +6377,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:en.irna.ir/rss",
@@ -6343,7 +6392,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:rss.nytimes.com/services/xml/rss/nyt/World.xml",
@@ -6357,7 +6407,8 @@
    "region": "أجنبي — صحيفة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:timesofindia.indiatimes.com/rssfeeds/296589292.cms",
@@ -6371,7 +6422,8 @@
    "region": "أجنبي — صحيفة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=%28Iraq%20OR%20Baghdad%20OR%20Kurdistan%20OR%20%22Middle%20East%22%29%20site%3Acnn.com%20when%3A1d",
@@ -6385,7 +6437,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=%28Iraq%20OR%20Baghdad%20OR%20Kurdistan%20OR%20%22Middle%20East%22%29%20site%3Awashingtonpost.com%20when%3A1d",
@@ -6399,7 +6452,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=%28Iraq%20OR%20Baghdad%20OR%20Kurdistan%20OR%20%22Middle%20East%22%29%20site%3Apolitico.com%20when%3A1d",
@@ -6413,7 +6467,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=%28Iraq%20OR%20Baghdad%20OR%20Kurdistan%20OR%20%22Middle%20East%22%29%20site%3Aptinews.com%20OR%20site%3Aaninews.in%20when%3A1d",
@@ -6427,7 +6482,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=%28Iraq%20OR%20Baghdad%20OR%20Kurdistan%20OR%20%22Middle%20East%22%29%20site%3Athecanadianpress.com%20OR%20site%3Aaap.com.au%20when%3A1d",
@@ -6441,7 +6497,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=%28Iraq%20OR%20Baghdad%20OR%20Kurdistan%20OR%20%22Middle%20East%22%29%20site%3Aswissinfo.ch%20OR%20site%3Ainterfax.com%20when%3A1d",
@@ -6455,7 +6512,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=%28Iraq%20OR%20Baghdad%20OR%20Kurdistan%20OR%20%22Middle%20East%22%29%20site%3Afactcheck.afp.com%20when%3A1d",
@@ -6469,7 +6527,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=%28Iraq%20OR%20Baghdad%20OR%20Kurdistan%20OR%20%22Middle%20East%22%29%20site%3Aenglish.kyodonews.net%20OR%20site%3Ajiji.com%20when%3A1d",
@@ -6483,7 +6542,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=%28Iraq%20OR%20Baghdad%20OR%20Kurdistan%20OR%20%22Middle%20East%22%29%20site%3Aenglish.news.cn%20when%3A1d",
@@ -6497,7 +6557,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=%28Iraq%20OR%20Baghdad%20OR%20Kurdistan%20OR%20%22Middle%20East%22%29%20site%3Aefe.com%20OR%20site%3Adpa-international.com%20when%3A1d",
@@ -6511,7 +6572,8 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
   },
   {
    "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=%28Iraq%20OR%20Baghdad%20OR%20Kurdistan%20OR%20%22Middle%20East%22%29%20site%3Avnanet.vn%20OR%20site%3Apap.pl%20OR%20site%3Abelganewsagency.eu%20when%3A1d",
@@ -6525,7 +6587,98 @@
    "region": "أجنبي — وكالة",
    "lang": "en",
    "official": false,
-   "added_by": "قائمة إيهاب 2026-11-01"
+   "added_by": "قائمة إيهاب 2026-11-01",
+   "iraq_only": true
+  },
+  {
+   "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site%3Awashingtoninstitute.org%20OR%20site%3Aatlanticcouncil.org%20OR%20site%3Amei.edu%20when%3A7d",
+   "name": "التحليل الأجنبي — مراكز دراسات — واشنطن/أتلانتك/الشرق الأوسط (Google News)",
+   "url": "https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site%3Awashingtoninstitute.org%20OR%20site%3Aatlanticcouncil.org%20OR%20site%3Amei.edu%20when%3A7d",
+   "platform": "rss",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "تحليل ودراسات",
+   "region": "أجنبي — تحليل",
+   "lang": "en",
+   "official": false,
+   "iraq_only": true,
+   "added_by": "إيهاب 2026-11-01"
+  },
+  {
+   "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site%3Acarnegieendowment.org%20OR%20site%3Achathamhouse.org%20OR%20site%3Aecfr.eu%20when%3A7d",
+   "name": "التحليل الأجنبي — مراكز دراسات — كارنيغي/تشاتام هاوس/ECFR (Google News)",
+   "url": "https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site%3Acarnegieendowment.org%20OR%20site%3Achathamhouse.org%20OR%20site%3Aecfr.eu%20when%3A7d",
+   "platform": "rss",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "تحليل ودراسات",
+   "region": "أجنبي — تحليل",
+   "lang": "en",
+   "official": false,
+   "iraq_only": true,
+   "added_by": "إيهاب 2026-11-01"
+  },
+  {
+   "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site%3Abrookings.edu%20OR%20site%3Acsis.org%20OR%20site%3Arand.org%20when%3A7d",
+   "name": "التحليل الأجنبي — مراكز دراسات — بروكينغز/CSIS/راند (Google News)",
+   "url": "https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site%3Abrookings.edu%20OR%20site%3Acsis.org%20OR%20site%3Arand.org%20when%3A7d",
+   "platform": "rss",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "تحليل ودراسات",
+   "region": "أجنبي — تحليل",
+   "lang": "en",
+   "official": false,
+   "iraq_only": true,
+   "added_by": "إيهاب 2026-11-01"
+  },
+  {
+   "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site%3Aforeignpolicy.com%20OR%20site%3Aforeignaffairs.com%20OR%20site%3Atheatlantic.com%20when%3A7d",
+   "name": "التحليل الأجنبي — مجلات — فورين بوليسي/فورين أفيرز/ذا أتلانتك (Google News)",
+   "url": "https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site%3Aforeignpolicy.com%20OR%20site%3Aforeignaffairs.com%20OR%20site%3Atheatlantic.com%20when%3A7d",
+   "platform": "rss",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "تحليل ودراسات",
+   "region": "أجنبي — تحليل",
+   "lang": "en",
+   "official": false,
+   "iraq_only": true,
+   "added_by": "إيهاب 2026-11-01"
+  },
+  {
+   "id": "rss:news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site%3Anewlinesinstitute.org%20OR%20site%3Astimson.org%20OR%20site%3Acrisisgroup.org%20when%3A7d",
+   "name": "التحليل الأجنبي — مراكز دراسات — نيولاينز/ستيمسون/كرايسس غروب (Google News)",
+   "url": "https://news.google.com/rss/search?hl=en-US&gl=US&ceid=US:en&q=Iraq%20site%3Anewlinesinstitute.org%20OR%20site%3Astimson.org%20OR%20site%3Acrisisgroup.org%20when%3A7d",
+   "platform": "rss",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "تحليل ودراسات",
+   "region": "أجنبي — تحليل",
+   "lang": "en",
+   "official": false,
+   "iraq_only": true,
+   "added_by": "إيهاب 2026-11-01"
+  },
+  {
+   "id": "rss:news.google.com/rss/search?hl=ar&gl=SA&ceid=SA:ar&q=%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%20site%3Astudies.aljazeera.net%20OR%20site%3Aepc.ae%20OR%20site%3Aworldview.stratfor.com%20when%3A7d",
+   "name": "التحليل الأجنبي — مراكز دراسات — مركز الجزيرة/الإمارات/ستراتفور (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=SA&ceid=SA:ar&q=%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%20site%3Astudies.aljazeera.net%20OR%20site%3Aepc.ae%20OR%20site%3Aworldview.stratfor.com%20when%3A7d",
+   "platform": "rss",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "تحليل ودراسات",
+   "region": "أجنبي — تحليل",
+   "lang": "ar",
+   "official": false,
+   "iraq_only": true,
+   "added_by": "إيهاب 2026-11-01"
   }
  ]
 }

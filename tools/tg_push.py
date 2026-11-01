@@ -268,12 +268,58 @@ def headline(n):
     return n["_hl"]
 
 
-def fmt(n, update=False):
-    """الخبر المحرَّر، ورابط التفاصيل للأخبار المهمة والعناوين المبهمة، وأسفله دعوة القناة."""
+PROVINCES = ["بغداد", "البصرة", "نينوى", "الموصل", "أربيل", "كركوك", "النجف", "كربلاء", "السليمانية", "الأنبار", "ديالى", "صلاح الدين",
+             "ذي قار", "بابل", "ميسان", "واسط", "دهوك", "المثنى", "الديوانية", "حلبجة", "الفلوجة", "سنجار"]
+TAG_OF = {"الموصل": "نينوى", "الفلوجة": "الأنبار", "سنجار": "نينوى"}
+
+
+def province_tags(title):
+    from marsad.textnorm import norm_ar
+    t = " " + norm_ar(title or "") + " "
+    tags = []
+    for p in PROVINCES:
+        if norm_ar(p) in t:
+            tag = "#" + TAG_OF.get(p, p).replace(" ", "_")
+            if tag not in tags:
+                tags.append(tag)
+    return tags[:2]
+
+
+def src_label(n):
+    name, _ = src(n)
+    name = re.sub(r"\s*[—-]\s*(telegram|RSS|يوتيوب)$", "", name or "", flags=re.I).strip()
+    if not name or name.startswith("إدخال يدوي") or "Google News" in name:
+        return ""
+    return name[:50]
+
+
+def fmt(n, update=False, kind="news"):
+    """الخبر المحرَّر + المصدر + وسم المحافظة + دعوة القناة. التفاصيل صارت زراً تحت الخبر."""
     mark = "🔴 عاجل | " if is_breaking(n) else ""
+    if kind == "update":
+        mark = "🔄 تحديث | "
+    lines = [f"<b>{mark}{H.escape(headline(n))}</b>"]
+    sl = src_label(n)
+    if sl:
+        lines.append(f"📌 المصدر: {H.escape(sl)}")
+    tags = province_tags(n.get("title"))
+    if tags:
+        lines.append(" ".join(tags))
+    return "\n\n".join([lines[0], "\n".join(lines[1:])] if len(lines) > 1 else lines) + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
+
+
+def buttons(n):
+    import urllib.parse as _u
+    row = []
     url = detail_url(n)
-    more = f"\n\n🔗 التفاصيل: {H.escape(url)}" if (url and (is_important(n) or is_vague(n["title"]))) else ""
-    return f"<b>{mark}{H.escape(headline(n))}</b>{more}\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
+    if url and (is_important(n) or is_vague(n["title"])):
+        row.append({"text": "📖 التفاصيل", "url": url})
+    share = "https://t.me/share/url?" + _u.urlencode({"url": CHANNEL, "text": "هسة وصل — أخبار العراق لحظة بلحظة"})
+    row.append({"text": "↗️ شارك القناة", "url": share})
+    return json.dumps({"inline_keyboard": [row]}, ensure_ascii=False)
+
+
+MSGS = DATA / "tg_msgs.json"
 
 
 CARDS = PWA / "cards"
@@ -325,20 +371,46 @@ def url_ok(u, timeout=6):
 
 
 def send_pending(token, chat_id):
-    """بعد نشر الموقع: رسالة نصية قابلة للنسخ بالكامل، وصورة البطاقة كبيرة فوق النص (معاينة الرابط).
-    إذا لم يصبح رابط البطاقة متاحاً خلال المهلة نرسلها صورةً مع تعليق (احتياط)."""
+    """بعد نشر الموقع: رسالة نصية قابلة للنسخ، والبطاقة كبيرة فوقها (معاينة الرابط)، وزر التفاصيل والمشاركة تحتها.
+    غير العاجل يصل بإشعار صامت. التحديث والتصحيح يُرسلان كرد على المنشور الأصلي. معرّفات الرسائل تُحفظ في tg_msgs.json."""
     import time as _t
     pend = load(PENDING, [])
-    done = {"preview": 0, "photo": 0, "text": 0, "anim": 0}
+    msgs = load(MSGS, {})
+    done = {"preview": 0, "photo": 0, "text": 0, "anim": 0, "replies": 0}
     deadline = _t.time() + 60
+
+    def common(p):
+        kw = {"parse_mode": "HTML", "disable_notification": "false" if p.get("b") else "true"}
+        if p.get("kb"):
+            kw["reply_markup"] = p["kb"]
+        if p.get("reply_to") and msgs.get(p["reply_to"]):
+            kw["reply_parameters"] = json.dumps({"message_id": msgs[p["reply_to"]], "allow_sending_without_reply": True})
+        return kw
+
+    def keep(p, r):
+        try:
+            if r.get("ok"):
+                msgs[p["id"]] = r["result"]["message_id"]
+        except Exception:  # noqa: BLE001
+            pass
+
     for p in pend:
+        if p.get("textonly"):
+            try:
+                r = api(token, "sendMessage", chat_id=chat_id, text=p["text"], disable_web_page_preview="true", **common(p))
+                keep(p, r)
+                done["replies"] += 1
+            except Exception as e:  # noqa: BLE001
+                DEBUG.append(f"replyfail:{type(e).__name__}:{str(e)[:50]}")
+            continue
         av = ANIM / p["card"].replace(".jpg", ".mp4")
         if av.exists():  # عاجل: بطاقة متحركة تومض + النص كاملاً كتعليق
             try:
                 r = api(token, "sendAnimation", files={"animation": (av.name, av.read_bytes(), "video/mp4")}, chat_id=chat_id,
-                        caption=p["text"][:1024], parse_mode="HTML", width="1280", height="720")
+                        caption=p["text"][:1024], width="1280", height="720", **common(p))
                 av.unlink()
                 if r.get("ok"):
+                    keep(p, r)
                     done["anim"] += 1
                     continue
             except Exception as e:  # noqa: BLE001
@@ -352,21 +424,115 @@ def send_pending(token, chat_id):
             _t.sleep(4)
         try:
             if ok:
-                api(token, "sendMessage", chat_id=chat_id, text=p["text"], parse_mode="HTML",
-                    link_preview_options=json.dumps({"url": cu, "prefer_large_media": True, "show_above_text": True}))
+                r = api(token, "sendMessage", chat_id=chat_id, text=p["text"],
+                        link_preview_options=json.dumps({"url": cu, "prefer_large_media": True, "show_above_text": True}), **common(p))
                 done["preview"] += 1
             else:
-                api(token, "sendPhoto", files={"photo": (p["card"], (CARDS / p["card"]).read_bytes())}, chat_id=chat_id, caption=p["text"][:1024], parse_mode="HTML")
+                r = api(token, "sendPhoto", files={"photo": (p["card"], (CARDS / p["card"]).read_bytes())}, chat_id=chat_id,
+                        caption=p["text"][:1024], **common(p))
                 done["photo"] += 1
+            keep(p, r)
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"sendfail:{type(e).__name__}:{str(e)[:60]}")
             try:
-                api(token, "sendMessage", chat_id=chat_id, text=p["text"], parse_mode="HTML", disable_web_page_preview="true")
+                r = api(token, "sendMessage", chat_id=chat_id, text=p["text"], parse_mode="HTML", disable_web_page_preview="true")
+                keep(p, r)
                 done["text"] += 1
             except Exception:  # noqa: BLE001
                 pass
     PENDING.write_text("[]", encoding="utf-8")
+    try:
+        done.update(evening_digest(token, chat_id, msgs) or {})
+    except Exception as e:  # noqa: BLE001
+        DEBUG.append(f"digest:{type(e).__name__}:{str(e)[:50]}")
+    try:
+        done.update(daily_stats(token, msgs) or {})
+    except Exception as e:  # noqa: BLE001
+        DEBUG.append(f"stats:{type(e).__name__}:{str(e)[:50]}")
+    keep_ids = sorted(((k, v) for k, v in msgs.items() if not k.startswith("_")), key=lambda kv: kv[1])[-1500:]
+    MSGS.write_text(json.dumps({**{k: v for k, v in msgs.items() if k.startswith("_")}, **dict(keep_ids)}, ensure_ascii=False), encoding="utf-8")
     return done
+
+
+def evening_digest(token, chat_id, msgs):
+    """موجز المساء 9 مساءً بغداد بالقناة: أبرز 5 أخبار عراقية نُشرت اليوم (حسب عدد الجهات)، كل سطر رابط للمنشور نفسه."""
+    now = datetime.now(timezone.utc)
+    bgd = now + timedelta(hours=3)
+    today = bgd.strftime("%Y-%m-%d")
+    if bgd.hour != 21 or msgs.get("_evening") == today:
+        return None
+    news = load(PWA / "news.json", [])
+    start = (bgd.replace(hour=0, minute=0, second=0) - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
+    pool = [n for n in news if n["id"] in msgs and (n.get("first_utc") or "") >= start and (n.get("about_iraq") or n.get("pmf"))]
+    top = sorted(pool, key=lambda n: (-(n.get("n_sources") or 1), -rank(n)))[:5]
+    if len(top) < 3:
+        return None
+    ch = CHANNEL.rstrip("/").split("/")[-1]
+    lines = [f"🗞 <b>أبرز أخبار العراق اليوم</b> — {bgd.day} {['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'][bgd.month - 1]}", ""]
+    for i, n in enumerate(top, 1):
+        from tools.editorial import clean_headline
+        lines.append(f"{i}. <a href=\"https://t.me/{ch}/{msgs[n['id']]}\">{H.escape(clean_headline(n['title'], 120))}</a>")
+    lines += ["", f"تابعونا لحظة بلحظة 👇\n{CHANNEL}"]
+    r = api(token, "sendMessage", chat_id=chat_id, text="\n".join(lines), parse_mode="HTML", disable_web_page_preview="true", disable_notification="true")
+    if r.get("ok"):
+        msgs["_evening"] = today
+        return {"evening_digest": True}
+    return None
+
+
+def daily_stats(token, msgs):
+    """تقرير أداء يومي للمحررين (11 مساءً بغداد): مشاهدات منشورات اليوم من صفحة القناة العامة، الأعلى مشاهدة، وأفضل ساعات النشر (آخر 7 أيام)."""
+    now = datetime.now(timezone.utc)
+    bgd = now + timedelta(hours=3)
+    today = bgd.strftime("%Y-%m-%d")
+    if bgd.hour != 23 or msgs.get("_stats") == today:
+        return None
+    ch = CHANNEL.rstrip("/").split("/")[-1]
+    posts, before = [], ""
+    for _ in range(6):
+        page = urllib.request.urlopen(urllib.request.Request(f"https://t.me/s/{ch}{before}", headers={"User-Agent": "Mozilla/5.0"}), timeout=20).read().decode("utf-8", "replace")
+        blocks = page.split('class="tgme_widget_message_wrap')[1:]
+        if not blocks:
+            break
+        for b in blocks:
+            pid = re.search(rf'data-post="{ch}/(\d+)"', b)
+            v = re.search(r'tgme_widget_message_views">([^<]+)<', b)
+            t = re.search(r'<time[^>]+datetime="([^"]+)"', b)
+            tx = re.search(r'tgme_widget_message_text[^>]*>(.*?)</div>', b, re.S)
+            if not (pid and v and t):
+                continue
+            vs = v.group(1).strip().upper()
+            num = float(vs.rstrip("KM")) * (1000 if vs.endswith("K") else 1_000_000 if vs.endswith("M") else 1)
+            posts.append({"id": int(pid.group(1)), "views": int(num), "t": datetime.fromisoformat(t.group(1)),
+                          "text": H.unescape(re.sub(r"<[^>]+>", " ", tx.group(1))).strip()[:90] if tx else ""})
+        before = f"?before={min(p['id'] for p in posts)}" if posts else ""
+        if posts and min(p["t"] for p in posts) < now - timedelta(days=7):
+            break
+    if not posts:
+        return None
+    day0 = (bgd.replace(hour=0, minute=0, second=0) - timedelta(hours=3))
+    todayp = [p for p in posts if p["t"] >= day0]
+    week = [p for p in posts if p["t"] >= now - timedelta(days=7)]
+    byh = {}
+    for p in week:
+        h = (p["t"] + timedelta(hours=3)).hour
+        byh.setdefault(h, []).append(p["views"])
+    best = sorted(((sum(v) / len(v), h) for h, v in byh.items() if len(v) >= 3), reverse=True)[:3]
+    top = sorted(todayp, key=lambda p: -p["views"])[:5]
+    lines = [f"📊 أداء «هسة وصل» اليوم {today}", f"منشورات اليوم: {len(todayp)} · مجموع المشاهدات: {sum(p['views'] for p in todayp):,}",
+             f"متوسط المشاهدة للمنشور: {int(sum(p['views'] for p in todayp) / max(1, len(todayp))):,}", "", "الأعلى مشاهدة:"]
+    lines += [f"• {p['views']:,} — {p['text']}" for p in top]
+    if best:
+        lines += ["", "أفضل ساعات النشر (آخر 7 أيام، متوسط المشاهدة): " + "، ".join(f"{h}:00 ({int(a):,})" for a, h in best)]
+    lines.append("ملاحظة: المشاهدات من صفحة القناة العامة وقت القياس، وليست أشخاصاً فريدين.")
+    sent = load(SENT, {})
+    for c in (sent.get("_editor_chats") or {}).values():
+        try:
+            api(token, "sendMessage", chat_id=c, text="\n".join(lines)[:4000], disable_web_page_preview="true")
+        except Exception:  # noqa: BLE001
+            pass
+    msgs["_stats"] = today
+    return {"daily_stats": len(todayp)}
 
 
 def digest(news, now):
@@ -492,13 +658,23 @@ def main():
         hour_n = sum(1 for x in posted if x.get("ts", 0) >= now.timestamp() - 3600)
         reg_n = sum(1 for x in posted if x.get("reg") and x.get("ts", 0) >= now.timestamp() - 3600)
         dup_skipped = 0
+        msgs = load(MSGS, {})
+        updates = []
         for n in sorted(news, key=lambda n: n.get("collected_utc") or ""):
             if n["id"] in sent or not worthy(n, now):
                 continue  # كل خبر يُنشر مرة واحدة فقط (لا إعادة نشر حتى لو تكرر لدى جهات أكثر — طلب إيهاب 2026-11-01)
             sig = title_sig(n["title"])
-            if any(same_story(sig, x) for x in posted):
+            prev = next((x for x in posted if same_story(sig, x)), None)
+            if prev:
                 dup_skipped += 1
                 sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "dup": True}
+                # تطور جوهري بنفس القصة (رقم جديد: حصيلة، مبلغ، موعد) ← «تحديث» كرد على المنشور الأصلي، مرة كل ساعتين
+                newnums = sig[1] - set(prev.get("d") or [])
+                if (newnums and prev.get("id") and prev.get("id") in msgs and now.timestamp() - prev.get("upd", 0) > 7200
+                        and rank(n) >= 2 and len(updates) < 2):
+                    prev["upd"] = now.timestamp()
+                    prev["d"] = sorted(set(prev.get("d") or []) | sig[1])
+                    updates.append((n, prev["id"]))
                 continue
             reg = is_regional(n)
             if reg and reg_n >= REGION_PER_HOUR and not is_breaking(n):
@@ -507,7 +683,7 @@ def main():
             if hour_n >= MAX_PER_HOUR and not is_breaking(n):
                 status["hour_cap"] = status.get("hour_cap", 0) + 1
                 continue  # سقف ساعي: بعده العاجل فقط (القناة لا تُغرق)
-            posted.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp(), "reg": reg})
+            posted.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp(), "reg": reg, "id": n["id"]})
             hour_n += 1
             reg_n += reg
             out.append((n, False))
@@ -529,9 +705,22 @@ def main():
                 DEBUG.append(f"cardfail:{type(e).__name__}")
                 continue
             status["images"][kind] = status["images"].get(kind, 0) + 1
-            pend.append({"id": n["id"], "card": card, "text": fmt(n, upd)})
+            pend.append({"id": n["id"], "card": card, "text": fmt(n, upd), "b": is_breaking(n), "kb": buttons(n)})
             sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "b": is_breaking(n)}
             status["sent_now"] += 1
+        for n, orig in updates:  # تحديثات كرد على المنشور الأصلي (نص فقط، بلا بطاقة)
+            pend.append({"id": n["id"], "text": fmt(n, kind="update"), "reply_to": orig, "b": False, "kb": buttons(n), "textonly": True})
+            status["updates"] = status.get("updates", 0) + 1
+        # تصحيح: خبر نشرناه ثم حكم المحرر أو التحقق بأنه غير صحيح ← تصحيح كرد عليه، مرة واحدة
+        corrected = set(sent.get("_corrected", []))
+        for n in news:
+            if n.get("vstatus") == "ثبت عدم صحته" and n["id"] in msgs and n["id"] not in corrected:
+                pend.append({"id": n["id"] + "_fix", "reply_to": n["id"], "b": True, "textonly": True,
+                             "text": f"⚠️ <b>تصحيح</b>\n\nتبيّن أن هذا الخبر غير صحيح وفق التحقق اللاحق" + (f": {H.escape(n.get('vwhy') or '')}" if n.get("vwhy") else ".") +
+                                     f"\n\nنعتذر لمتابعينا. «هسة وصل» تصحّح علناً.\n{CHANNEL}"})
+                corrected.add(n["id"])
+                status["corrections"] = status.get("corrections", 0) + 1
+        sent["_corrected"] = sorted(corrected)[-300:]
         from tools.editorial import LLM_STATS
         status["editor_llm"] = LLM_STATS
         PENDING.write_text(json.dumps(pend, ensure_ascii=False), encoding="utf-8")
