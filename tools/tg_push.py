@@ -655,7 +655,7 @@ def main():
         out = []
         build_idf([x.get("title") or "" for x in news])
         posted = [x for x in sent.get("_titles", []) if x.get("ts", 0) >= now.timestamp() - 12 * 3600]
-        hour_n = sum(1 for x in posted if x.get("ts", 0) >= now.timestamp() - 3600)
+        hour_n = sum(1 for x in posted if x.get("id") and x.get("ts", 0) >= now.timestamp() - 3600)  # منشورات النظام الجديد فقط
         reg_n = sum(1 for x in posted if x.get("reg") and x.get("ts", 0) >= now.timestamp() - 3600)
         dup_skipped = 0
         msgs = load(MSGS, {})
