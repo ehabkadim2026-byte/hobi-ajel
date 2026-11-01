@@ -46,6 +46,7 @@ def clean_headline(title, max_len=170):
 # (2) إعادة صياغة بنموذج لغوي (Gemini، طبقته المجانية) إذا وُجد المفتاح GEMINI_API_KEY في أسرار GitHub؛
 #     مع حارس حقائق: نفس الأرقام، لا أسماء جديدة، طول معقول — وإلا نرجع لنتيجة القواعد.
 import json as _json
+from marsad.textnorm import norm_ar
 import os as _os
 import urllib.request as _ur
 
@@ -65,7 +66,8 @@ def formal_rules(t):
 
 PROMPT = ("أنت محرر أخبار في قناة إخبارية عراقية رصينة. أعد صياغة العنوان التالي بعربية فصحى إخبارية رصينة وموجزة "
           "(سطر واحد، 10 إلى 24 كلمة)، بصيغة الإسناد المهنية (مثل: «وزارة الداخلية: ...» أو «أعلنت ... أن ...»).\n"
-          "قواعد صارمة: لا تضف أي معلومة أو رقم أو اسم أو صفة غير موجودة؛ احتفظ بكل الأرقام والأسماء كما هي؛ "
+          "قواعد صارمة: لا تضف أي معلومة أو رقم أو اسم أو صفة أو كلمة توضيحية غير موجودة في العنوان (لا تضف مكاناً ولا جهة ولا تفصيلاً)؛ "
+          "اكتب الأرقام بالأرقام كما وردت تماماً؛ احتفظ بكل الأسماء كما هي؛ لا تحوّل «قانون» إلى «مشروع قانون» ولا العكس؛ "
           "احذف الإثارة والعامية وعلامات التعجب والهاشتاغات؛ لا تحكم على صحة الخبر؛ إذا كان العنوان رأياً أو ادعاءً فانسبه لقائله.\n"
           "أعد العنوان فقط بلا مقدمة ولا علامات تنصيص.\n\nالعنوان: ")
 
@@ -74,7 +76,7 @@ def _llm(title):
     key = _os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         return None
-    model = _os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
+    model = _os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
     body = _json.dumps({"contents": [{"parts": [{"text": PROMPT + title}]}],
                         "generationConfig": {"temperature": 0.2, "maxOutputTokens": 120}}).encode()
     req = _ur.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
@@ -84,15 +86,42 @@ def _llm(title):
     return d["candidates"][0]["content"]["parts"][0]["text"].strip().strip('"«»').split("\n")[0].strip()
 
 
+# كلمات الصياغة المسموح للنموذج إضافتها (إسناد وربط فقط) — أي كلمة جديدة غيرها = رفض الصياغة
+STYLE_OK = set("""أعلن أعلنت يعلن تعلن أكد أكدت يؤكد تؤكد قال قالت يقول تقول ذكر ذكرت أفاد أفادت أوضح أوضحت كشف كشفت تكشف يكشف
+نفى نفت ينفي تنفي أن إن التي الذي الذين اللذين أي يقضي تقضي بشأن حول خلال إلى على في من عن مع بعد قبل وزارة وزير رسميا رسمياً
+عن صدور اليوم هذا هذه ذلك تلك كما وفق وفقاً بحسب حسب عبر لدى بين نحو قرابة ضمن تم جرى
+تضم يضم تشمل يشمل عقب إثر جراء بسبب لها له فيها فيه منها منه""".split())
+
+
+def _stem(w):
+    w = norm_ar(w.strip("«»،.:؛\"'()!؟?-–—"))
+    for p in ("وال", "بال", "لل", "فال", "كال", "ال", "و", "ب", "ل", "ف"):
+        if w.startswith(p) and len(w) - len(p) >= 3:
+            w = w[len(p):]
+            break
+    for suf in ("ات", "ين", "ون", "ها", "هم", "ه", "ة"):
+        if w.endswith(suf) and len(w) - len(suf) >= 3:
+            w = w[:-len(suf)]
+            break
+    return w
+
+
 def _safe(orig, new):
-    """حارس الحقائق: نفس الأرقام، طول معقول، ونسبة كلمات مشتركة كافية (لا اختلاق)."""
+    """حارس الحقائق: نفس الأرقام، طول معقول، ولا كلمة مضمونية جديدة غير موجودة في الأصل (عدا كلمات الإسناد والربط)."""
     if not new or len(new) < 15 or len(new) > 220:
         return False
     if sorted(DIGITS.findall(orig)) != sorted(DIGITS.findall(new)):
         return False
-    norm = lambda s: {w.strip("«»،.:؛\"'") .removeprefix("ال").removeprefix("و") for w in s.split() if len(w) > 2}
-    a, b = norm(orig), norm(new)
-    return bool(b) and len(a & b) / len(b) >= 0.45
+    have = {_stem(w) for w in orig.split()}
+    ok_style = {_stem(w) for w in STYLE_OK} | {norm_ar(w) for w in STYLE_OK}
+    for w in new.split():
+        st = _stem(w)
+        if len(st) < 3 or st in have or st in ok_style or norm_ar(w.strip("«»،.:؛\"'")) in ok_style:
+            continue
+        if any(len(st) >= 4 and (st in h or h in st) and abs(len(st) - len(h)) <= 2 for h in have if len(h) >= 4):
+            continue  # نفس الجذر بصيغة صرفية قريبة (ينفي/نفى، تصوت/التصويت)
+        return False
+    return True
 
 
 LLM_STATS = {"ok": 0, "rejected": 0, "error": 0, "off": 0}
