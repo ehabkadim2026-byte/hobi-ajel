@@ -17,6 +17,13 @@ from tools.tg_push import CHANNEL, api
 POST = re.compile(r"https?://(?:t\.me|telegram\.me)/(?:s/)?([A-Za-z0-9_]{4,})/(\d+)")
 UA = {"User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/126 Mobile Safari/537.36"}
 MAX = 48 * 1024 * 1024
+# مقاطع منقولة عن وسائل إعلام جهات مستبعدة بقرار ثابت (مثلاً «لـ"العهد"») — لا «ولي العهد» ولا «العهد» بمعنى آخر
+CITED_EXCL = re.compile(r"(?:لـ?\s*[\"«“]\s*(?:العهد|النجباء|المنار|الأقصى)|[\(#](?:العهد|النجباء|المنار)\b|قناة\s+(?:العهد|النجباء|المنار|الأقصى))")
+
+
+def excluded(*texts):
+    blob = " ".join(t or "" for t in texts)
+    return bool(EXCLUDE.search(blob) or CITED_EXCL.search(blob))
 
 
 def _get(url, limit=MAX + 1, timeout=60):
@@ -58,13 +65,13 @@ def handle(token, chat_id, editor_cid, reply_to, text):
     except Exception as e:  # noqa: BLE001
         tell(f"⚠️ ما كدرت أفتح المنشور ({type(e).__name__}). تأكد إن القناة عامة والرابط صحيح.")
         return True
-    if EXCLUDE.search(channel + " " + post["name"]):
-        tell("⛔ هذه القناة ضمن الجهات المستبعدة بقرار ثابت، ما ننشر منها.")
+    if EXCLUDE.search(channel + " " + post["name"]) or CITED_EXCL.search(post["text"]):
+        tell("⛔ المقطع من جهة مستبعدة بقرار ثابت (أو منقول عن إعلامها)، ما ننشره.")
         return True
     if not post["video"] and not (post["too_big"] or post["restricted"]):
         return False  # منشور بلا فيديو: يكمل كإدخال يدوي عادي للرصد
     if not post["video"]:
-        why = ("الفيديو كبير، وتلغرام ما يعرضه بالمعاينة العامة (يفتح بس بالتطبيق)" if post["too_big"]
+        why = ("الفيديو كبير، وتلغرام ما يعرضه بالمعاينة العامة. الحل: حوّل (Forward) المنشور نفسه للبوت بدل الرابط، وينتشر بأي حجم" if post["too_big"]
                else "القناة مقيّدة الحفظ أو المنشور بدون فيديو")
         tell(f"⚠️ ما لكيت فيديو قابل للنشر بهذا المنشور: {why}. ما راح أتحايل على القيد.")
         return True
@@ -88,6 +95,40 @@ def handle(token, chat_id, editor_cid, reply_to, text):
         r = {"ok": False, "description": f"{type(e).__name__}: {str(e).replace(token, '***')}"}
     if r.get("ok"):
         tell(f"✅ انتشر الفيديو بالقناة ({len(data) // 1024 // 1024 or 1} ميغا) مع ذكر المصدر «{post['name']}».")
+    else:
+        tell(f"⚠️ تلغرام رفض النشر: {r.get('description', '')[:150]}")
+    return True
+
+
+def handle_forward(token, chat_id, editor_cid, m):
+    """المحرر حوّل (أو أرسل) فيديو للبوت ← نسخه للقناة بعنوان محرَّر وذكر المصدر. يعمل بأي حجم (نسخ داخل تلغرام بلا تحميل).
+    القنوات التي تمنع الحفظ لا تسمح بالتحويل أصلاً، فلا تحايل."""
+    if not (m.get("video") or m.get("animation") or (m.get("document") or {}).get("mime_type", "").startswith("video")):
+        return False
+
+    def tell(msg):
+        api(token, "sendMessage", chat_id=editor_cid, reply_to_message_id=m["message_id"], text=msg)
+
+    origin = m.get("forward_origin") or {}
+    oc = origin.get("chat") or origin.get("sender_chat") or {}
+    src_name = oc.get("title") or (origin.get("sender_user") or {}).get("first_name") or origin.get("sender_user_name") or ""
+    src_user = oc.get("username") or ""
+    cap_in = (m.get("caption") or "").strip()
+    if excluded(src_name, src_user, cap_in):
+        tell("⛔ المقطع من جهة مستبعدة بقرار ثابت (أو منقول عن إعلامها)، ما ننشره.")
+        return True
+    from tools.editorial import edit_headline
+    first = next((ln.strip() for ln in POST.sub("", cap_in).split("\n") if len(ln.strip()) >= 8), "")
+    head = edit_headline(first) if first else ""
+    src_line = f"🎥 المصدر: {H.escape(src_name)}\n\n" if src_name and src_user.lower() != "hassawassal" else ""
+    cap = (f"<b>{H.escape(head)}</b>\n\n" if head else "") + src_line + f"زورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
+    try:
+        r = api(token, "copyMessage", chat_id=chat_id, from_chat_id=editor_cid, message_id=m["message_id"],
+                caption=cap[:1024], parse_mode="HTML")
+    except Exception as e:  # noqa: BLE001
+        r = {"ok": False, "description": f"{type(e).__name__}: {str(e).replace(token, '***')}"}
+    if r.get("ok"):
+        tell("✅ انتشر الفيديو بالقناة" + (f" مع ذكر المصدر «{src_name}»." if src_line else ". (ما ظهر مصدر التحويل، اكتب اسم المصدر بالتعليق إذا تحب)"))
     else:
         tell(f"⚠️ تلغرام رفض النشر: {r.get('description', '')[:150]}")
     return True
