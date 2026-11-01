@@ -19,7 +19,9 @@ DIGITS = re.compile(r"\d+")
 def clean_headline(title, max_len=170):
     if not title:
         return title
-    t = URL.sub(" ", title)
+    t = re.sub(r"ـ*[.*]+ـ*(?=[\u0600-\u06FF])", "", title)  # «القبـ.ـض» و«يـ*ـهدد» ← القبض، يهدد (تمويه الكلمات لتفادي الحظر)
+    t = re.sub(r"(?<=[\u0600-\u06FF])ـ+\s?(?=[\u0600-\u06FF])", "", t)
+    t = URL.sub(" ", t)
     t = EMOJI.sub(" ", t)
     t = HASHTAG.sub(" ", t)
     t = FOLLOW.sub("", t)

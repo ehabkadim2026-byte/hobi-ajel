@@ -74,16 +74,16 @@ def auto_post(c, seg, data, st):
     words = sum(len(x["t"].split()) for x in seg)
     low = sum(1 for x in seg if x["low"]) / len(seg) if seg else 1
     why = []
-    if not 20 <= c["duration"] <= 180:
-        why.append("المدة خارج 20–180 ث")
-    if not seg or words < 25 or low > 0.3:
-        why.append("كلام قليل أو صوت غير واضح")
-    if seg and seg[-1]["e"] > c["duration"] - 0.4:
-        why.append("الكلام مقطوع بنهاية المقطع")
-    if not seg or seg[0]["s"] > 2.5:
-        why.append("بلا هوك: الكلام يبدأ متأخراً")
+    if not 8 <= c["duration"] <= 180:
+        why.append("المدة خارج 8–180 ث")
+    if seg and words >= 8:  # مقطع فيه كلام: لازم واضح وما مقطوع بالنهاية
+        if low > 0.3:
+            why.append("صوت غير واضح")
+        if seg[-1]["e"] > c["duration"] - 0.4 and c["duration"] > 25:
+            why.append("الكلام مقطوع بنهاية المقطع")
+    # مقطع مشهدي بلا كلام (لحظة قبض، سيول، حادث) مقبول: الهوك هنا هو الوصف الخبري نفسه
     if len(cap.split()) < 5 or PROMO.search(cap):
-        why.append("وصف ترويجي أو ناقص")
+        why.append("وصف ترويجي أو ناقص (بلا هوك)")
     if len(data) > 48 * 1024 * 1024:
         why.append("أكبر من 48 ميغا")
     from tools.tg_video import excluded
@@ -119,6 +119,28 @@ def auto_post(c, seg, data, st):
     prev.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time()})
     st["posted_sigs"] = prev[-200:]
     return "نُشر بالقناة"
+
+
+def retro_pass(clips, st):
+    """مقاطع آخر 3 ساعات رُفضت بالشروط القديمة أو فشل نشرها: نعيد تقييمها مرة واحدة برابط فيديو جديد من صفحة المنشور."""
+    from tools.tg_video import fetch_post
+    cut = (datetime.now(timezone.utc) - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
+    for c in clips:
+        if st.get("_posted_run", 0) >= POST_LIMIT:
+            break
+        if (c.get("auto") or "").startswith("نُشر") or c.get("retro") or (c.get("posted") or "") < cut:
+            continue
+        c["retro"] = True
+        try:
+            chn, mid = c["post_url"].rstrip("/").split("/")[-2:]
+            p = fetch_post(chn, mid)
+            if not p["video"]:
+                continue
+            data = get(p["video"], limit=60_000_000, timeout=60)
+            cc = {"caption": c["caption"], "duration": c["duration"], "channel_name": c["channel"]}
+            c["auto"] = auto_post(cc, c["segments"], data, st)
+        except Exception as e:  # noqa: BLE001
+            c["auto"] = f"خطأ: {type(e).__name__}"
 
 
 def due():
@@ -181,6 +203,7 @@ def main():
                 f[c["post"]] = f.get(c["post"], 0) + 1
                 if f[c["post"]] >= 2:
                     st["done"].append(c["post"])
+    retro_pass(clips, st)
     st.pop("_posted_run", None)
     st["done"] = st["done"][-500:]
     st["last"] = time.time()
