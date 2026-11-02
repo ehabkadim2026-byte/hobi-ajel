@@ -28,9 +28,9 @@ MAX_PER_RUN = 15
 DEBUG = []
 CHANNEL = "https://t.me/hassawassal"
 RANK = {"عاجل": 3, "مهم": 2, "متابعة": 1}
-MAX_PER_HOUR = 20
+MAX_PER_HOUR = 12
 REGION_MIN_SOURCES = 8
-REGION_PER_HOUR = 4
+REGION_PER_HOUR = 3
 
 
 def api(token, method, files=None, **params):
@@ -87,7 +87,9 @@ def _markers():
         extra_f = [norm_ar(w) for w in ["حمص", "حلب", "إدلب", "ادلب", "دير الزور", "خانيونس", "خان يونس", "رفح", "بيروت", "الجنوب اللبناني", "صنعاء", "عدن",
                                          "اليمنية", "اليمني", "السورية", "اللبنانية", "الإسرائيلية", "الاسرائيلي", "الاحتلال", "نتنياهو", "تل أبيب",
                                          "بولندا", "البولندي", "المجر", "أوربان", "كييف", "موسكو", "بوتين", "زيلينسكي", "الأوكرانية", "الروسية", "الكرملين",
-                                         "السودان", "الخرطوم", "ليبيا", "تونس", "المغرب", "الجزائر", "باكستان", "الهند", "أفغانستان", "طالبان", "كوريا", "اليابان", "ألمانيا"]]
+                                         "السودان", "الخرطوم", "ليبيا", "تونس", "المغرب", "الجزائر", "باكستان", "الهند", "أفغانستان", "طالبان", "كوريا", "اليابان", "ألمانيا",
+                                         "الخليل", "رام الله", "نابلس", "جنين", "الضفة", "غزة", "القدس", "الكنيست", "الليكود", "الحريديم", "الدعم السريع",
+                                         "سيستان", "بلوشستان", "فلوريدا", "كولورادو", "أريزونا", "كاليفورنيا", "تكساس", "ترامب", "ترمب", "البيت الأبيض"]]
         extra_i = [norm_ar(w) for w in ["الرافدين", "كوردستان", "كردستان", "الكرد", "الأكراد", "حكومة الإقليم", "النزاهة", "المنافذ", "الرواتب",
                                          "التربية النيابية", "النيابية", "النائب", "النائبة", "المحافظة", "محافظ", "المرسومي", "الحلبوسي", "المالكي", "الصدر",
                                          "الحكيم", "العبادي", "بارزاني", "طالباني", "الحشد", "خلية الإعلام الأمني", "الداخلية", "البنك المركزي"]]
@@ -111,11 +113,41 @@ def far_title(title):
     return any(w in t for w in FAR)
 
 
+IQ_GENERIC = None
+AMBIG = [("الجيش السوداني", "السودان"), ("مجلس الوزراء السوداني", "السودان"), ("وزير الخارجية السوداني", "السودان"), ("الرئيس السوداني", "السودان"),
+         ("الشعب السوداني", "السودان"), ("الحكومة السودانية", "السودان"), ("السودانية", "السودان"), ("مجلس السيادة", "السودان")]
+
+
+def _clean_ambig(t):
+    from marsad.textnorm import norm_ar
+    for a, b in AMBIG:
+        t = t.replace(norm_ar(a), norm_ar(b))
+    return t
+
+
+def iraq_strict(title):
+    """للمسار العراقي: علامة عراقية صريحة مطلوبة. الكلمات العامة (محافظ، مجلس الوزراء، النائب…) لا تكفي إذا وُجدت علامة أجنبية،
+    ولا يكفي غياب الدول الأجنبية وحده (فلوريدا، الليكود… كانت تمر كأخبار عراقية)."""
+    global IQ_GENERIC
+    from marsad.textnorm import norm_ar
+    iq, fr = _markers()
+    if IQ_GENERIC is None:
+        IQ_GENERIC = {norm_ar(w) for w in ["محافظ", "المحافظة", "النائب", "النائبة", "النيابية", "الداخلية", "الرواتب", "المنافذ", "النزاهة",
+                                           "البنك المركزي", "الحكيم", "الصدر", "العبادي", "مجلس الوزراء", "مجلس النواب", "الطلبة", "الدينار"]}
+    t = _clean_ambig(" " + norm_ar(title or "") + " ")
+    hits = [w for w in iq if w and w in t]
+    if not hits:
+        return False
+    if any(w and w in t for w in fr) or far_title(title):
+        return any(w not in IQ_GENERIC for w in hits)
+    return True
+
+
 def iraq_title(title):
     """فحص على مستوى العنوان نفسه: عنوان فيه بلد/جهة أجنبية بلا أي إشارة عراقية = خبر غير عراقي (لا يُنشر بقناة أخبار العراق)."""
     from marsad.textnorm import norm_ar
     iq, fr = _markers()
-    t = " " + norm_ar(title or "") + " "
+    t = _clean_ambig(" " + norm_ar(title or "") + " ")
     has_iq = any(w and w in t for w in iq)
     has_fr = any(w and w in t for w in fr)
     return has_iq or not has_fr
@@ -139,7 +171,7 @@ def me_title(title):
               "بيروت", "إسرائيل", "الإسرائيلي", "الإسرائيلية", "نتنياهو", "تل أبيب", "غزة", "الضفة", "فلسطين", "الفلسطيني", "تركيا", "التركي", "التركية",
               "أنقرة", "أردوغان", "السعودية", "السعودي", "الرياض", "بن سلمان", "الإمارات", "الإماراتي", "أبوظبي", "دبي", "قطر", "القطري", "الدوحة",
               "الكويت", "الكويتي", "البحرين", "عمان", "مسقط", "الأردن", "الأردني", "عمّان", "مصر", "المصري", "القاهرة", "السيسي", "اليمن", "اليمني",
-              "الحوثي", "صنعاء", "الخليج", "هرمز", "البحر الأحمر", "ترامب", "واشنطن", "البيت الأبيض", "البنتاغون", "أوبك", "النفط", "برنت"]
+              "الحوثي", "صنعاء", "الخليج", "هرمز", "البحر الأحمر", "أوبك", "برنت"]
         ME_RX = [norm_ar(w) for w in ws]
     t = " " + norm_ar(title or "") + " "
     return any(w in t for w in ME_RX)
@@ -180,11 +212,33 @@ def worthy(n, now):
     ct = clean_headline(t)
     if JUNK.match(ct or "") or len((ct or "").split()) < 6 or PROMO_RX.search(ct) or ct.lstrip().startswith(("•", "-", "▪")):
         return False
-    if n.get("ctype") == "تحليل/رأي":
+    if n.get("ctype") == "تحليل/رأي" or LOWVAL_RX.search(ct) or incomplete(ct):
         return False
-    if (n.get("about_iraq") or n.get("pmf")) and iraq_title(t) and n.get("origin") != "أجنبي":
+    if (n.get("about_iraq") or n.get("pmf")) and iraq_strict(t) and n.get("origin") != "أجنبي":
+        if ROUTINE_RX.search(ct) and n.get("level") != "عاجل" and (n.get("n_sources") or 1) < 6:
+            return False  # استقبالات ولقاءات وجولات روتينية: لا تُنشر إلا إذا تداولتها 6 جهات فأكثر
         return bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم")
     return is_regional(n)
+
+
+# عناوين ليست أخباراً: أسئلة رأي وتحليل، مسلسلات، فتاوى، توعية، مقالات رأي
+LOWVAL_RX = re.compile(r"(؟\s*$|\?\s*$|مسلسل|الحلقة|حلقة|تعترف لوالد|ما حكم|حكم إعطاء|زكاة|فتوى|اليوم الدولي|اليوم العالمي|رحلة تبدأ بتجربة|"
+                       r"^بالرغم من|^في كف|يشتكي من|حلاق|فكريات|نرسل لكم|عناوين جريدة|صباحكم|مساءكم)")
+ROUTINE_RX = re.compile(r"(يستقبل|استقبل|یستقبل|يبحث مع|بحث مع|يلتقي|التقى|يزور|زار|جولة ميدانية|يتابع|يترأس|ترأس|يستعرض|تستعرض|يشيد|تشيد|يهنئ|يعزي|"
+                        r"حملة تشجير|تحتفي|يحتفي|ورشة|ندوة|مؤتمر صحفي مشترك)")
+ROLE_START = re.compile(r"^(رئيس|نائب|وزير|وزيرة|محافظ|مستشار|مدير|وكيل|قائد|المتحدث|الناطق|السفير|عضو)")
+VERB_RX = re.compile(r"(يعلن|تعلن|أعلن|اعلن|أعلنت|يؤكد|تؤكد|أكد|اكد|يوجه|وجه|يقرر|قرر|يكشف|كشف|يحذر|حذر|ينفي|نفى|يطالب|طالب|يدعو|دعا|"
+                     r"يصل|وصل|يستقبل|يبحث|يلتقي|يزور|قال|يقول|يصدر|أصدر|يفتتح|افتتح|يوافق|وافق|يصوت|صوت|:)")
+
+
+def incomplete(t):
+    """عنوان مبتور: ينتهي بحرف جر/كلمة معلّقة، أو اسم ومنصب فقط بلا فعل («نائب رئيس الوزراء لشؤون الخدمات فلان»)."""
+    w = (t or "").rstrip(" .،…").split()
+    if not w:
+        return True
+    if w[-1] in ("في", "من", "على", "إلى", "الى", "عن", "مع", "واقع", "بشأن", "حول", "الى", "و", "أو", "التي", "الذي", "بعد", "قبل", "ضد", "عبر"):
+        return True
+    return bool(ROLE_START.search(t)) and not VERB_RX.search(t) and len(w) <= 12
 
 
 def is_regional(n):
@@ -211,10 +265,14 @@ def is_breaking(n):
     """عاجل: خبر عراقي عاجل، أو خبر إقليمي عاجل كبير جداً (8 جهات فأكثر). لا يكفي تكرار النشر وحده."""
     if rank(n) < 3:
         return False
-    if iraq_title(n.get("title") or "") and (n.get("about_iraq") or n.get("pmf")):
+    if iraq_strict(n.get("title") or "") and (n.get("about_iraq") or n.get("pmf")):
         return True
     t = n.get("title") or ""
-    return not far_title(t) and me_title(t) and (n.get("n_sources") or 1) >= 12
+    return (not far_title(t) and me_title(t) and (n.get("n_sources") or 1) >= 25 and bool(EVENT_RX.search(t)) and not STATEMENT_RX.search(t))
+
+
+EVENT_RX = re.compile(r"(مقتل|قتلى|انفجار|انفجارات|قصف|غارة|غارات|هجوم|اغتيال|زلزال|اشتباكات|سقوط صاروخ|صواريخ|إغلاق مضيق|اجتياح|حرب)")
+STATEMENT_RX = re.compile(r"^[^:]{2,40}:|(يؤكد|أكد|يقول|قال|يرى|يعتبر|صرح|يصرح|يشير)")
 
 
 VAGUE_RX = re.compile(r"(شاهد|بالفيديو|بالصور|فيديو|التفاصيل|تفاصيل|إليكم|اليكم|هذا ما|ماذا|لماذا|كيف|هكذا|إليك|اليك|تعرف|الكشف عن|كشف عن|مفاجأة|\?|؟|…|\.\.\.?$)")
@@ -239,12 +297,46 @@ def detail_url(n):
     return ""
 
 
+def _sstem(w):
+    """تجريد لواحق خفيف للمطابقة فقط: عقارات=عقار، تلاعبوا=تلاعب، الموظفين=موظف."""
+    for suf in ("ات", "ون", "ين", "وا", "ها", "هم", "يه", "ية"):
+        if len(w) > len(suf) + 3 and w.endswith(suf):
+            return w[: -len(suf)]
+    if len(w) > 4 and w[-1] in "هي":
+        return w[:-1]
+    return w
+
+
+ACTORS = ["الزيدي", "رئيس مجلس الوزراء", "رئيس الوزراء", "رئيس الجمهورية", "رئيس مجلس النواب", "مجلس القضاء", "القضاء الأعلى", "البنك المركزي",
+          "النزاهة", "خلية الإعلام الأمني", "الداخلية", "الدفاع", "الخارجية", "النفط", "الكهرباء", "التربية", "المالية", "الصحة", "التقاعد",
+          "مصرف الرافدين", "الأنواء", "عراقجي", "الحرس الثوري", "حكومة الإقليم", "الحشد", "مكافحة الإرهاب", "العمليات المشتركة", "المنافذ", "الكمارك"]
+_ACT = []
+
+
+def lead_key(title):
+    """الجهة/الشخص المتصدر للعنوان — لسقف المنشورات المتتالية عن الجهة نفسها. أولاً جهة معروفة في أول العنوان، ثم «الجهة: …»، ثم أول كلمتين."""
+    from tools.tg_card import split_kicker
+    from tools.editorial import clean_headline
+    from marsad.textnorm import norm_ar
+    if not _ACT:
+        _ACT.extend(norm_ar(a) for a in ACTORS)
+    t = norm_ar(clean_headline(title or ""))
+    head = " ".join(t.split()[:6])
+    for a in _ACT:
+        if a in head:
+            return a
+    k, _ = split_kicker(t)
+    w = (k or t).split()
+    return " ".join(w[-2:] if k else w[:2])
+
+
 def title_sig(t):
     """بصمة العنوان: جذور الكلمات المضمونية + الأرقام — لكشف الخبر نفسه بصياغة أخرى من جهة ثانية."""
     from tools.editorial import _stem, DIGITS, clean_headline, STYLE_OK
     t = clean_headline(t or "")
-    words = {_stem(w) for w in t.split()}
-    stop = {_stem(w) for w in STYLE_OK}
+    t = re.sub(r"\s+[-–|]\s+[^-–|:]{2,25}$", "", t)  # توقيع المصدر آخر العنوان («- الواجهة»)
+    words = {_sstem(_stem(w)) for w in t.split()}
+    stop = {_sstem(_stem(w)) for w in STYLE_OK}
     return ({w for w in words if len(w) >= 3 and w not in stop}, set(DIGITS.findall(t)))
 
 
@@ -256,7 +348,9 @@ GENERIC = set()
 def _generic():
     from tools.editorial import _stem
     return {_stem(w) for w in """جاري رفع اطلاق إطلاق تمويل يبحث بحث يبحثان يستقبل استقبل يلتقي التقى لقاء وزير وزيرة سفير السفير رئيس يعلن أعلن تعلن أعلنت
-يؤكد أكد أكدت مدير عام العامة دائرة شركة الشركة وزارة محافظ مجلس لجنة يزور زار زيارة اجتماع يترأس ترأس بشأن ملف عن جديد جديدة""".split()}
+يؤكد أكد أكدت مدير عام العامة دائرة شركة الشركة وزارة محافظ مجلس لجنة يزور زار زيارة اجتماع يترأس ترأس بشأن ملف عن جديد جديدة
+شهر لشهر الشهر تشرين كانون شباط آذار نيسان أيار حزيران تموز آب أيلول الثاني الأول الماضي المقبل اليوم أمس غدا العام عام لعام السنة
+الواجهة عاجل العراق العراقية العراقي بغداد""".split()}
 
 
 def build_idf(titles):
@@ -289,6 +383,9 @@ def same_story(sig, prev):
         return False  # رقم مختلف بنفس الصياغة (حصيلة جديدة، هزة أخرى) = خبر مختلف
     shared = w & pw
     j = len(shared) / len(w | pw)
+    dd = {x for x in d & pd if not re.fullmatch(r"(19|20)\d\d", x)}  # السنة (2026، 2027) ليست رقماً مميزاً للخبر
+    if IDF and dd and sum(1 for x in shared if IDF.get(x, 6.0) >= RARE) >= 2:
+        return True  # رقم مشترك + كلمتان نادرتان مشتركتان = الخبر نفسه بصياغة أخرى (حكم السجن نفسه نزل 4 مرات)
     if j >= 0.45 or (bool(d & pd) and j >= 0.3):
         return True
     if IDF:  # تشابه موزون بالندرة: نفس الأسماء والمفردات النادرة بصياغة مختلفة
@@ -547,7 +644,12 @@ def send_pending(token, chat_id, only_breaking=False):
                 keep(p, r)
                 done["text"] += 1
             except Exception:  # noqa: BLE001
-                pass
+                try:  # آخر محاولة: نص خام بلا تنسيق (خطأ HTML لا يُسقط المنشور)
+                    r = api(token, "sendMessage", chat_id=chat_id, text=H.unescape(re.sub(r"<[^>]+>", "", p["text"]))[:4000], disable_web_page_preview="true")
+                    keep(p, r)
+                    done["text"] += 1
+                except Exception as e2:  # noqa: BLE001
+                    DEBUG.append(f"sendfail2:{p['id'][:20]}:{str(e2)[:60]}")
     try:  # نسخة لمشتركي المحافظات والمواضيع بالخاص
         from tools import subs as SB
         items = [{"id": p["id"], "card": p.get("card"), "text": p["text"],
@@ -806,6 +908,12 @@ def main():
                     prev["d"] = sorted(set(prev.get("d") or []) | sig[1])
                     updates.append((n, prev["id"]))
                 continue
+            lk = lead_key(n.get("title"))
+            burst = sum(1 for x in posted_all if x.get("ts", 0) >= now.timestamp() - 3600 and lead_key(x.get("title") or "") == lk)
+            if burst >= 2 and not (is_breaking(n) and n.get("source_flag")):
+                status["burst_cap"] = status.get("burst_cap", 0) + 1
+                sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "dup": True}
+                continue  # منشوران عن الجهة نفسها خلال ساعة يكفيان (اجتماع واحد نزل 6 مرات)
             reg = is_regional(n)
             if reg and reg_n >= REGION_PER_HOUR and not is_breaking(n):
                 status["region_cap"] = status.get("region_cap", 0) + 1
@@ -868,7 +976,8 @@ def main():
         bh0 = (now + timedelta(hours=3)).hour
         aslot = "a1" if 14 <= bh0 < 18 else "a2" if 20 <= bh0 < 24 else None
         tries = sent.setdefault("_op_tries", {})
-        if aslot and not any(v.get("slot") == day + aslot for v in ap.values()) and tries.get(day + aslot, 0) < 6:
+        slot_done = any(v.get("slot") == day + aslot and (("op_" + k) in msgs or now.timestamp() - v.get("t", 0) < 900) for k, v in ap.items()) if aslot else True
+        if aslot and not slot_done and tries.get(day + aslot, 0) < 6:  # الفترة تُحسب منجزة فقط إذا وصل المنشور فعلاً للقناة
             from tools import analysis as A, tg_card
             from tools.editorial import pick_best, clean_headline
             done_t = [title_sig(v.get("title") or "") for v in ap.values() if v.get("d") == day]
@@ -892,7 +1001,7 @@ def main():
                     DEBUG.append(f"opinion:{type(e).__name__}")
                 if art:
                     otitle, obody = art
-                    body = H.escape(obody)
+                    body = H.escape(obody[:3200])
                     for h in A.OP_HEADS:
                         body = body.replace(h, f"<b>{h}</b>")
                     n0 = next((x for x in news if x["id"] == a["id"]), None)

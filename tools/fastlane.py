@@ -139,14 +139,19 @@ def main():
                 sig = T.title_sig(first)
                 if any(T.same_story(sig, x) for x in mine + main_sigs):
                     skip("مكرر"); continue
+                lk = T.lead_key(first)
+                if ch not in CFG["loud"] and sum(1 for x in mine + main_sigs if x.get("ts", 0) >= time.time() - 3600 and T.lead_key(x.get("title") or "") == lk) >= 2:
+                    skip("نفس الجهة خلال ساعة"); continue
+                if T.LOWVAL_RX.search(first) or T.incomplete(first):
+                    skip("عنوان غير صالح"); continue
                 if ch in CFG.get("agency", []):
                     # وكالة موثوقة: عاجلها (أو حدث مهم بكلمات صريحة) عن العراق يُنشر فوراً منسوباً لها، بلا انتظار مصدر ثانٍ
-                    if not (FLAG.search(p["text"][:40]) or STRICT.search(first)) or not T.iraq_title(first) or T.far_title(first):
+                    if not (FLAG.search(p["text"][:40]) or STRICT.search(first)) or not T.iraq_strict(first):
                         skip("وكالة: ليس عاجلاً عراقياً"); continue
                     ok = True
                 elif tier == "breaking":
                     # قنوات الأخبار السريعة: فقط ما وسمته «عاجل» ويذكر العراق صراحة
-                    if not FLAG.search(p["text"][:40]) or not T.iraq_title(first) or not iraq_strong(first):
+                    if not FLAG.search(p["text"][:40]) or not T.iraq_strict(first):
                         skip("ليس عاجلاً عراقياً"); continue
                     ok = True
                 else:

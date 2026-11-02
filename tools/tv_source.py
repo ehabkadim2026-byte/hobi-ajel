@@ -78,8 +78,14 @@ def handle(token, chat_id, post, sent, editors_chats):
     sig = title_sig(cap)
     now = time.time()
     st["sigs"] = [x for x in st["sigs"] if x.get("ts", 0) >= now - 12 * 3600]
-    if any(same_story(sig, x) for x in st["sigs"]) or any(same_story(sig, x) for x in sent.get("_titles", [])):
+    from tools.tg_push import fastlane_sigs, iraq_strict, build_idf, IDF
+    others = [x for x in fastlane_sigs() + fastlane_sigs("main_sigs.json") if x.get("ts", 0) >= now - 12 * 3600]
+    if not IDF:
+        build_idf([x.get("title") or "" for x in others])
+    if any(same_story(sig, x) for x in st["sigs"]) or any(same_story(sig, x) for x in sent.get("_titles", []) + others):
         return "مكرر"
+    if not iraq_strict(cap[:300]):
+        return "ليس عراقياً"  # القناة لأخبار العراق: مقاطع الشأن الأجنبي لا تُنشر
     ok, by = important(cap)
     if not ok:
         return f"غير مهم ({by})"

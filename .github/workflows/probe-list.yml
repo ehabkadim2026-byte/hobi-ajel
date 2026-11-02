@@ -1,0 +1,13 @@
+name: probe-list
+on: {workflow_dispatch: {}}
+permissions: {contents: write}
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          python3 tools/probe_official.py config/probe_list.txt list_probe.json
+          gh release upload probe list_probe.json --clobber
