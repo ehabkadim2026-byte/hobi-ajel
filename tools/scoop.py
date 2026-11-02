@@ -22,6 +22,7 @@ from tools import tg_push as T  # noqa: E402
 CFG = json.loads((ROOT / "config" / "competitors.json").read_text(encoding="utf-8"))["groups"]
 SRC2NAME = {s: g for g, ids in CFG.items() for s in ids}
 UA = {"User-Agent": "Mozilla/5.0"}
+LAST_POSTS = []
 
 
 def _dt(s):
@@ -58,6 +59,7 @@ def own_posts(hours=26):
             except ValueError:
                 views = 0
             got.append({"msg": int(pid.group(1)), "t": datetime.fromisoformat(t.group(1)), "title": first[:200], "views": views,
+                        "brk": "عاجل |" in text[:40],
                         "kind": "تحليل" if "تحليل خبري" in text[:40] else "تحديث" if "تحديث |" in text[:30] else "منوعات" if "#منوعات" in text else "خبر"})
         out += got
         if not got or min(p["t"] for p in got) < now - timedelta(hours=hours):
@@ -75,6 +77,7 @@ def build(db_path=None):
     con = core.connect(db_path) if db_path else core.connect()
     con.row_factory = sqlite3.Row
     posts = own_posts()
+    LAST_POSTS[:] = posts
     rows, matched = [], set()
     comp_ids = list(SRC2NAME)
     q = ",".join("?" * len(comp_ids))
@@ -171,6 +174,24 @@ def main():
     bgd = datetime.now(timezone.utc) + timedelta(hours=3)
     sent = T.load(T.SENT, {})
     token = os.environ.get("MARSAD_TG_BOT_TOKEN", "").strip()
+    # حلقة التعلّم: تسجيل المشاهدات كل جولة، وتحديث معاملات الاهتمام مرة كل ساعة، وتقرير أسبوعي للمحررين (الجمعة 10 مساءً)
+    from tools import learn as LN
+    log = LN.record(sent, LAST_POSTS)
+    if (sent.get("_learn") or {}).get("updated", "")[:13] != datetime.now(timezone.utc).strftime("%Y-%m-%dT%H"):
+        sent["_learn"] = LN.analyse(log)
+        (ROOT / "pwa" / "learn.json").write_text(json.dumps(sent["_learn"], ensure_ascii=False), encoding="utf-8")
+        print(f"::notice title=learn::{json.dumps({'n': sent['_learn']['n'], 'active': sent['_learn']['active'], 'lift': sent['_learn']['lift']}, ensure_ascii=False)}")
+    wk = bgd.strftime("%G-W%V")
+    if token and bgd.weekday() == 4 and bgd.hour == 22 and sent.get("_learn_week") != wk:
+        r = LN.weekly_report(sent["_learn"])
+        for c in (sent.get("_editor_chats") or {}).values():
+            try:
+                if r:
+                    T.api(token, "sendMessage", chat_id=c, text=r[:4000], disable_web_page_preview="true")
+            except Exception:  # noqa: BLE001
+                pass
+        sent["_learn_week"] = wk
+    T.SENT.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
     if token and bgd.hour == 23 and sent.get("_scoop_day") != bgd.strftime("%Y-%m-%d"):
         for c in (sent.get("_editor_chats") or {}).values():
             try:

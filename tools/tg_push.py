@@ -793,6 +793,11 @@ def main():
             if hour_n >= MAX_PER_HOUR and not is_breaking(n):
                 status["hour_cap"] = status.get("hour_cap", 0) + 1
                 continue  # سقف ساعي: بعده العاجل فقط (القناة لا تُغرق)
+            if not is_breaking(n) and hour_n >= MAX_PER_HOUR * 0.7:
+                from tools.learn import lift_of
+                if lift_of(sent, n.get("title")) < 0.8 and (n.get("n_sources") or 1) < 4:
+                    status["low_interest"] = status.get("low_interest", 0) + 1
+                    continue  # عند الزحام: موضوع أثبتت المشاهدات ضعف اهتمام المتابعين به، ونشرته جهات قليلة
             entry = {"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp(), "reg": reg, "id": n["id"], "title": (n.get("title") or "")[:200]}
             posted.append(entry)
             posted_all.append(entry)
@@ -904,7 +909,8 @@ def main():
                 sig = title_sig(n["title"])
                 if any(same_story(sig, x) for x in posted_all):
                     continue
-                vc.append((n.get("n_sources") or 1, n, k, sig))
+                from tools.learn import lift_of
+                vc.append(((n.get("n_sources") or 1) * lift_of(sent, n.get("title")), n, k, sig))
             if vc:
                 _, n, k, sig = max(vc, key=lambda x: x[0])
                 try:
