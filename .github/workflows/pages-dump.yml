@@ -1,0 +1,13 @@
+name: pages-dump
+on: {workflow_dispatch: {}}
+permissions: {contents: write}
+jobs:
+  d:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          for f in scoop.json fastlane_status.json; do curl -sSL -m 30 "https://ehabkadim2026-byte.github.io/hobi-ajel/$f" -o "dump_$f" || true; done
+          gh release download fastlane -p fast_status.json -D . --clobber || true
+          gh release upload probe dump_scoop.json fast_status.json --clobber
