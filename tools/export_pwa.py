@@ -315,7 +315,8 @@ def main(hours=24):
                             "FROM items i LEFT JOIN sources s ON s.id=i.source_id WHERE i.cluster_id=? ORDER BY COALESCE(i.published_utc, i.collected_utc)",
                             (c["id"],)).fetchall()
         edited = con.execute("SELECT COUNT(*) FROM item_versions v JOIN items i ON i.id=v.item_id WHERE i.cluster_id=?", (c["id"],)).fetchone()[0]
-        flag_names = [r["source_name"] or "" for r in irows if FLAG_RX.search((r["title"] or "")[:80]) and r["source_id"] not in FLAG_SPAM]
+        flag_names = [r["source_name"] or "" for r in irows if FLAG_RX.search((r["title"] or "")[:80]) and r["source_id"] not in FLAG_SPAM
+                      and (r["category"] or "") != "مدونون وصنّاع محتوى"]  # وسم «عاجل» عند المدوّنين لا يجعل الخبر عاجلاً
         source_flag = any("عاجل" not in n for n in flag_names)
         official_any = any(r["official"] for r in irows)
         if any(k == "رأي/تحليل" for k in (r["kind"] for r in irows)) or kind:
