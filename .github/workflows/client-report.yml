@@ -1,0 +1,38 @@
+name: client-report
+# تقرير المرصد المخصص (خدمة مدفوعة): يُولَّد عند الطلب ويُرسل للمحررين بالخاص كملف — لا يُنشر على الموقع العام
+on:
+  workflow_dispatch:
+    inputs:
+      watch: {description: "معرّف ملف المتابعة في config/watchlists.json", required: true, default: "economy"}
+      days: {description: "عدد الأيام", required: true, default: "7"}
+permissions: {contents: read}
+jobs:
+  r:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/marsad.db
+            data/translations.json
+            data/tg_sent.json
+            data/tg_chat.json
+          key: "marsad-db-report-${{ github.run_id }}"
+          restore-keys: "marsad-db-"
+      - run: python3 -m tools.client_report --watch "${{ inputs.watch }}" --days "${{ inputs.days }}" --out "data/report_${{ inputs.watch }}.html"
+      - name: send to editors
+        env: {MARSAD_TG_BOT_TOKEN: "${{ secrets.MARSAD_TG_BOT_TOKEN }}", W: "${{ inputs.watch }}"}
+        run: |
+          python3 - <<'PY'
+          import os, json
+          from tools import tg_push as T
+          p = f"data/report_{os.environ['W']}.html"
+          sent = T.load(T.SENT, {})
+          for c in (sent.get("_editor_chats") or {}).values():
+              T.api(os.environ["MARSAD_TG_BOT_TOKEN"], "sendDocument", files={"document": (os.path.basename(p), open(p, "rb").read(), "text/html")},
+                    chat_id=c, caption="📑 تقرير المرصد المخصص — افتحه بالمتصفح")
+          PY
