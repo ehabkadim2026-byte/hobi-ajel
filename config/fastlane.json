@@ -64,7 +64,37 @@
   "alsharqiyagroup",
   "utviraq",
   "alforat_tv",
-  "Alanbar_Tv"
+  "Alanbar_Tv",
+  "alsumariatviraq",
+  "shafaaqnews",
+  "baghdadtoday",
+  "media964",
+  "almaalomah"
  ],
- "_note_breaking": "قنوات الأخبار الأسرع (حسب من نشر الخبر الكبير أولاً ببيانات الرصد): يُنشر منها فقط ما وُسم «عاجل» ويخص العراق صراحة."
+ "_note_breaking": "قنوات الأخبار الأسرع (حسب من نشر الخبر الكبير أولاً ببيانات الرصد): يُنشر منها فقط ما وُسم «عاجل» ويخص العراق صراحة.",
+ "hot": [
+  "inainaiq",
+  "ajanews",
+  "almaalomah",
+  "dijlahtvchannel",
+  "naya_foriraq",
+  "IRAQ2TV",
+  "iraqi1_news",
+  "alsumariatviraq",
+  "alarabiyaBr",
+  "alhadath_brk",
+  "SecMedCell",
+  "IraqiPMO",
+  "shafaaqnews"
+ ],
+ "hot_every_sec": 8,
+ "agency": [
+  "inainaiq",
+  "alsumariatviraq",
+  "shafaaqnews",
+  "baghdadtoday",
+  "media964",
+  "dijlahtvchannel"
+ ],
+ "_note_speed": "القنوات «hot» (الأكثر سبقاً حسب لوحة السبق) تُفحص كل 8 ثوانٍ والباقي كل 25؛ «agency» وكالات موثوقة: عاجلها العراقي يُنشر فوراً منسوباً لها."
 }

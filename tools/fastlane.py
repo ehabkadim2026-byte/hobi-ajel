@@ -65,6 +65,9 @@ def latest_posts(ch):
     return out, H.unescape(name.group(1)) if name else ch
 
 
+LAST_FULL = [0.0]
+
+
 def iraq_strong(t):
     from marsad.textnorm import norm_ar
     iq, _ = T._markers()
@@ -95,7 +98,12 @@ def main():
         mine = [x for x in mine if x.get("ts", 0) >= time.time() - 12 * 3600]
         T.build_idf([x.get("title", "") for x in mine] + [x.get("title", "") for x in main_sigs][-400:]) if stats["loops"] % 20 == 1 else None
         from concurrent.futures import ThreadPoolExecutor
-        chans = [(c, "official") for c in CFG["channels"]] + [(c, "breaking") for c in CFG.get("breaking", [])]
+        allc = [(c, "official") for c in CFG["channels"]] + [(c, "breaking") for c in CFG.get("breaking", []) if c not in CFG["channels"]]
+        hot = set(CFG.get("hot", []))
+        full = time.time() - LAST_FULL[0] >= CFG["every_sec"] or stats["loops"] == 1
+        chans = allc if full else [x for x in allc if x[0] in hot]  # الأكثر سبقاً كل 8 ثوانٍ، الكل كل 25
+        if full:
+            LAST_FULL[0] = time.time()
 
         def fetch(c):
             try:
@@ -131,7 +139,12 @@ def main():
                 sig = T.title_sig(first)
                 if any(T.same_story(sig, x) for x in mine + main_sigs):
                     skip("مكرر"); continue
-                if tier == "breaking":
+                if ch in CFG.get("agency", []):
+                    # وكالة موثوقة: عاجلها (أو حدث مهم بكلمات صريحة) عن العراق يُنشر فوراً منسوباً لها، بلا انتظار مصدر ثانٍ
+                    if not (FLAG.search(p["text"][:40]) or STRICT.search(first)) or not T.iraq_title(first) or T.far_title(first):
+                        skip("وكالة: ليس عاجلاً عراقياً"); continue
+                    ok = True
+                elif tier == "breaking":
                     # قنوات الأخبار السريعة: فقط ما وسمته «عاجل» ويذكر العراق صراحة
                     if not FLAG.search(p["text"][:40]) or not T.iraq_title(first) or not iraq_strong(first):
                         skip("ليس عاجلاً عراقياً"); continue
@@ -172,7 +185,10 @@ def main():
             gh_put("fast_status.json", {**stats, "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")})
         STATE.parent.mkdir(exist_ok=True)
         STATE.write_text(json.dumps({"last": last}, ensure_ascii=False), encoding="utf-8")
-        time.sleep(max(3, CFG["every_sec"] - (time.time() - t0)))
+        # تهدئة تلقائية إذا كثرت أخطاء الجلب (حماية من حدود الطلبات)
+        err_rate = sum(1 for _, r in results if r is None) / max(1, len(results))
+        step = CFG.get("hot_every_sec", 8) * (3 if err_rate > 0.3 else 1)
+        time.sleep(max(2, step - (time.time() - t0)))
     print(f"::notice title=fastlane::{json.dumps(stats, ensure_ascii=False)}")
 
 

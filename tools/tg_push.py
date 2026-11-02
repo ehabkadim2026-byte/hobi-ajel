@@ -106,7 +106,7 @@ def far_title(title):
         FAR = [norm_ar(w) for w in ["روسيا", "الروسية", "الروسي", "موسكو", "بوتين", "الكرملين", "أوكرانيا", "الأوكرانية", "الأوكراني", "كييف", "زيلينسكي",
                                      "بولندا", "البولندي", "المجر", "أوربان", "ألمانيا", "فرنسا", "بريطانيا", "إيطاليا", "إسبانيا", "أوروبا", "الأوروبي",
                                      "الصين", "اليابان", "كوريا", "الهند", "باكستان", "أفغانستان", "طالبان", "أستراليا", "البرازيل", "المكسيك", "كندا",
-                                     "السودان", "الخرطوم", "ليبيا", "تونس", "الجزائر", "المغرب", "الدوري الإسباني", "برشلونة", "ريال مدريد"]]
+                                     "السودان", "الخرطوم", "دارفور", "الفاشر", "حلفا", "ليبيا", "تونس", "الجزائر", "المغرب", "فلوريدا", "كاليفورنيا", "تكساس", "نيويورك", "شيكاغو", "الدوري الإسباني", "برشلونة", "ريال مدريد"]]
     t = " " + norm_ar(title or "") + " "
     return any(w in t for w in FAR)
 
@@ -481,8 +481,8 @@ def send_pending(token, chat_id, only_breaking=False):
     pend = load(PENDING, [])
     later = []
     if only_breaking:  # العاجل يُرسل فوراً بمرحلة التحضير (رفع البطاقة مباشرة) بلا انتظار نشر الموقع
-        later = [p for p in pend if not (p.get("b") and not p.get("textonly"))]
-        pend = [p for p in pend if p.get("b") and not p.get("textonly")]
+        later = [p for p in pend if not ((p.get("b") or p.get("now")) and not p.get("textonly"))]
+        pend = [p for p in pend if (p.get("b") or p.get("now")) and not p.get("textonly")]
     msgs = load(MSGS, {})
     done = {"preview": 0, "photo": 0, "text": 0, "anim": 0, "replies": 0}
     deadline = _t.time() + 60
@@ -843,7 +843,8 @@ def main():
                 DEBUG.append(f"cardfail:{type(e).__name__}")
                 continue
             status["images"][kind] = status["images"].get(kind, 0) + 1
-            pend.append({"id": n["id"], "card": card, "text": fmt(n, upd), "b": is_breaking(n), "kb": buttons(n)})
+            pend.append({"id": n["id"], "card": card, "text": fmt(n, upd), "b": is_breaking(n), "kb": buttons(n),
+                         "now": bool(n.get("about_iraq") and n.get("level") in ("عاجل", "مهم"))})  # المهم العراقي يُرسل فوراً بلا انتظار نشر الموقع
             sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "b": is_breaking(n)}
             status["sent_now"] += 1
         for n, orig in updates:  # تحديثات كرد على المنشور الأصلي (نص فقط، بلا بطاقة)
@@ -971,7 +972,7 @@ def main():
         status["editor_llm"] = LLM_STATS
         PENDING.write_text(json.dumps(pend, ensure_ascii=False), encoding="utf-8")
         SENT.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
-        if any(p.get("b") and not p.get("textonly") for p in pend):
+        if any((p.get("b") or p.get("now")) and not p.get("textonly") for p in pend):
             try:
                 status["breaking_now"] = send_pending(token, chat_id, only_breaking=True)
             except Exception as e:  # noqa: BLE001
