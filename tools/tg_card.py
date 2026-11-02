@@ -956,6 +956,7 @@ TAGS = {  # لون الشريط واسم الوسم لكل نوع منشور
     "خبر": ((14, 38, 84), (255, 255, 255)),
     "تحليل": ((176, 132, 46), (255, 255, 255)),
     "منوعات": ((0, 122, 120), (255, 255, 255)),
+    "رأي": ((176, 132, 46), (255, 255, 255)),
     "تحديث": ((14, 38, 84), (255, 255, 255)),
 }
 _LOGO_W = {}
@@ -1053,7 +1054,7 @@ def card_news2(photo_jpg, title, breaking=True, when_utc=None, tag=None, stats=N
     tw = d.textlength(_shape(tag), font=ft, **kw)
     sx = W - P - tw - 24
     d.line([(sx, btop + 16), (sx, top - 16)], fill=(255, 255, 255) if not dim else (200, 120, 125), width=2)
-    sub = {"عاجل": "هسة وصل · أخبار العراق", "تحليل": "قراءة في أبرز حدث اليوم", "منوعات": "من العراق"}.get(tag, "هسة وصل · أخبار العراق")
+    sub = {"عاجل": "هسة وصل · أخبار العراق", "تحليل": "قراءة في أبرز حدث اليوم", "منوعات": "من العراق", "رأي": "قراءة هسة وصل"}.get(tag, "هسة وصل · أخبار العراق")
     _draw_rtl(d, sx - 20, btop + 12, sub, _cairo(24, 600), (255, 236, 238) if tag == "عاجل" else (230, 236, 248))
     w = _when(when_utc)
     if w:
@@ -1064,7 +1065,7 @@ def card_news2(photo_jpg, title, breaking=True, when_utc=None, tag=None, stats=N
     d.rectangle([0, top, W, top + 3], fill=(255, 255, 255) if tag != "عاجل" else (255, 210, 214))
     y = top + 22
     if kick:
-        _draw_rtl(d, W - P, y, kick, _cairo(32, 700), (130, 186, 255) if tag != "تحليل" else (232, 196, 120))
+        _draw_rtl(d, W - P, y, kick, _cairo(32, 700), (130, 186, 255) if tag not in ("تحليل", "رأي") else (232, 196, 120))
         y += kick_h
     for ln in lines:
         _draw_rtl(d, W - P, y, ln, f, (255, 255, 255))

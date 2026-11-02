@@ -860,53 +860,55 @@ def main():
                 corrected.add(n["id"])
                 status["corrections"] = status.get("corrections", 0) + 1
         sent["_corrected"] = sorted(corrected)[-300:]
-        # وكيل التحليل الخبري: مقالتان يومياً (2–6 عصراً و8–11 مساءً بغداد) عن أكثر خبر عراقي تداولاً لم يُحلَّل بعد، مع بطاقة «تحليل»
+        # «قراءة هسة وصل»: رأي تحريري بأسلوب محلل الاستوديو، بزاوية إيجابية بنّاءة للعراق — مرتان يومياً (2–6 عصراً و8–12 ليلاً بغداد)
+        # عن أكثر خبر عراقي تداولاً اليوم مناسب لقراءة بنّاءة (لا مآسي ولا حوادث). إن فشل النموذج لا يُنشر بديل، ويُعاد في الجولة التالية ضمن الفترة.
         ana = load(PWA / "analysis.json", {}).get("items", [])
         ap = sent.get("_ana_posted") or {}
         day = (now + timedelta(hours=3)).strftime("%Y-%m-%d")
         bh0 = (now + timedelta(hours=3)).hour
         aslot = "a1" if 14 <= bh0 < 18 else "a2" if 20 <= bh0 < 24 else None
-        if aslot and not any(v.get("slot") == day + aslot for v in ap.values()):
+        tries = sent.setdefault("_op_tries", {})
+        if aslot and not any(v.get("slot") == day + aslot for v in ap.values()) and tries.get(day + aslot, 0) < 6:
+            from tools import analysis as A, tg_card
+            from tools.editorial import pick_best, clean_headline
             done_t = [title_sig(v.get("title") or "") for v in ap.values() if v.get("d") == day]
-            cand = [a for a in ana if a["id"] not in ap and iraq_title(a["title"]) and not far_title(a["title"])
+            pool = [a for a in ana if a["id"] not in ap and iraq_title(a["title"]) and not far_title(a["title"]) and A.op_eligible(a)
                     and (a.get("last_time") or "") >= (now - timedelta(hours=16)).strftime("%Y-%m-%dT%H:%M")
                     and not any(same_story(title_sig(a["title"]), {"w": sorted(t[0]), "d": sorted(t[1])}) for t in done_t)]
-            if cand:
-                a = dict(max(cand, key=lambda x: x["n_sources"]))
-                from tools import analysis as A, tg_card
-                from tools.editorial import pick_best, clean_headline
+            if not pool:  # احتياط: أبرز خبر إيجابي عراقي (3 جهات فأكثر) إن لم يوجد حدث كبير مناسب
+                pn = A.pick_positive(news, set(ap), (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S"))
+                if pn:
+                    pool = [{"id": pn["id"], "title": pn["title"], "n_sources": pn.get("n_sources") or 1, "vstatus": pn.get("vstatus"),
+                             "excerpts": [{"source": "", "text": (pn.get("lead") or "")[:400]}] if pn.get("lead") else [], "narratives": []}]
+            if pool:
+                a = dict(max(pool, key=lambda x: x["n_sources"]))
                 a["title"] = clean_headline(pick_best([a["title"]] + [x["title"] for x in (a.get("narratives") or [])] +
-                                                       [x["text"][:200].split("\n")[0] for x in (a.get("excerpts") or [])])) or a["title"]
-                if a.get("reach10_min") is not None:
-                    m = a["reach10_min"]
-                    a["reach_txt"] = f"{m} د" if m < 90 else f"{round(m / 60)} س"
-                art, by = None, "Gemini"
+                                                       [x["text"][:200].split("\n")[0] for x in (a.get("excerpts") or []) if x.get("text")])) or a["title"]
+                tries[day + aslot] = tries.get(day + aslot, 0) + 1
+                art = None
                 try:
-                    art = A.write_article(a)
+                    art = A.write_opinion(a)
                 except Exception as e:  # noqa: BLE001
-                    DEBUG.append(f"article:{type(e).__name__}")
-                if not art:
-                    art, by = A.data_reading(a), "بيانات التغطية"
-                atitle, abody = art
-                body = H.escape(abody)
-                for h in A.ART_HEADS + ("الصياغات المتداولة:",):
-                    body = body.replace(h, f"<b>{h}</b>")
-                n0 = next((x for x in news if x["id"] == a["id"]), None)
-                photo = news_photo(n0) if n0 else None
-                f = a.get("first") or {}
-                stats = [(a["n_sources"], "جهة نشرت الخبر"), ((f.get("source") or "—").split(" — ")[0][:18], "أقدم ناشر مرصود")]
-                if a.get("reach10_min") is not None:
-                    stats.append((a["reach_txt"], "حتى بلغ 10 جهات"))
-                try:
-                    card = save_card(tg_card.card_news2(photo, atitle, False, now.strftime("%Y-%m-%dT%H:%M:%SZ"), tag="تحليل", stats=stats), "ana_" + a["id"])
-                    note = ("صياغة آلية محايدة بحارس حقائق" if by == "Gemini" else "قراءة محسوبة من بيانات التغطية")
-                    text = (f"🧭 <b>تحليل خبري</b>\n<b>{H.escape(atitle)}</b>\n\n{body}\n\n"
-                            f"<i>{note}، استناداً إلى {a['n_sources']} جهة رصدتها «هسة وصل». الانتشار لا يعني التأكيد.</i>\n\n#تحليل_خبري\n{CHANNEL}")
-                    pend.append({"id": "ana_" + a["id"], "card": card, "text": text[:4000], "b": False, "kb": buttons(n0) if n0 else None})
-                    ap[a["id"]] = {"d": day, "t": now.timestamp(), "slot": day + aslot, "title": a["title"], "by": by}
-                    status["analysis_post"] = {"id": a["id"], "by": by, "n": a["n_sources"]}
-                except Exception as e:  # noqa: BLE001
-                    DEBUG.append(f"anacard:{type(e).__name__}:{str(e)[:40]}")
+                    DEBUG.append(f"opinion:{type(e).__name__}")
+                if art:
+                    otitle, obody = art
+                    body = H.escape(obody)
+                    for h in A.OP_HEADS:
+                        body = body.replace(h, f"<b>{h}</b>")
+                    n0 = next((x for x in news if x["id"] == a["id"]), None)
+                    photo = news_photo(n0) if n0 else None
+                    try:
+                        card = save_card(tg_card.card_news2(photo, otitle, False, now.strftime("%Y-%m-%dT%H:%M:%SZ"), tag="رأي"), "op_" + a["id"])
+                        text = (f"🎙 <b>قراءة هسة وصل</b>\n<b>{H.escape(otitle)}</b>\n\n{body}\n\n"
+                                f"<i>رأي تحريري لقناة «هسة وصل» مبني على ما نُشر عن الخبر، بصياغة آلية بحارس حقائق.</i>\n\n#قراءة_هسة_وصل\n{CHANNEL}")
+                        pend.append({"id": "op_" + a["id"], "card": card, "text": text[:4000], "b": False, "kb": buttons(n0) if n0 else None})
+                        ap[a["id"]] = {"d": day, "t": now.timestamp(), "slot": day + aslot, "title": a["title"]}
+                        status["opinion_post"] = {"id": a["id"], "title": otitle}
+                    except Exception as e:  # noqa: BLE001
+                        DEBUG.append(f"opcard:{type(e).__name__}:{str(e)[:40]}")
+                else:
+                    status["opinion_post"] = f"فشل النموذج/الحارس (محاولة {tries[day + aslot]})"
+        sent["_op_tries"] = dict(list(tries.items())[-20:])
         sent["_ana_posted"] = dict(list(ap.items())[-200:])
         # منوعات: خبر عراقي خفيف (رياضة، طقس، ثقافة، تقنية، صحة، أسعار) — واحد كل 75 دقيقة كحد أعلى، 8 يومياً، 8 صباحاً–11 ليلاً، بإشعار صامت
         vs = sent.get("_variety") or {}
@@ -947,26 +949,7 @@ def main():
                 except Exception as e:  # noqa: BLE001
                     DEBUG.append(f"variety:{type(e).__name__}:{str(e)[:40]}")
         sent["_variety"] = dict(list(vs.items())[-300:])
-        # تحليل خبر إيجابي عن العراق: مرتان يومياً (12 ظهراً و6 مساءً بغداد)
-        bh = (now + timedelta(hours=3)).hour
-        slot = "noon" if 12 <= bh < 15 else "eve" if 18 <= bh < 21 else None
-        pp = sent.get("_pos") or {}
-        if slot and pp.get(day + slot) is None:
-            from tools import analysis as A
-            n = A.pick_positive(news, set(pp.get("ids", [])), (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S"))
-            r = A.write_positive(n) if n else None
-            if r:
-                body = H.escape(r)
-                for h in ("ما الذي حدث:", "لماذا هو تطور إيجابي:", "ما الذي يحتاجه ليكتمل أثره:"):
-                    body = body.replace(h, f"<b>{h}</b>")
-                pend.append({"id": "pos_" + n["id"], "textonly": True, "b": False, "reply_to": n["id"],
-                             "text": f"🌱 <b>تحليل خبري | {H.escape(n['title'][:150])}</b>\n\n{body}\n\n"
-                                     f"<i>قراءة آلية استناداً إلى ما نشرته {n.get('n_sources') or 1} جهة رصدتها «هسة وصل».</i>\n\n{CHANNEL}"})
-                pp[day + slot] = n["id"]
-                pp["ids"] = (pp.get("ids", []) + [n["id"]])[-100:]
-                status["positive_post"] = n["id"]
-            elif n is None:
-                status["positive_post"] = "لا يوجد خبر إيجابي مناسب الآن"
+        pp = sent.get("_pos") or {}  # التحليل الإيجابي القديم دُمج في «قراءة هسة وصل» (طلب إيهاب 2026-11-02)
         sent["_pos"] = pp
         from tools.editorial import LLM_STATS
         status["editor_llm"] = LLM_STATS

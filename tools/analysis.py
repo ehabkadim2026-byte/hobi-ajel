@@ -385,3 +385,59 @@ def data_reading(a):
         parts.append("ظهر نفي أو تصحيح ضمن التغطية: «" + a["denial"][0]["title"][:140] + "».")
     parts.append("ما لم يتأكد: " + " ".join((a.get("open") or [])[:3]))
     return title, "\n\n".join(parts)
+
+
+# ───────────── «قراءة هسة وصل»: رأي تحريري بأسلوب محلل الاستوديو، بزاوية إيجابية بنّاءة للعراق ─────────────
+OP_HEADS = ("رأينا:", "ماذا يعني للعراق:", "ماذا يعني للمواطن:", "الفرصة والخطوة التالية:", "ما ننتظره:")
+OP_PROMPT = ("أنت محلل سياسي واقتصادي عراقي في استوديو قناة إخبارية عراقية، تعلّق على الخبر التالي كما يفعل المحللون على الشاشة: "
+             "رأي واضح، قراءة لمعناه وأثره، لا سرد لمن نشره ولا كم مرة نُشر. اكتب «قراءة هسة وصل» (200–300 كلمة) بزاوية إيجابية بنّاءة "
+             "لمصلحة العراق والمواطن: أبرز الفرصة والمكسب وما يجعل الخطوة تنجح، بواقعية ودون تهويل أو دعاية. "
+             "ابدأ بسطر «العنوان: …» (عنوان رأي جذاب من 6 إلى 11 كلمة)، ثم خمس فقرات قصيرة تبدأ بهذه العناوين حرفياً كلٌّ في سطر جديد:\n"
+             + "\n".join(OP_HEADS) + "\n"
+             "قواعد صارمة: لا تضف أي رقم أو اسم شخص أو تاريخ أو وعد غير موجود في المعطيات؛ لا تمدح ولا تهاجم أي شخصية أو حزب أو كتلة بالاسم — "
+             "المصلحة هي العراق والمواطن لا الأشخاص؛ لا تتهم أحداً؛ إن كان في الخبر جانب ناقص فاذكر ما يحتاجه ليكتمل بصيغة بنّاءة؛ "
+             "التوقعات بصيغة احتمال؛ لا تنكر أي واقعة سلبية في المعطيات. عربية فصحى سلسة قريبة من لغة الشاشة، جمل قصيرة، بلا رموز تعبيرية ولا تنسيق Markdown.\n\nالمعطيات:\n")
+OP_NEG = re.compile(r"(مقتل|قتلى|شهداء|استشهاد|جرحى|انفجار|اغتيال|اعتقال|القبض|اشتباك|قصف|هجوم|حريق|غرق|سرقة|احتيال|اختلاس|فساد|السجن|"
+                    r"إعدام|اتهام|كارثة|وفاة|إصابة|جريمة|مخدرات|إرهاب|ارهاب|تظاهر|احتجاج|إضراب)")
+
+
+def op_facts(a):
+    f = [f"الخبر: {a['title']}", f"حالة التحقق: {a.get('vstatus') or 'غير متحقق'}"]
+    f += [f"صياغة أخرى للخبر: «{n['title']}»" for n in (a.get("narratives") or [])[:3]]
+    f += [f"نفي/تصحيح ظهر: «{n['title']}»" for n in (a.get("denial") or [])[:2]]
+    f += [f"من نص الخبر: {e['text']}" for e in (a.get("excerpts") or [])[:4]]
+    return "\n".join(f)
+
+
+def op_eligible(a):
+    return not OP_NEG.search(a.get("title") or "") and not any(OP_NEG.search(n.get("title") or "") for n in (a.get("narratives") or [])[:2])
+
+
+def write_opinion(a):
+    """يرجع (العنوان، النص) أو None — بلا بديل آلي: إن فشل النموذج أو الحارس لا يُنشر شيء في هذه الجولة."""
+    from tools import editorial as E
+    ftxt = op_facts(a)
+    old = E.MODELS[:]
+    try:
+        E.MODELS[:] = ART_MODELS
+        out = _gem_long(OP_PROMPT + ftxt)
+    finally:
+        E.MODELS[:] = old
+    if not out:
+        return None
+    out = re.sub(r"[*#_`]+", "", out).strip()
+    m = re.search(r"العنوان\s*:\s*(.+)", out)
+    if not m:
+        return None
+    title, body = m.group(1).strip().strip("«»\""), out[m.end():].strip()
+    if not all(h in body for h in ("رأينا:", "ماذا يعني للمواطن:", "الفرصة والخطوة التالية:")) or not (140 <= len(body.split()) <= 380):
+        return None
+    if not set(E.DIGITS.findall(title + " " + body)) <= set(E.DIGITS.findall(ftxt)):
+        return None
+    if ACCUSE.search(title + body) and not ACCUSE.search(ftxt):
+        return None
+    if re.search(r"(نشرت|نقلت|تداولت)\s+\S*\s*(جهة|جهات|وسائل|منصات)", body):
+        body = body  # تذكير: ليس قراءة انتشار؛ الحارس الرقمي يكفي
+    if len(title.split()) > 13 or len(title) < 10:
+        title = a["title"]
+    return title, body
