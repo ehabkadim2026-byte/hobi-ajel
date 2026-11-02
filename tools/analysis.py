@@ -328,6 +328,9 @@ def write_article(a):
     return title, body
 
 
+LAST_FINISH = [""]
+
+
 def _gem_long(prompt):
     """نداء أطول (مهلة 60 ث) لنماذج الكتابة، بنفس سلسلة البدائل."""
     import json as _j
@@ -340,13 +343,18 @@ def _gem_long(prompt):
     for model in E.MODELS:
         if model in E._EXHAUSTED:
             continue
-        body = _j.dumps({"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.35, "maxOutputTokens": 1400}}).encode()
+        body = _j.dumps({"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.35, "maxOutputTokens": 8192}}).encode()
         req = _r.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent", data=body,
                          headers={"Content-Type": "application/json", "x-goog-api-key": key})
         try:
             with _r.urlopen(req, timeout=60) as r:
                 d = _j.loads(r.read().decode())
-            return "".join(p.get("text", "") for p in d["candidates"][0]["content"]["parts"])
+            c0 = d["candidates"][0]
+            txt = "".join(p.get("text", "") for p in c0.get("content", {}).get("parts", []) if not p.get("thought"))
+            LAST_FINISH[0] = f"{model}:{c0.get('finishReason')}:{len(txt.split())}w"
+            if c0.get("finishReason") not in (None, "STOP") or len(txt.split()) < 120:
+                continue  # مقطوع أو قصير: النموذج التالي
+            return txt
         except Exception as e:  # noqa: BLE001
             if getattr(e, "code", None) in (429, 404, 403):
                 E._EXHAUSTED.add(model)
