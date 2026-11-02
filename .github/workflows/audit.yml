@@ -1,0 +1,16 @@
+name: audit
+on: {workflow_dispatch: {}}
+permissions: {contents: write}
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          python3 -m tools.audit_dump
+          B=https://ehabkadim2026-byte.github.io/hobi-ajel
+          for f in tg_status.json scoop.json health.json meta.json learn.json; do curl -sSL -m 30 "$B/$f" -o "audit_$f" || true; done
+          gh release download fastlane -p fast_status.json -D . --clobber || true
+          gh release upload probe audit_posts.json audit_tg_status.json audit_scoop.json audit_health.json audit_meta.json audit_learn.json fast_status.json --clobber
