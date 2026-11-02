@@ -18,10 +18,11 @@ def probe(u):
         return {"u": u, "ok": False, "err": type(e).__name__}
     title = re.search(r'<meta property="og:title" content="([^"]*)"', p)
     desc = re.search(r'<meta property="og:description" content="([^"]*)"', p)
+    pt = re.search(r'class="tgme_page_title"[^>]*>\s*<span[^>]*>([^<]+)', p) or re.search(r'class="tgme_header_title"[^>]*>([^<]+)', p)
     times = re.findall(r'<time datetime="([^"]+)"', p)
     subs = re.search(r'<span class="counter_value">([^<]+)</span>\s*<span class="counter_type">subscribers', p)
     refs = re.findall(r'tgme_widget_message_forwarded_from_name"\s+href="https://t\.me/([A-Za-z0-9_]{5,})', p) + re.findall(r'href="https://t\.me/([A-Za-z][A-Za-z0-9_]{4,})(?:/\d+)?"', p)
-    return {"u": u, "refs": refs, "ok": bool(times), "title": H.unescape(title.group(1)) if title else "", "desc": H.unescape(desc.group(1))[:160] if desc else "",
+    return {"u": u, "refs": refs, "page_title": H.unescape(pt.group(1)).strip() if pt else "", "ok": bool(times), "title": H.unescape(title.group(1)) if title else "", "desc": H.unescape(desc.group(1))[:160] if desc else "",
             "last": times[-1] if times else None, "n": len(times), "subs": subs.group(1) if subs else None}
 
 
