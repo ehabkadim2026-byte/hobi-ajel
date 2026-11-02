@@ -881,7 +881,7 @@ def main():
                     pool = [{"id": pn["id"], "title": pn["title"], "n_sources": pn.get("n_sources") or 1, "vstatus": pn.get("vstatus"),
                              "excerpts": [{"source": "", "text": (pn.get("lead") or "")[:400]}] if pn.get("lead") else [], "narratives": []}]
             if pool:
-                a = dict(max(pool, key=lambda x: x["n_sources"]))
+                a = dict(max(pool, key=A.op_score))
                 a["title"] = clean_headline(pick_best([a["title"]] + [x["title"] for x in (a.get("narratives") or [])] +
                                                        [x["text"][:200].split("\n")[0] for x in (a.get("excerpts") or []) if x.get("text")])) or a["title"]
                 tries[day + aslot] = tries.get(day + aslot, 0) + 1

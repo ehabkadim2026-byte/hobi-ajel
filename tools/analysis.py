@@ -409,6 +409,17 @@ def op_facts(a):
     return "\n".join(f)
 
 
+OP_THIN = re.compile(r"(موعد|غلق التقديم|تمديد التقديم|جداول|ضوابط|استمارة|رابط التقديم|أسماء المقبولين|نتائج|الدور الثالث|عطلة|تعطيل الدوام)")
+OP_RICH = re.compile(r"(استثمار|اقتصاد|الموازنة|النفط|الغاز|الكهرباء|الطاقة|مشروع|إعمار|اعمار|الدولار|التصدير|اتفاقية|زيارة|علاقات|شراكة|الزراعة|الصناعة|تطوير|إصلاح|السياحة|الصحة)")
+
+
+def op_score(a):
+    """الأولوية = حجم التداول × ثراء الموضوع للرأي (الإجراءات الإدارية كالمواعيد أقل، الاقتصاد والخدمات والعلاقات أعلى)."""
+    t = a.get("title") or ""
+    k = 0.5 if OP_THIN.search(t) else 1.3 if OP_RICH.search(t) else 1.0
+    return (a.get("n_sources") or 1) * k
+
+
 def op_eligible(a):
     return not OP_NEG.search(a.get("title") or "") and not any(OP_NEG.search(n.get("title") or "") for n in (a.get("narratives") or [])[:2])
 
