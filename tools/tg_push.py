@@ -145,6 +145,28 @@ def me_title(title):
     return any(w in t for w in ME_RX)
 
 
+VARIETY = [("رياضة", re.compile(r"(المنتخب العراقي|منتخبنا|أسود الرافدين|الدوري العراقي|دوري نجوم العراق|الزوراء|القوة الجوية|الشرطة الرياضي|نادي الطلبة|نادي الكرخ|اتحاد الكرة|كأس العراق|الأولمبية العراقية|بطولة|ملعب|مدرب)")),
+           ("طقس", re.compile(r"(الأنواء الجوية|الانواء الجوية|طقس|أمطار|امطار|درجات الحرارة|موجة حر|موجة برد|غبار|عاصفة|سيول)")),
+           ("ثقافة", re.compile(r"(معرض|مهرجان|فيلم|مسرح|كتاب|تراث|آثار|اثار|متحف|فنان|فنانة|شاعر|موسيقى|سياحة|سياحي)")),
+           ("تقنية", re.compile(r"(تطبيق|الإنترنت|الانترنت|الذكاء الاصطناعي|منصة إلكترونية|بوابة أور|إلكتروني|الكتروني|اتصالات|الجيل الخامس)")),
+           ("صحة", re.compile(r"(مستشفى|لقاح|طبي|علاج|عملية جراحية|دواء|أدوية)")),
+           ("أسعار", re.compile(r"(سعر الدولار|أسعار الدولار|سعر صرف|أسعار الذهب|سعر الذهب|أسعار الطماطم|أسعار المواد)"))]
+VARIETY_MAX_DAY, VARIETY_GAP = 8, 75 * 60
+
+
+VARIETY_NO = re.compile(r"(اعتقال|القبض|مقتل|قتلى|جرحى|إصابة|اصابة|مشاجرة|حريق|انفجار|اشتباك|حادث|غرق|محتجز|وفاة|جثة|اغتيال|هجوم|قصف|إرهاب|ارهاب|إطفاء|توقف تغطية|إيقاف شبكة)")
+
+
+def variety_kind(n):
+    t = n.get("title") or ""
+    if VARIETY_NO.search(t):
+        return None
+    for k, rx in VARIETY:
+        if rx.search(t):
+            return k
+    return None
+
+
 def worthy(n, now):
     """قناة «هسة وصل» = أخبار العراق: عاجل ومهم العراق والحشد فقط، بعنوان صالح، وليس رأياً."""
     seen = n.get("collected_utc")
@@ -378,11 +400,30 @@ def publish_main_sigs(titles):
 
 CARDS = PWA / "cards"
 ANIM = DATA / "anim"
-CARD_STYLE = "news"  # «نشرة» بأسلوب القنوات الإخبارية وخط Cairo — طلب إيهاب 2026-11-01 (قبلها «lux»)  # «أ» الفاخر (زجاج مغبّش + معالجة سينمائية) — طلب إيهاب قالباً أفخم 2026-11-01 (قبلها «a»)
+CARD_STYLE = "news2"  # «نشرة ٢» شريط تلفزيوني كامل وشعار مفرّغ — طلب إيهاب 2026-11-02 (قبلها «news»)  # «نشرة» بأسلوب القنوات الإخبارية وخط Cairo — طلب إيهاب 2026-11-01 (قبلها «lux»)  # «أ» الفاخر (زجاج مغبّش + معالجة سينمائية) — طلب إيهاب قالباً أفخم 2026-11-01 (قبلها «a»)
 PENDING = DATA / "tg_pending.json"
 
 
-def prepare_card(n):
+def news_photo(n):
+    from tools import tg_card
+    _, url = src(n)
+    img = tg_card.find_image(url)
+    if img:
+        try:
+            return tg_card.fetch_jpeg(img)
+        except Exception:  # noqa: BLE001
+            return None
+    return None
+
+
+def save_card(jpg, key):
+    CARDS.mkdir(parents=True, exist_ok=True)
+    name = re.sub(r"[^A-Za-z0-9_]", "", key)[:40] + f"_{int(datetime.now(timezone.utc).timestamp())}.jpg"
+    (CARDS / name).write_bytes(jpg)
+    return name
+
+
+def prepare_card(n, tag=None):
     """يصنع بطاقة الخبر (صورة المصدر أو خلفية الهوية) ويحفظها في pwa/cards ليُنشر رابطها مع موقع التطبيق."""
     from tools import tg_card
     _, url = src(n)
@@ -394,8 +435,11 @@ def prepare_card(n):
             photo = tg_card.fetch_jpeg(img)
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"imgfail:{type(e).__name__}")
-    maker = {"news": tg_card.card_news, "lux": tg_card.card_lux, "a": tg_card.card_a, "b": tg_card.card_b, "c": tg_card.card_c, "v3": tg_card.news_card3}.get(CARD_STYLE, tg_card.news_card2)
-    jpg = maker(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"))
+    maker = {"news2": tg_card.card_news2, "news": tg_card.card_news, "lux": tg_card.card_lux, "a": tg_card.card_a, "b": tg_card.card_b, "c": tg_card.card_c, "v3": tg_card.news_card3}.get(CARD_STYLE, tg_card.news_card2)
+    if CARD_STYLE == "news2":
+        jpg = tg_card.card_news2(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"), tag=tag)
+    else:
+        jpg = maker(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"))
     CARDS.mkdir(parents=True, exist_ok=True)
     cut = datetime.now(timezone.utc).timestamp() - 5 * 86400  # البطاقات تبقى متاحة 5 أيام (تُحفظ بين الجولات)
     for f in CARDS.glob("*.jpg"):
@@ -403,7 +447,7 @@ def prepare_card(n):
             f.unlink()
     name = re.sub(r"[^A-Za-z0-9_]", "", n["id"])[:40] + f"_{int(datetime.now(timezone.utc).timestamp())}.jpg"
     (CARDS / name).write_bytes(jpg)
-    if is_breaking(n) and CARD_STYLE in ("v3", "a", "b", "c", "lux", "news"):  # العاجل: بطاقة متحركة بوميض شارة «عاجل»
+    if is_breaking(n) and CARD_STYLE in ("v3", "a", "b", "c", "lux", "news", "news2"):  # العاجل: بطاقة متحركة بوميض شارة «عاجل»
         try:
             ANIM.mkdir(parents=True, exist_ok=True)
             for f in ANIM.glob("*.mp4"):
@@ -790,24 +834,92 @@ def main():
                 corrected.add(n["id"])
                 status["corrections"] = status.get("corrections", 0) + 1
         sent["_corrected"] = sorted(corrected)[-300:]
-        # تحليل خبري بالقناة: أكبر الأحداث (30+ جهة) التي كتب لها الوكيل قراءة — حتى 4 يومياً، وواحد كل ساعتين
+        # وكيل التحليل الخبري: مقالتان يومياً (2–6 عصراً و8–11 مساءً بغداد) عن أكثر خبر عراقي تداولاً لم يُحلَّل بعد، مع بطاقة «تحليل»
         ana = load(PWA / "analysis.json", {}).get("items", [])
         ap = sent.get("_ana_posted") or {}
         day = (now + timedelta(hours=3)).strftime("%Y-%m-%d")
-        today_n = sum(1 for v in ap.values() if v.get("d") == day)
-        last_t = max([v.get("t", 0) for v in ap.values()] or [0])
-        cand = [a for a in ana if a.get("reading") and a["n_sources"] >= 30 and a["id"] not in ap]
-        if cand and today_n < 4 and now.timestamp() - last_t > 7200:
-            a = max(cand, key=lambda x: x["n_sources"])
-            body = H.escape(a["reading"])
-            for h in ("ما الذي حدث:", "لماذا يهم:", "الروايات والمواقف:", "ما لم يتأكد وما يُرتقب:"):
-                body = body.replace(h, f"<b>{h}</b>")
-            pend.append({"id": "ana_" + a["id"], "textonly": True, "b": False, "reply_to": a["id"],
-                         "text": f"🧭 <b>تحليل خبري | {H.escape(a['title'][:150])}</b>\n\n{body}\n\n"
-                                 f"<i>قراءة آلية محايدة استناداً إلى تغطية {a['n_sources']} جهة رصدتها «هسة وصل». الانتشار لا يعني التأكيد.</i>\n\n{CHANNEL}"})
-            ap[a["id"]] = {"d": day, "t": now.timestamp()}
-            status["analysis_post"] = a["id"]
+        bh0 = (now + timedelta(hours=3)).hour
+        aslot = "a1" if 14 <= bh0 < 18 else "a2" if 20 <= bh0 < 24 else None
+        if aslot and not any(v.get("slot") == day + aslot for v in ap.values()):
+            done_t = [title_sig(v.get("title") or "") for v in ap.values() if v.get("d") == day]
+            cand = [a for a in ana if a["id"] not in ap and iraq_title(a["title"]) and not far_title(a["title"])
+                    and (a.get("last_time") or "") >= (now - timedelta(hours=16)).strftime("%Y-%m-%dT%H:%M")
+                    and not any(same_story(title_sig(a["title"]), {"w": sorted(t[0]), "d": sorted(t[1])}) for t in done_t)]
+            if cand:
+                a = dict(max(cand, key=lambda x: x["n_sources"]))
+                from tools import analysis as A, tg_card
+                from tools.editorial import pick_best, clean_headline
+                a["title"] = clean_headline(pick_best([a["title"]] + [x["title"] for x in (a.get("narratives") or [])] +
+                                                       [x["text"][:200].split("\n")[0] for x in (a.get("excerpts") or [])])) or a["title"]
+                if a.get("reach10_min") is not None:
+                    m = a["reach10_min"]
+                    a["reach_txt"] = f"{m} د" if m < 90 else f"{round(m / 60)} س"
+                art, by = None, "Gemini"
+                try:
+                    art = A.write_article(a)
+                except Exception as e:  # noqa: BLE001
+                    DEBUG.append(f"article:{type(e).__name__}")
+                if not art:
+                    art, by = A.data_reading(a), "بيانات التغطية"
+                atitle, abody = art
+                body = H.escape(abody)
+                for h in A.ART_HEADS + ("الصياغات المتداولة:",):
+                    body = body.replace(h, f"<b>{h}</b>")
+                n0 = next((x for x in news if x["id"] == a["id"]), None)
+                photo = news_photo(n0) if n0 else None
+                f = a.get("first") or {}
+                stats = [(a["n_sources"], "جهة نشرت الخبر"), ((f.get("source") or "—").split(" — ")[0][:18], "أقدم ناشر مرصود")]
+                if a.get("reach10_min") is not None:
+                    stats.append((a["reach_txt"], "حتى بلغ 10 جهات"))
+                try:
+                    card = save_card(tg_card.card_news2(photo, atitle, False, now.strftime("%Y-%m-%dT%H:%M:%SZ"), tag="تحليل", stats=stats), "ana_" + a["id"])
+                    note = ("صياغة آلية محايدة بحارس حقائق" if by == "Gemini" else "قراءة محسوبة من بيانات التغطية")
+                    text = (f"🧭 <b>تحليل خبري</b>\n<b>{H.escape(atitle)}</b>\n\n{body}\n\n"
+                            f"<i>{note}، استناداً إلى {a['n_sources']} جهة رصدتها «هسة وصل». الانتشار لا يعني التأكيد.</i>\n\n#تحليل_خبري\n{CHANNEL}")
+                    pend.append({"id": "ana_" + a["id"], "card": card, "text": text[:4000], "b": False, "kb": buttons(n0) if n0 else None})
+                    ap[a["id"]] = {"d": day, "t": now.timestamp(), "slot": day + aslot, "title": a["title"], "by": by}
+                    status["analysis_post"] = {"id": a["id"], "by": by, "n": a["n_sources"]}
+                except Exception as e:  # noqa: BLE001
+                    DEBUG.append(f"anacard:{type(e).__name__}:{str(e)[:40]}")
         sent["_ana_posted"] = dict(list(ap.items())[-200:])
+        # منوعات: خبر عراقي خفيف (رياضة، طقس، ثقافة، تقنية، صحة، أسعار) — واحد كل 75 دقيقة كحد أعلى، 8 يومياً، 8 صباحاً–11 ليلاً، بإشعار صامت
+        vs = sent.get("_variety") or {}
+        v_today = [v for v in vs.values() if v.get("d") == day]
+        v_last = max([v.get("t", 0) for v in vs.values()] or [0])
+        if 8 <= bh0 < 23 and len(v_today) < VARIETY_MAX_DAY and now.timestamp() - v_last > VARIETY_GAP:
+            vc = []
+            for n in news:
+                if n["id"] in sent or n["id"] in vs or not n.get("about_iraq") or not iraq_title(n.get("title") or ""):
+                    continue
+                seen = n.get("collected_utc") or ""
+                if seen < (now - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M") or n.get("ctype") == "تحليل/رأي" or is_breaking(n):
+                    continue
+                from tools.editorial import clean_headline
+                ct = clean_headline(n.get("title") or "")
+                if len(ct.split()) < 6 or PROMO_RX.search(ct) or JUNK.match(ct):
+                    continue
+                k = variety_kind(n)
+                if not k or (n.get("n_sources") or 1) < 2:
+                    continue
+                sig = title_sig(n["title"])
+                if any(same_story(sig, x) for x in posted_all):
+                    continue
+                vc.append((n.get("n_sources") or 1, n, k, sig))
+            if vc:
+                _, n, k, sig = max(vc, key=lambda x: x[0])
+                try:
+                    card, _kind = prepare_card(n, tag="منوعات")
+                    text = fmt(n).replace("\n\nزورونا", f"\n#منوعات #{k}\n\nزورونا", 1)
+                    pend.append({"id": n["id"], "card": card, "text": text, "b": False, "kb": buttons(n)})
+                    sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "v": k}
+                    vs[n["id"]] = {"d": day, "t": now.timestamp(), "k": k}
+                    entry = {"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp(), "id": n["id"], "title": (n.get("title") or "")[:200]}
+                    posted.append(entry)
+                    sent["_titles"] = posted[-400:]
+                    status["variety_post"] = {"id": n["id"], "k": k}
+                except Exception as e:  # noqa: BLE001
+                    DEBUG.append(f"variety:{type(e).__name__}:{str(e)[:40]}")
+        sent["_variety"] = dict(list(vs.items())[-300:])
         # تحليل خبر إيجابي عن العراق: مرتان يومياً (12 ظهراً و6 مساءً بغداد)
         bh = (now + timedelta(hours=3)).hour
         slot = "noon" if 12 <= bh < 15 else "eve" if 18 <= bh < 21 else None

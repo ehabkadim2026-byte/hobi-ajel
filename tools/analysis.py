@@ -44,6 +44,20 @@ def _words(t):
     return {w for w in norm_ar(t or "").split() if len(w) > 2}
 
 
+def _excerpts(rows, k=4):
+    out, seen = [], []
+    for r in rows:
+        t = " ".join((r["text"] or r["title"] or "").split())[:420]
+        w = _words(t)
+        if len(t) < 80 or any(len(w & x) / max(1, len(w | x)) > 0.5 for x in seen):
+            continue
+        seen.append(w)
+        out.append({"source": r["source_name"], "text": t})
+        if len(out) >= k:
+            break
+    return out
+
+
 def eligible(n_sources, about_iraq, level):
     return (n_sources or 0) >= MIN_SOURCES and (about_iraq or level in ("عاجل", "مهم"))
 
@@ -113,6 +127,7 @@ def build(cid, title, irows, va, level, watch_names):
         "narratives": narratives,
         "denial": [{"title": (r["title"] or "")[:200], "source": r["source_name"], "url": r["url"]} for r in denial[:3]],
         "official": official, "people": watch_names[:6], "open": open_q, "reading": None,
+        "excerpts": _excerpts(rows),
     }
 
 
@@ -251,3 +266,114 @@ def spread(cid, title, irows, va):
         "why": why, "denial": denial,
         "note": "مؤشر آلي لنمط الانتشار ضمن المصادر المرصودة، ليس حكماً بوجود حملة منظمة ولا بصحة الخبر أو كذبه.",
     }
+
+
+# ───────────── وكيل التحليل الخبري: مقالتان يومياً عن أكثر خبرين تداولاً ─────────────
+ART_MODELS = ["gemini-3.6-flash", "gemma-4-31b-it", "gemma-4-26b-a4b-it", "gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
+ART_HEADS = ("الخلاصة:", "السياق:", "القراءة:", "السيناريوهات المحتملة:", "ما لم يتأكد:")
+ART_PROMPT = ("أنت كاتب تحليل خبري في قناة أخبار عراقية رصينة ومحايدة. اكتب مقالة تحليلية (230–330 كلمة) عن الحدث التالي "
+              "مستنداً فقط إلى المعطيات والمقتطفات المرفقة. ابدأ بسطر «العنوان: …» (عنوان تحليلي جذاب من 6 إلى 12 كلمة، لا يكرر عنوان الخبر حرفياً)، "
+              "ثم خمس فقرات تبدأ بهذه العناوين حرفياً كلٌّ في سطر جديد:\n" + "\n".join(ART_HEADS) + "\n"
+              "قواعد صارمة: لا تضف أي رقم أو اسم أو تاريخ أو واقعة غير موجودة في المعطيات؛ لا تتهم أي شخص أو جهة بفساد أو خيانة أو تضليل؛ "
+              "لا تنحز لطرف ولا تستخدم لغة تحريضية؛ ميّز الواقعة المؤكدة من التصريح المنسوب من الادعاء؛ السيناريوهات بصيغة احتمال (قد، يُحتمل) "
+              "واثنان إلى ثلاثة سيناريوهات فقط؛ انتشار الخبر لا يعني صحته. لغة عربية فصحى سليمة واضحة، جمل قصيرة، بلا رموز تعبيرية ولا تنسيق Markdown.\n\nالمعطيات:\n")
+
+
+def _facts(a):
+    f = [f"عنوان الخبر: {a['title']}", f"عدد الجهات الناشرة ضمن المرصود: {a['n_sources']}",
+         f"حالة التحقق: {a.get('vstatus') or 'غير متحقق'} — {a.get('vwhy') or ''}"]
+    if a.get("first"):
+        f.append(f"أقدم ظهور مرصود: {(a['first'].get('source') or '').split(' — ')[0]}")
+    if a.get("reach10_min") is not None:
+        m = a["reach10_min"]
+        f.append(f"بلغ 10 جهات خلال {m} دقيقة" if m < 90 else f"بلغ 10 جهات خلال نحو {round(m / 60)} ساعة")
+    f.append("أنواع الناشرين: " + "، ".join(f"{k} {v}" for k, v in (a.get("kinds") or {}).items()))
+    f += [f"صياغة: «{n['title']}» — {n.get('source')}" for n in (a.get("narratives") or [])]
+    f += [f"نفي/تصحيح: «{n['title']}» — {n.get('source')}" for n in (a.get("denial") or [])]
+    f += [f"مقتطف من {e.get('source')}: {e['text']}" for e in (a.get("excerpts") or [])]
+    f += [f"سؤال مفتوح: {q}" for q in (a.get("open") or [])]
+    return "\n".join(f)
+
+
+def write_article(a):
+    """يرجع (العنوان، النص) أو None إذا فشل النموذج أو خالف قواعد الحقائق."""
+    from tools import editorial as E
+    ftxt = _facts(a)
+    old = E.MODELS[:]
+    try:
+        E.MODELS[:] = ART_MODELS
+        out = None
+        for _ in range(2):
+            out = _gem_long(ART_PROMPT + ftxt)
+            if out:
+                break
+    finally:
+        E.MODELS[:] = old
+    if not out:
+        return None
+    out = re.sub(r"[*#_`]+", "", out).strip()
+    m = re.search(r"العنوان\s*:\s*(.+)", out)
+    if not m:
+        return None
+    title = m.group(1).strip().strip("«»\"")
+    body = out[m.end():].strip()
+    if not all(h in body for h in ("الخلاصة:", "القراءة:", "ما لم يتأكد:")) or not (150 <= len(body.split()) <= 420):
+        return None
+    if not set(E.DIGITS.findall(title + " " + body)) <= set(E.DIGITS.findall(ftxt)):
+        return None
+    if ACCUSE.search(title + body) and not ACCUSE.search(ftxt):
+        return None
+    if len(title.split()) > 14 or len(title) < 12:
+        title = a["title"]
+    return title, body
+
+
+def _gem_long(prompt):
+    """نداء أطول (مهلة 60 ث) لنماذج الكتابة، بنفس سلسلة البدائل."""
+    import json as _j
+    import os as _o
+    import urllib.request as _r
+    from tools import editorial as E
+    key = _o.environ.get("GEMINI_API_KEY", "").strip()
+    if not key:
+        return None
+    for model in E.MODELS:
+        if model in E._EXHAUSTED:
+            continue
+        body = _j.dumps({"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.35, "maxOutputTokens": 1400}}).encode()
+        req = _r.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent", data=body,
+                         headers={"Content-Type": "application/json", "x-goog-api-key": key})
+        try:
+            with _r.urlopen(req, timeout=60) as r:
+                d = _j.loads(r.read().decode())
+            return "".join(p.get("text", "") for p in d["candidates"][0]["content"]["parts"])
+        except Exception as e:  # noqa: BLE001
+            if getattr(e, "code", None) in (429, 404, 403):
+                E._EXHAUSTED.add(model)
+            continue
+    return None
+
+
+def data_reading(a):
+    """بديل بلا نموذج لغوي: قراءة في بيانات التغطية نفسها (حقائق محسوبة فقط، بلا آراء)."""
+    short = " ".join(a["title"].split(":")[-1].split()[:9])
+    title = f"قراءة في التغطية: {short}"
+    k = a.get("kinds") or {}
+    parts = [f"الخلاصة: «{a['title']}» كان من أكثر الأحداث العراقية تداولاً اليوم، إذ نشرته {a['n_sources']} جهة ضمن المصادر التي نرصدها."]
+    ctx = []
+    if a.get("first"):
+        ctx.append(f"أقدم ظهور رصدناه كان لدى {(a['first'].get('source') or '').split(' — ')[0]}")
+    if a.get("reach10_min") is not None:
+        m = a["reach10_min"]
+        ctx.append(f"وبلغ عشر جهات خلال {m} دقيقة" if m < 90 else f"وبلغ عشر جهات خلال نحو {round(m / 60)} ساعة")
+    if ctx:
+        parts.append("السياق: " + "، ".join(ctx) + ".")
+    if k:
+        parts.append("القراءة: توزّع الناشرون بين " + "، ".join(f"{n} ({v})" for n, v in k.items()) + "."
+                     + (" ولا يوجد مصدر رسمي بين الناشرين حتى الآن." if not a.get("official") else " ومن بين الناشرين جهة رسمية واحدة على الأقل."))
+    if len(a.get("narratives") or []) > 1:
+        parts.append("الصياغات المتداولة: " + " / ".join(f"«{n['title'][:110]}»" for n in a["narratives"][:3]))
+    if a.get("denial"):
+        parts.append("ظهر نفي أو تصحيح ضمن التغطية: «" + a["denial"][0]["title"][:140] + "».")
+    parts.append("ما لم يتأكد: " + " ".join((a.get("open") or [])[:3]))
+    return title, "\n\n".join(parts)

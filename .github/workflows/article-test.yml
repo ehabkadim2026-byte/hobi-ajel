@@ -1,0 +1,12 @@
+name: article-test
+on: {workflow_dispatch: {}}
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m tools._article_test > art.txt; cat art.txt
+        env: {GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"}
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: gh release upload probe art.txt --clobber

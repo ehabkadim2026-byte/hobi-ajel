@@ -150,7 +150,7 @@ def main():
                     except Exception:  # noqa: BLE001
                         pass
                 loud = ch in CFG["loud"] or bool(FLAG.search(p["text"][:40]))
-                card = tg_card.card_news(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"))
+                card = tg_card.card_news2(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"))
                 tags = T.province_tags(first)
                 cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}" + \
                       (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"

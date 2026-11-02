@@ -167,7 +167,7 @@ def readings(analysis):
         if hit and a["n_sources"] < hit.get("n", 0) * 1.6:
             a["reading"] = hit.get("r")
             continue
-        if calls >= 2 or not os_key():
+        if calls >= 1 or a["n_sources"] < 30 or not os_key():  # حصة Gemini محجوزة أولاً لمقالتي التحليل اليوميتين
             continue
         calls += 1
         r = A.write_reading(a)

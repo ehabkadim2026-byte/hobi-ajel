@@ -533,7 +533,7 @@ def breaking_anim(photo_jpg, title, when_utc=None, style="v3"):
     import subprocess
     import tempfile
     import imageio_ffmpeg
-    fn = {"a": card_a, "b": card_b, "c": card_c, "lux": globals().get("card_lux"), "news": globals().get("card_news")}.get(style)
+    fn = {"a": card_a, "b": card_b, "c": card_c, "lux": globals().get("card_lux"), "news": globals().get("card_news"), "news2": globals().get("card_news2")}.get(style)
     if fn:
         a = Image.open(io.BytesIO(fn(photo_jpg, title, True, when_utc)))
         _DIM[0] = True
@@ -947,4 +947,136 @@ def card_news(photo_jpg, title, breaking=True, when_utc=None):
         d = _D.Draw(im)
         hx = W - P - cap.width - 4
         _draw_rtl(d, hx, fy + 6, "t.me/hassawassal", _cairo(22, 600), (150, 166, 196))
+    return _jpg(im)
+
+
+# ───────────────────── «نشرة ٢»: شريط عنوان تلفزيوني كامل + شعار مفرّغ + معالجة الصور الصغيرة ─────────────────────
+TAGS = {  # لون الشريط واسم الوسم لكل نوع منشور
+    "عاجل": ((200, 16, 30), (255, 255, 255)),
+    "خبر": ((14, 38, 84), (255, 255, 255)),
+    "تحليل": ((176, 132, 46), (255, 255, 255)),
+    "منوعات": ((0, 122, 120), (255, 255, 255)),
+    "تحديث": ((14, 38, 84), (255, 255, 255)),
+}
+_LOGO_W = {}
+
+
+def _logo_white(h):
+    """الشعار أبيض مفرّغ (بلا مربع أبيض) لوضعه على خلفية داكنة."""
+    if h in _LOGO_W:
+        return _LOGO_W[h]
+    if not LOGO.exists():
+        return None
+    lg = Image.open(LOGO).convert("L")
+    lg = lg.resize((int(lg.width * h / lg.height), h), Image.LANCZOS)
+    alpha = lg.point(lambda v: 0 if v > 225 else min(255, int((235 - v) * 1.6)))
+    w = Image.new("RGBA", lg.size, (255, 255, 255, 0))
+    w.putalpha(alpha)
+    _LOGO_W[h] = w
+    return w
+
+
+def _photo_frame(photo_jpg, W, H):
+    """صورة واضحة: الصغيرة تُعرض بحجمها الطبيعي فوق نسخة مغبّشة منها (بدل تكبيرها حتى تتشوه)، مع حدّة خفيفة."""
+    from PIL import ImageFilter, ImageEnhance, ImageDraw as _D
+    src = Image.open(io.BytesIO(photo_jpg)).convert("RGB")
+    mx, my = int(src.width * 0.025), int(src.height * 0.025)
+    src = src.crop((mx, my, src.width - mx, src.height - my))
+    if src.width >= W * 0.72:
+        im = _cover(src, W, H)
+        im = im.filter(ImageFilter.UnsharpMask(radius=1.4, percent=60, threshold=3))
+        return ImageEnhance.Contrast(ImageEnhance.Color(im).enhance(0.96)).enhance(1.05)
+    bg = _cover(src, W, H).filter(ImageFilter.GaussianBlur(34))
+    bg = ImageEnhance.Brightness(bg).enhance(0.55)
+    k = min(H * 0.86 / src.height, W * 0.8 / src.width, 1.9)
+    fg = src.resize((int(src.width * k), int(src.height * k)), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=1.2, percent=70, threshold=2))
+    x, y = (W - fg.width) // 2, int(H * 0.05)
+    sh = Image.new("L", (W, H), 0)
+    _D.Draw(sh).rectangle([x + 10, y + 14, x + fg.width + 10, y + fg.height + 14], fill=150)
+    bg.paste(Image.new("RGB", (W, H), (0, 0, 0)), (0, 0), sh.filter(ImageFilter.GaussianBlur(18)))
+    bg.paste(fg, (x, y))
+    return bg
+
+
+def card_news2(photo_jpg, title, breaking=True, when_utc=None, tag=None, stats=None):
+    """«نشرة ٢»: صورة نظيفة + شعار أبيض مفرّغ أعلى الصورة، وتحتها شريط وسم ملوّن كامل العرض (عاجل/خبر/تحليل/منوعات)
+    فيه الوقت، ثم لوح عنوان كحلي صلب بخط Cairo عريض. stats = [(قيمة، وصف)] تظهر صفاً تحت العنوان (لبطاقات التحليل)."""
+    from PIL import ImageDraw as _D, ImageFilter
+    W, H, P = 1280, 720, 58
+    tag = tag or ("عاجل" if breaking else "خبر")
+    col, fg_col = TAGS.get(tag, TAGS["خبر"])
+    dim = tag == "عاجل" and _DIM[0]
+    if dim:
+        col = (110, 10, 18)
+    if photo_jpg:
+        im = _photo_frame(photo_jpg, W, H)
+    else:
+        im = Image.new("RGB", (W, H), (8, 22, 52))
+        d0 = _D.Draw(im)
+        for y in range(H):
+            k = y / H
+            d0.line([(0, y), (W, y)], fill=(int(16 - 8 * k), int(44 - 22 * k), int(98 - 46 * k)))
+        lw = _logo_white(260)
+        if lw:
+            a = lw.split()[3].point(lambda v: int(v * 0.10))
+            im.paste(Image.new("RGB", lw.size, (255, 255, 255)), (W // 2 - lw.width // 2, 60), a)
+    d = _D.Draw(im)
+    kick, head = split_kicker(title)
+    f, sz, lines = _fit_cairo(d, head, W - 2 * P, 3, [60, 56, 52, 48, 44, 40])
+    lh = int(sz * 1.48)
+    bar_h = 58
+    kick_h = 46 if kick else 0
+    stats_h = 92 if stats else 0
+    panel_h = 30 + kick_h + lh * len(lines) + 22 + stats_h
+    top = H - panel_h
+    btop = top - bar_h
+    # ظل ناعم يفصل الصورة عن الشريط
+    sh = Image.new("L", (W, 150), 0)
+    ds = _D.Draw(sh)
+    for y in range(150):
+        ds.line([(0, y), (W, y)], fill=int(170 * (y / 150) ** 2.2))
+    im.paste(Image.new("RGB", (W, 150), (0, 5, 16)), (0, btop - 150), sh)
+    d = _D.Draw(im)
+    # شعار القناة أعلى يمين الصورة (Bug) — مفرّغ أبيض بظل خفيف
+    lw = _logo_white(64)
+    if lw:
+        x0, y0 = W - P - lw.width + 18, 30
+        shadow = lw.split()[3].filter(ImageFilter.GaussianBlur(6)).point(lambda v: int(v * 0.6))
+        im.paste(Image.new("RGB", lw.size, (0, 0, 0)), (x0 + 2, y0 + 3), shadow)
+        im.paste(Image.new("RGB", lw.size, (255, 255, 255)), (x0, y0), lw.split()[3])
+        d = _D.Draw(im)
+    # شريط الوسم الكامل
+    d.rectangle([0, btop, W, top], fill=col)
+    ft = _cairo(32, 900)
+    kw = {"direction": "rtl", "language": "ar"} if RAQM else {}
+    _draw_rtl(d, W - P, btop + 4, tag, ft, (255, 175, 180) if dim else fg_col)
+    tw = d.textlength(_shape(tag), font=ft, **kw)
+    sx = W - P - tw - 24
+    d.line([(sx, btop + 16), (sx, top - 16)], fill=(255, 255, 255) if not dim else (200, 120, 125), width=2)
+    sub = {"عاجل": "هسة وصل · أخبار العراق", "تحليل": "قراءة في أبرز حدث اليوم", "منوعات": "من العراق"}.get(tag, "هسة وصل · أخبار العراق")
+    _draw_rtl(d, sx - 20, btop + 12, sub, _cairo(24, 600), (255, 236, 238) if tag == "عاجل" else (230, 236, 248))
+    w = _when(when_utc)
+    if w:
+        fw = _cairo(24, 700)
+        _draw_rtl(d, P + d.textlength(_shape(w), font=fw, **kw), btop + 12, w, fw, fg_col)
+    # لوح العنوان
+    d.rectangle([0, top, W, H], fill=(9, 20, 46))
+    d.rectangle([0, top, W, top + 3], fill=(255, 255, 255) if tag != "عاجل" else (255, 210, 214))
+    y = top + 22
+    if kick:
+        _draw_rtl(d, W - P, y, kick, _cairo(32, 700), (130, 186, 255) if tag != "تحليل" else (232, 196, 120))
+        y += kick_h
+    for ln in lines:
+        _draw_rtl(d, W - P, y, ln, f, (255, 255, 255))
+        y += lh
+    if stats:
+        y += 8
+        n = len(stats)
+        cw = (W - 2 * P) / n
+        for i, (val, lab) in enumerate(stats):
+            xr = W - P - i * cw
+            if i:
+                d.line([(xr + 14, y + 6), (xr + 14, y + 70)], fill=(60, 78, 112), width=2)
+            _draw_rtl(d, xr, y - 4, str(val), _cairo(38, 800), (232, 196, 120))
+            _draw_rtl(d, xr, y + 44, lab, _cairo(21, 600), (170, 184, 210))
     return _jpg(im)

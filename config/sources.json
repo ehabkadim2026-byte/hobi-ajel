@@ -6887,6 +6887,97 @@
    "region": "العراق - اتحادي",
    "lang": "ar",
    "official": false
+  },
+  {
+   "id": "telegram:t.me/k24arabic",
+   "name": "كوردستان24 عربية — telegram",
+   "url": "https://t.me/k24arabic",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "تلفزيون وإذاعة",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false
+  },
+  {
+   "id": "telegram:t.me/alsyasehnews",
+   "name": "السياسة نيوز — telegram",
+   "url": "https://t.me/alsyasehnews",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "عاجل مجمّع",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D8%A7%D9%84%D9%85%D9%86%D8%AA%D8%AE%D8%A8+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%D9%8A+OR+%D8%A7%D9%84%D8%AF%D9%88%D8%B1%D9%8A+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%D9%8A+OR+%D8%AF%D9%88%D8%B1%D9%8A+%D9%86%D8%AC%D9%88%D9%85+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82+when%3A1d",
+   "name": "منوعات — رياضة (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D8%A7%D9%84%D9%85%D9%86%D8%AA%D8%AE%D8%A8+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%D9%8A+OR+%D8%A7%D9%84%D8%AF%D9%88%D8%B1%D9%8A+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%D9%8A+OR+%D8%AF%D9%88%D8%B1%D9%8A+%D9%86%D8%AC%D9%88%D9%85+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82+when%3A1d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "منوعات",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D8%A7%D9%84%D8%A3%D9%86%D9%88%D8%A7%D8%A1+%D8%A7%D9%84%D8%AC%D9%88%D9%8A%D8%A9+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%D9%8A%D8%A9+OR+%D8%B7%D9%82%D8%B3+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82+when%3A1d",
+   "name": "منوعات — طقس (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D8%A7%D9%84%D8%A3%D9%86%D9%88%D8%A7%D8%A1+%D8%A7%D9%84%D8%AC%D9%88%D9%8A%D8%A9+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%D9%8A%D8%A9+OR+%D8%B7%D9%82%D8%B3+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82+when%3A1d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "منوعات",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D9%85%D9%87%D8%B1%D8%AC%D8%A7%D9%86+OR+%D9%85%D8%B9%D8%B1%D8%B6+OR+%D8%AA%D8%B1%D8%A7%D8%AB+%D8%A8%D8%BA%D8%AF%D8%A7%D8%AF+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82+when%3A1d",
+   "name": "منوعات — ثقافة (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D9%85%D9%87%D8%B1%D8%AC%D8%A7%D9%86+OR+%D9%85%D8%B9%D8%B1%D8%B6+OR+%D8%AA%D8%B1%D8%A7%D8%AB+%D8%A8%D8%BA%D8%AF%D8%A7%D8%AF+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82+when%3A1d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "منوعات",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82+%D8%AA%D8%B7%D8%A8%D9%8A%D9%82+%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A+OR+%D9%85%D9%86%D8%B5%D8%A9+%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A%D8%A9+OR+%D8%A8%D9%88%D8%A7%D8%A8%D8%A9+%D8%A3%D9%88%D8%B1+when%3A1d",
+   "name": "منوعات — تقنية (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82+%D8%AA%D8%B7%D8%A8%D9%8A%D9%82+%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A+OR+%D9%85%D9%86%D8%B5%D8%A9+%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A%D8%A9+OR+%D8%A8%D9%88%D8%A7%D8%A8%D8%A9+%D8%A3%D9%88%D8%B1+when%3A1d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "منوعات",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D8%B3%D8%B9%D8%B1+%D8%B5%D8%B1%D9%81+%D8%A7%D9%84%D8%AF%D9%88%D9%84%D8%A7%D8%B1+%D8%A8%D8%BA%D8%AF%D8%A7%D8%AF+OR+%D8%A3%D8%B3%D8%B9%D8%A7%D8%B1+%D8%A7%D9%84%D8%B0%D9%87%D8%A8+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82+when%3A1d",
+   "name": "منوعات — أسعار (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D8%B3%D8%B9%D8%B1+%D8%B5%D8%B1%D9%81+%D8%A7%D9%84%D8%AF%D9%88%D9%84%D8%A7%D8%B1+%D8%A8%D8%BA%D8%AF%D8%A7%D8%AF+OR+%D8%A3%D8%B3%D8%B9%D8%A7%D8%B1+%D8%A7%D9%84%D8%B0%D9%87%D8%A8+%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82+when%3A1d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "منوعات",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false
   }
  ]
 }
