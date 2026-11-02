@@ -365,7 +365,13 @@ def buttons(n):
         row.append({"text": "📖 التفاصيل", "url": url})
     share = "https://t.me/share/url?" + _u.urlencode({"url": CHANNEL, "text": "هسة وصل — أخبار العراق لحظة بلحظة"})
     row.append({"text": "↗️ شارك القناة", "url": share})
-    return json.dumps({"inline_keyboard": [row]}, ensure_ascii=False)
+    rows = [row]
+    if BOT_USER[0]:
+        rows.append([{"text": "🔔 أخبار محافظتك بالخاص", "url": f"https://t.me/{BOT_USER[0]}?start=sub"}])
+    return json.dumps({"inline_keyboard": rows}, ensure_ascii=False)
+
+
+BOT_USER = [""]
 
 
 MSGS = DATA / "tg_msgs.json"
@@ -542,6 +548,13 @@ def send_pending(token, chat_id, only_breaking=False):
                 done["text"] += 1
             except Exception:  # noqa: BLE001
                 pass
+    try:  # نسخة لمشتركي المحافظات والمواضيع بالخاص
+        from tools import subs as SB
+        items = [{"id": p["id"], "card": p.get("card"), "text": p["text"],
+                  "title": re.sub(r"<[^>]+>", "", p["text"]).split("\n")[0]} for p in pend if not p.get("textonly") and p["id"] in msgs]
+        done["subs"] = SB.dispatch(token, api, items, load(SENT, {}), msgs, APP_URL)
+    except Exception as e:  # noqa: BLE001
+        DEBUG.append(f"subs:{type(e).__name__}:{str(e)[:40]}")
     PENDING.write_text(json.dumps(later, ensure_ascii=False), encoding="utf-8")
     if only_breaking:
         MSGS.write_text(json.dumps(msgs, ensure_ascii=False), encoding="utf-8")
@@ -756,6 +769,13 @@ def main():
         status["chat_title"] = chat.get("title") or "عاجل هسه وصل"
         news = load(PWA / "news.json", [])
         sent = load(SENT, {})
+        if not sent.get("_bot_user"):
+            try:
+                sent["_bot_user"] = api(token, "getMe").get("result", {}).get("username") or ""
+            except Exception:  # noqa: BLE001
+                pass
+        BOT_USER[0] = sent.get("_bot_user") or ""
+        status["bot_user"] = BOT_USER[0]
         first_run = not sent.get("_init")
         out = []
         build_idf([x.get("title") or "" for x in news])

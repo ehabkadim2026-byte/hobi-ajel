@@ -44,6 +44,13 @@ def main():
             sent["_editors"] = {str(a["user"]["id"]): a["user"].get("first_name") or "محرر" for a in adm if not a["user"].get("is_bot")}
             sent["_editors_t"] = now.timestamp()
         editors = sent.get("_editors", {})
+        try:
+            from tools.tg_push import MSGS
+            dead = set(load(MSGS, {}).get("_subs_dead") or [])
+            for d in dead:
+                (sent.get("_subs") or {}).pop(d, None)
+        except Exception:  # noqa: BLE001
+            pass
         ups = api(token, "getUpdates", offset=sent.get("_offset", 0), timeout=0,
                   allowed_updates=json.dumps(["message", "channel_post"])).get("result", [])
         manual = []
@@ -65,12 +72,19 @@ def main():
             stats["updates"] += 1
             uid = str((m.get("from") or {}).get("id"))
             cid = m["chat"]["id"]
+            text0 = (m.get("text") or "").strip()
+            from tools import subs as SB
             if uid not in editors:
-                stats["rejected"] += 1
-                denied = sent.setdefault("_denied", [])
-                if uid not in denied:
-                    denied.append(uid)
-                    api(token, "sendMessage", chat_id=cid, text="عذراً، هذا البوت لمحرري قناة «عاجل هسه وصل» فقط.")
+                # المتابعون: اشتراكات المحافظات والمواضيع (أي رسالة غير أمر اشتراك تُعاد لها قائمة الأزرار)
+                try:
+                    if not SB.handle(token, api, cid, text0 or "/start", sent):
+                        api(token, "sendMessage", chat_id=cid, text="اختر محافظة أو موضوعاً من الأزرار حتى تصلك أخباره 👇", reply_markup=SB.keyboard())
+                    stats["subs_msgs"] = stats.get("subs_msgs", 0) + 1
+                except Exception as e:  # noqa: BLE001
+                    stats["subs_err"] = type(e).__name__
+                continue
+            if SB.is_command(text0) and not text0.startswith("/start"):
+                SB.handle(token, api, cid, text0, sent)  # المحرر يقدر يشترك أيضاً
                 continue
             sent.setdefault("_editor_chats", {})[uid] = cid
             text = (m.get("text") or m.get("caption") or "").strip()
@@ -136,6 +150,7 @@ def main():
     except Exception as e:  # noqa: BLE001
         stats["error"] = f"{type(e).__name__}: {str(e).replace(token, '***')[:150]}"
     stats["editors"] = len(sent.get("_editors", {}))
+    stats["subscribers"] = sum(1 for v in (sent.get("_subs") or {}).values() if v.get("p") or v.get("t"))
     stats["editor_chats"] = len(sent.get("_editor_chats", {}))
     print(f"::notice title=tg_inbox::{json.dumps(stats, ensure_ascii=False)}")
 
