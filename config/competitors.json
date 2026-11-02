@@ -1,0 +1,21 @@
+{
+ "_note": "منافسو السبق: المصادر المباشرة فقط (تلغرام ومواقع)؛ خلاصات Google News لا تُحتسب لأن توقيتها غير دقيق.",
+ "groups": {
+  "العربية": ["telegram:t.me/alarabiyaBr", "telegram:t.me/AlArabiya"],
+  "الحدث": ["telegram:t.me/alhadath_brk", "telegram:t.me/alhadath"],
+  "الجزيرة": ["telegram:t.me/ajanews"],
+  "شفق نيوز": ["rss:shafaq.com/ar?rss=1"],
+  "السومرية": ["telegram:t.me/alsumariatviraq", "rss:alsumaria.tv/Rss/iraq-latest-news/ar"],
+  "بغداد اليوم": ["telegram:t.me/baghdadtoday", "rss:baghdadtoday.news/rss"],
+  "واع": ["telegram:t.me/inainaiq"],
+  "964": ["telegram:t.me/media964"],
+  "نايا": ["telegram:t.me/naya_foriraq"],
+  "دجلة": ["telegram:t.me/dijlahtvchannel"],
+  "روداو": ["telegram:t.me/RudawArabic"],
+  "المعلومة": ["telegram:t.me/almaalomah"],
+  "واحد العراق": ["telegram:t.me/IRAQ2TV"],
+  "شبكة اخبار العراق": ["telegram:t.me/iraqi1_news"],
+  "امبراطورية الاخبار": ["telegram:t.me/newss_iq"],
+  "المركز الخبري الوطني": ["telegram:t.me/nnc101"]
+ }
+}

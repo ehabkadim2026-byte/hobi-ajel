@@ -143,6 +143,12 @@ jobs:
           MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ github.token }}
+      - name: "لوحة السبق (مقارنة وقت نشرنا بالمنافسين) + تقرير المحررين 11 مساءً"
+        continue-on-error: true
+        timeout-minutes: 2
+        run: python3 -m tools.scoop
+        env:
+          MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
       - uses: actions/cache/save@v4
         with:
           path: |
