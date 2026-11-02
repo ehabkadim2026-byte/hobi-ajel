@@ -110,9 +110,13 @@ def gemini(prompt, max_tokens=120, temperature=0.2):
             last = e
             if e.code in (429, 404, 403):
                 _EXHAUSTED.add(model)
-                continue
-            raise
-    raise last or RuntimeError("no model")
+            continue  # 500/503 (عطل مؤقت عند Google) أو حصة: نجرّب النموذج التالي بدل إيقاف الوكيل
+        except (_ue.URLError, TimeoutError, KeyError, IndexError, ValueError) as e:
+            last = e
+            continue
+    if last:
+        LLM_STATS["error"] = LLM_STATS.get("error", 0) + 0  # يُحسب عند المستدعي
+    return None
 
 
 def _llm(title, context=""):
