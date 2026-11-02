@@ -401,7 +401,7 @@ def main(hours=24):
             n.pop("lead", None)
     analysis.sort(key=lambda x: (x["last_time"] or ""), reverse=True)
     try:
-        readings(analysis)
+        pass  # قراءات تحليل الانتشار أُلغيت (طلب إيهاب 2026-11-02): حصة Gemini كلها لـ«قراءة هسة وصل»
     except Exception as e:  # noqa: BLE001
         print(f"::warning title=analysis agent::{type(e).__name__}: {str(e)[:120]}")
     (ROOT / "pwa" / "analysis.json").write_text(json.dumps({"updated_utc": iso(now), "min_sources": A.MIN_SOURCES, "items": analysis[:40]},
