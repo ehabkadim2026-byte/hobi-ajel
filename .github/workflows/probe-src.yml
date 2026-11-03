@@ -1,0 +1,18 @@
+name: probe-src
+on: {workflow_dispatch: {}}
+permissions: {contents: write}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 - <<'PY' > /tmp/known.txt
+          import json
+          for x in json.load(open('config/sources.json'))['sources']:
+              if x['platform'] == 'telegram': print(x['url'].rstrip('/').split('/')[-1])
+          PY
+          python3 tools/_probe_src.py tools/_probe_seeds.txt tools/_probe_guess.txt /tmp/known.txt src_probe.json 450
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: gh release upload probe src_probe.json --clobber -R ${{ github.repository }}
