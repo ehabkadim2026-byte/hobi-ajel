@@ -68,6 +68,19 @@ def latest_posts(ch):
 LAST_FULL = [0.0]
 
 
+GEM_CALLS = []
+GEM_PER_HOUR = 90  # حماية حصة Gemini المجانية: حكم الأهمية لأخبار القنوات السريعة والوكالات غير الموسومة
+
+
+def gem_ok():
+    now = time.time()
+    GEM_CALLS[:] = [t for t in GEM_CALLS if t >= now - 3600]
+    if len(GEM_CALLS) >= GEM_PER_HOUR:
+        return False
+    GEM_CALLS.append(now)
+    return True
+
+
 def iraq_strong(t):
     from marsad.textnorm import norm_ar
     iq, _ = T._markers()
@@ -151,15 +164,21 @@ def main():
                     if FLAG.search(p["text"][:40]) or STRICT.search(first):
                         ok = True
                     else:  # خبر وكالة غير موسوم: يحكم النموذج على أهميته (واع سبقتنا 12 مرة بأخبار عادية مهمة كنا ننتظرها للجولة الرئيسية)
-                        ok, by = important(p["text"][:600])
+                        ok, by = important(p["text"][:600]) if gem_ok() else (False, "سقف")
                         ok = ok and by == "Gemini" and not T.ROUTINE_RX.search(first)
                 elif tier == "breaking":
                     # قنوات الأخبار السريعة: فقط ما وسمته «عاجل» ويذكر العراق صراحة
                     if not T.iraq_strict(first):
                         skip("ليس عراقياً"); continue
-                    if not (FLAG.search(p["text"][:40]) or T.SEC_RX.search(first)):
-                        skip("ليس عاجلاً عراقياً"); continue
-                    ok = True  # عاجل عراقي، أو خبر أمني عراقي حتى بلا وسم «عاجل» (الأمني لا ينتظر)
+                    if FLAG.search(p["text"][:40]) or T.SEC_RX.search(first):
+                        ok = True  # عاجل عراقي، أو خبر أمني عراقي حتى بلا وسم «عاجل» (الأمني لا ينتظر)
+                    elif gem_ok():
+                        # خبر عراقي غير موسوم من قناة سريعة (دجلة، السومرية، 964…): المسار السريع هو الناشر الأساسي الآن،
+                        # والجولة الرئيسية تتأخر 5–10 دقائق بطبيعتها — يحكم النموذج على أهميته (تحليل السبق 2026-11-03)
+                        ok, by = important(p["text"][:600])
+                        ok = ok and by == "Gemini" and not T.ROUTINE_RX.search(first)
+                    else:
+                        skip("سقف النموذج بالساعة"); continue
                 else:
                     ok, by = important(p["text"][:600])
                     if by != "Gemini":

@@ -27,11 +27,11 @@ for n in items:
         continue
     h = headline(n)
     name, _ = src(n)
-    (out / f"{done}_news2.jpg").write_bytes(tg_card.card_news2(ph, h, is_breaking(n), n.get("first_utc")))
-    (out / f"{done}_news3.jpg").write_bytes(tg_card.card_news3(ph, h, is_breaking(n), n.get("first_utc"), source=name))
+    for st in "ABC":
+        (out / f"{done}_{st}.jpg").write_bytes(tg_card.card_news4(ph, h, is_breaking(n) or done == 0, n.get("first_utc"), source=name, style=st))
     print(done, n["title"][:80], "=>", h)
     done += 1
-    if done >= 5:
+    if done >= 4:
         break
-(out / "nophoto_news3.jpg").write_bytes(tg_card.card_news3(None, headline(items[0]), True, items[0].get("first_utc")))
-(out / "opinion_news3.jpg").write_bytes(tg_card.card_news3(None, "تثبيت سقف الإنتاج يمنح الاستقرار المالي ويدعم التخطيط الاقتصادي للعراق", False, items[0].get("first_utc"), tag="رأي"))
+for st in "ABC":
+    (out / f"op_{st}.jpg").write_bytes(tg_card.card_news4(None, "تثبيت سقف الإنتاج يمنح الاستقرار المالي ويدعم التخطيط الاقتصادي للعراق", False, items[0].get("first_utc"), tag="رأي", style=st))

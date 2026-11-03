@@ -1211,3 +1211,194 @@ def card_news3(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
     buf = io.BytesIO()
     im.save(buf, "JPEG", quality=90, optimize=True, progressive=True)
     return buf.getvalue()
+
+
+def _fit_font(d, text, width, max_lines, sizes, loader):
+    for sz in sizes:
+        f = loader(sz)
+        lines = _wrap(d, text, f, width)
+        if len(lines) <= max_lines and not (len(lines) > 1 and len(lines[-1].split()) <= 1 and sz > sizes[-1]):
+            return f, sz, lines
+    f = loader(sizes[-1])
+    lines = _wrap(d, text, f, width)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        lines[-1] = lines[-1].rstrip("،.") + " …"
+    return f, sizes[-1], lines
+
+
+def _grade(im, warm=True):
+    """تدريج لوني خفيف موحّد لكل الصور: تباين أعلى قليلاً وتشبع أهدأ — يوحّد هوية البطاقات مهما اختلف مصدر الصورة."""
+    from PIL import ImageEnhance
+    im = ImageEnhance.Contrast(im).enhance(1.08)
+    im = ImageEnhance.Color(im).enhance(0.9)
+    return im
+
+
+def _vgrad(W, H, stops):
+    """قناع تدرّج عمودي: stops = [(موضع 0..1، شفافية 0..255)]."""
+    m = Image.new("L", (1, H))
+    px = m.load()
+    for y in range(H):
+        k = y / max(1, H - 1)
+        for (a, va), (b, vb) in zip(stops, stops[1:]):
+            if a <= k <= b:
+                t = (k - a) / max(1e-6, b - a)
+                t = t * t * (3 - 2 * t)
+                px[0, y] = int(va + (vb - va) * t)
+                break
+    return m.resize((W, H))
+
+
+def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=None, style="A"):
+    """ثلاث هويات للمعاينة (1080×1350):
+    A «شاشة الحدث»: صورة كاملة سينمائية، العنوان أبيض كبير فوق تدرّج أسود، لسان أحمر حاد بأسلوب الشاشات الإخبارية.
+    B «الصحيفة»: صورة أعلى وورق عاجي أسفل، عنوان أسود ثقيل وسطر أحمر — رصانة الصحافة الكبرى.
+    C «البطاقة العائمة»: صورة كاملة وبطاقة بيضاء عائمة بحواف مستديرة، عنوان كحلي ولسان أحمر يتقاطع مع حافتها."""
+    from PIL import ImageDraw as _D, ImageFilter
+    W, H = 1080, 1350
+    tag = tag or ("عاجل" if breaking else "خبر")
+    RED, NAVY = (222, 18, 30), (11, 27, 63)
+    kw = {"direction": "rtl", "language": "ar"} if RAQM else {}
+    tmp = _D.Draw(Image.new("RGB", (8, 8)))
+    kick, head = split_kicker(title)
+    w = _when(when_utc)
+    src_name = source if source and source != kick else None
+    im = Image.new("RGB", (W, H), NAVY)
+
+    def photo(h):
+        if photo_jpg:
+            return _grade(_photo_frame(photo_jpg, W, h))
+        g = Image.new("RGB", (W, h), NAVY)
+        dd = _D.Draw(g)
+        for y in range(h):
+            k = y / h
+            dd.line([(0, y), (W, y)], fill=(int(20 - 9 * k), int(46 - 19 * k), int(104 - 41 * k)))
+        lw = _logo_white(320)
+        if lw:
+            a = lw.split()[3].point(lambda v: int(v * 0.09))
+            g.paste(Image.new("RGB", lw.size, (255, 255, 255)), (W // 2 - lw.width // 2, h // 2 - 190), a)
+        return g
+
+    def badge(x_right, y, h=96):
+        b = _logo_badge(h)
+        if not b:
+            return
+        m = 22
+        sm = Image.new("L", (b.width + 2 * m, b.height + 2 * m), 0)
+        sm.paste(b.split()[3], (m, m))
+        sm = sm.filter(ImageFilter.GaussianBlur(12)).point(lambda v: int(v * 0.3))
+        im.paste(Image.new("RGB", sm.size, (0, 0, 0)), (x_right - b.width - m, y - m + 6), sm)
+        im.paste(b, (x_right - b.width, y), b)
+
+    label = {"عاجل": "عاجل", "رأي": "قراءة هسة وصل", "تحليل": "تحليل", "منوعات": "منوعات"}.get(tag, "خبر")
+    hot = tag == "عاجل"
+
+    if style == "A":
+        P = 70
+        im.paste(photo(H), (0, 0))
+        f, sz, lines = _fit_font(tmp, head, W - 2 * P, 4, [84, 78, 72, 66, 60, 56], lambda s: _cairo(s, 900))
+        lh = int(sz * 1.36)
+        block = lh * len(lines)
+        y_text = H - 150 - block
+        y_tag = y_text - (62 + 26) - (54 if kick else 0)
+        shade = _vgrad(W, H, [(0, 90), (0.18, 0), (max(0.2, (y_tag - 260) / H), 0), ((y_tag + 40) / H, 215), (1, 250)])
+        im.paste(Image.new("RGB", (W, H), (4, 8, 18)), (0, 0), shade)
+        d = _D.Draw(im)
+        badge(W - P + 10, 52)
+        ft = _cairo(38, 900)
+        tw = d.textlength(_shape(label), font=ft, **kw)
+        bw = int(tw + 52)
+        x1 = W - P
+        d.polygon([(x1 - bw - 18, y_tag + 62), (x1 - bw, y_tag), (x1, y_tag), (x1, y_tag + 62)], fill=RED if hot or tag == "خبر" else (196, 150, 54))
+        _draw_rtl(d, x1 - 26, y_tag + 4, label, ft, (255, 255, 255))
+        if w:
+            fw = _cairo(28, 700)
+            _draw_rtl(d, x1 - bw - 40, y_tag + 15, w, fw, (225, 230, 240))
+        y = y_tag + 62 + 26
+        if kick:
+            _draw_rtl(d, W - P, y, kick, _cairo(38, 800), (255, 196, 70))
+            y += 54
+        for ln in lines:
+            _draw_rtl(d, W - P, y, ln, f, (255, 255, 255))
+            y += lh
+        d.rectangle([0, H - 12, W, H], fill=RED)
+        fy = H - 84
+        d.line([(P, fy - 18), (W - P, fy - 18)], fill=(255, 255, 255, 60), width=1)
+        _draw_rtl(d, W - P, fy, src_name or "عاجل هسه وصل", _cairo(28, 700), (200, 208, 224))
+        d.text((P, fy + 1), "@hassawassal", font=_cairo(27, 600), fill=(160, 172, 196), **({"direction": "ltr"} if RAQM else {}))
+
+    elif style == "B":
+        P = 72
+        PAPER, INK = (246, 242, 234), (18, 20, 26)
+        loader = (lambda s: _ff("IBMPlexSansArabic-Bold.ttf", s)) if (FONTS_DIR / "IBMPlexSansArabic-Bold.ttf").exists() else (lambda s: _cairo(s, 800))
+        f, sz, lines = _fit_font(tmp, head, W - 2 * P, 4, [70, 66, 62, 58, 54, 50], loader)
+        lh = int(sz * 1.5)
+        txt_h = 40 + 46 + (52 if kick else 0) + lh * len(lines) + 30 + 90
+        ph_h = max(int(H * 0.5), H - txt_h)
+        im.paste(photo(ph_h), (0, 0))
+        im.paste(Image.new("RGB", (W, H - ph_h), PAPER), (0, ph_h))
+        d = _D.Draw(im)
+        top_sh = _vgrad(W, 180, [(0, 110), (1, 0)])
+        im.paste(Image.new("RGB", (W, 180), (0, 0, 0)), (0, 0), top_sh)
+        d = _D.Draw(im)
+        badge(W - P + 12, 46)
+        d.rectangle([0, ph_h, W, ph_h + 10], fill=RED if hot else NAVY)
+        y = ph_h + 44
+        ft = _cairo(34, 900)
+        _draw_rtl(d, W - P, y, label, ft, RED if hot or tag == "خبر" else (170, 120, 30))
+        lw_ = d.textlength(_shape(label), font=ft, **kw)
+        if w:
+            _draw_rtl(d, W - P - lw_ - 26, y + 6, "·  " + w, _cairo(27, 600), (110, 108, 104))
+        y += 58
+        if kick:
+            _draw_rtl(d, W - P, y, kick, _cairo(34, 700), NAVY)
+            y += 52
+        for ln in lines:
+            _draw_rtl(d, W - P, y, ln, f, INK)
+            y += lh
+        fy = H - 78
+        d.line([(P, fy - 20), (W - P, fy - 20)], fill=(214, 208, 196), width=2)
+        _draw_rtl(d, W - P, fy, src_name or "عاجل هسه وصل", _cairo(27, 700), (90, 88, 84))
+        d.text((P, fy + 1), "@hassawassal", font=_cairo(26, 600), fill=(130, 126, 118), **({"direction": "ltr"} if RAQM else {}))
+
+    else:  # C
+        M, P = 44, 52
+        im.paste(photo(H), (0, 0))
+        f, sz, lines = _fit_font(tmp, head, W - 2 * M - 2 * P, 4, [68, 64, 60, 56, 52, 48], lambda s: _cairo(s, 850))
+        lh = int(sz * 1.42)
+        card_h = 70 + (50 if kick else 0) + lh * len(lines) + 24 + 84
+        cy0 = H - M - card_h
+        shade = _vgrad(W, H, [(0, 80), (0.15, 0), (max(0.16, (cy0 - 240) / H), 0), (1, 150)])
+        im.paste(Image.new("RGB", (W, H), (0, 0, 0)), (0, 0), shade)
+        d = _D.Draw(im)
+        sh = Image.new("L", (W, H), 0)
+        _D.Draw(sh).rounded_rectangle([M, cy0 + 14, W - M, H - M + 14], radius=34, fill=120)
+        im.paste(Image.new("RGB", (W, H), (0, 0, 0)), (0, 0), sh.filter(ImageFilter.GaussianBlur(26)))
+        d = _D.Draw(im)
+        d.rounded_rectangle([M, cy0, W - M, H - M], radius=34, fill=(255, 255, 255))
+        badge(W - M, 48)
+        ft = _cairo(36, 900)
+        tw = d.textlength(_shape(label), font=ft, **kw)
+        pw = int(tw + 60 + (26 if hot else 0))
+        px1 = W - M - P + 10
+        d.rounded_rectangle([px1 - pw, cy0 - 33, px1, cy0 + 33], radius=33, fill=RED if hot or tag == "خبر" else (190, 140, 40))
+        if hot:
+            d.ellipse([px1 - 38, cy0 - 8, px1 - 22, cy0 + 8], fill=(255, 255, 255))
+        _draw_rtl(d, px1 - 30 - (26 if hot else 0), cy0 - 28, label, ft, (255, 255, 255))
+        y = cy0 + 56
+        if kick:
+            _draw_rtl(d, W - M - P, y, kick, _cairo(34, 800), RED)
+            y += 50
+        for ln in lines:
+            _draw_rtl(d, W - M - P, y, ln, f, NAVY)
+            y += lh
+        fy = H - M - 66
+        d.line([(M + P, fy - 16), (W - M - P, fy - 16)], fill=(228, 231, 238), width=2)
+        right = (src_name or "عاجل هسه وصل") + (f"  ·  {w}" if w else "")
+        _draw_rtl(d, W - M - P, fy, right, _cairo(26, 700), (98, 108, 128))
+        d.text((M + P, fy + 1), "@hassawassal", font=_cairo(25, 600), fill=(140, 148, 166), **({"direction": "ltr"} if RAQM else {}))
+
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=92, optimize=True, progressive=True)
+    return buf.getvalue()
