@@ -192,6 +192,8 @@ def main():
                 if not ok:
                     skip("غير مهم"); continue
                 head = edit_headline(first, context=p["text"][:500])
+                if T.low_value(head) or T.incomplete(head) or len(head.split()) < 5:
+                    skip("عنوان غير صالح"); continue  # التحرير قد يبتر العنوان (حذف هاشتاغ/سطر): نفحص الناتج النهائي لا الخام (تدقيق 2883، 2884)
                 photo = None
                 if p["img"]:
                     try:

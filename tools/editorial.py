@@ -27,7 +27,10 @@ def clean_headline(title, max_len=170):
     t = t.replace(",,", "").replace("،،", "")
     t = PREFIX.sub("", t.strip())
     t = EMOJI.sub(" ", t)
-    t = HASHTAG.sub(" ", t)
+    m = re.search(r"(?:\s+#[\w_؀-ۿ]+)+\s*$", t)  # سلسلة هاشتاغات آخر النص تُحذف، إلا إذا كانت تكملة الجملة («… في #بغداد»)
+    if m and not re.search(r"(?:^|\s)(?:في|من|على|إلى|الى|عن|مع|بين|و|محافظة|مدينة|قضاء)\s*$", t[:m.start()]):
+        t = t[:m.start()]
+    t = HASHTAG.sub(lambda m: m.group(0)[1:].replace("_", " "), t)  # الهاشتاغ داخل الجملة جزء منها: «#الدولار يرتفع في #بغداد و#أربيل» (تدقيق 2883)
     t = FOLLOW.sub("", t)
     t = TAGS.sub("", t.strip())
     t = re.sub(r"^\s*(?:عاجل|خاص|هام|مهم)\s+(?=\S)", "", t)
@@ -267,7 +270,8 @@ def complete_line(text):
     """العنوان الكامل من منشور متعدد الأسطر: إذا السطر الأول اسم متحدث/جهة فقط («رئيس الوزراء علي الزيدي» أو ينتهي بـ«:»)
     أو شذرة تبدأ بنقطة «•»، نضمه للسطر التالي («الجهة: الكلام»)."""
     lines = [_URL.sub("", ln).strip(" -–|🔻🔴📌⭕️🚨•▪️◾️") for ln in (text or "").split("\n")]
-    lines = [ln for ln in lines if ln and not _SIG.search(ln[:40]) and not re.fullmatch(r"[#\W\d]*(عاجل|عــاجل)?[#\W]*", ln)]
+    lines = [ln for ln in lines if ln and not _SIG.search(ln[:40]) and not re.fullmatch(r"[#\W\d]*(عاجل|عــاجل)?[#\W]*", ln)
+             and not re.fullmatch(r"(?:#[\w_؀-ۿ]+[\s\W]*)+", ln)]  # سطر هاشتاغات فقط ليس تكملة للعنوان (تدقيق 2884)
     if not lines:
         return ""
     lines = [re.sub(r"^\W*(عاجل|عــاجل|خاص|متابعة)\s*[|:\-–_/]*\s*", "", ln).strip() for ln in lines]
