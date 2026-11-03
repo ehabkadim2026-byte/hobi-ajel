@@ -821,19 +821,6 @@
    "official": true
   },
   {
-   "id": "telegram:t.me/SabrenNewss",
-   "name": "صابرين نيوز — telegram",
-   "url": "https://t.me/SabrenNewss",
-   "platform": "telegram",
-   "method": "telegram_preview",
-   "status": "لم يُجمع بعد",
-   "frequency": "ساعي",
-   "category": "حسابات تواصل",
-   "region": "العراق",
-   "lang": "ar",
-   "official": false
-  },
-  {
    "id": "telegram:t.me/Samarra_news",
    "name": "سامراء نيوز - Samarra News — telegram",
    "url": "https://t.me/Samarra_news",
