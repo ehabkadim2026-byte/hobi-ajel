@@ -548,6 +548,21 @@ def src_label(n):
     return name[:50]
 
 
+def verify_line(n):
+    """سطر التحقق المهني: ما الذي نعرفه عن موثوقية الخبر وقت النشر (لا يعني كثرة النشر صحته)."""
+    st = n.get("vstatus") or ""
+    if st == "ثبت عدم صحته":
+        return "❌ التحقق: ثبت عدم صحته"
+    if n.get("source_flag") or (n.get("status") or "").startswith("مؤكد") or st == "منسوب لمصدر رسمي":
+        return "✅ التحقق: صادر عن جهة رسمية"
+    ind = n.get("independent") or 0
+    if st == "مؤيد بمصادر مستقلة" or ind >= 2:
+        return f"☑️ التحقق: متطابق لدى {max(ind, 2)} جهات مستقلة"
+    if st == "متنازع عليه":
+        return "⚠️ التحقق: روايات متعارضة"
+    return "⏳ التحقق: غير مؤكد بعد — مصدر واحد"
+
+
 def fmt(n, update=False, kind="news"):
     """الخبر المحرَّر + المصدر + وسم المحافظة + دعوة القناة. التفاصيل صارت زراً تحت الخبر."""
     mark = "🔴 عاجل | " if is_breaking(n) else ""
@@ -559,6 +574,7 @@ def fmt(n, update=False, kind="news"):
     sl = src_label(n)
     if sl:
         lines.append(f"📌 المصدر: {H.escape(sl)}")
+    lines.append(verify_line(n))
     tags = province_tags(n.get("title"))
     if tags:
         lines.append(" ".join(tags))
