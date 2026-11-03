@@ -27,12 +27,12 @@ for u in ["https://tgstat.com/ar/news?country=iq", "https://tgstat.com/news?coun
     add(get(u), u, [TGST, TME])
 qs = [l.strip() for l in open(sys.argv[1]) if l.strip()]
 for q in qs:
-    h = get("https://html.duckduckgo.com/html/?q=" + urllib.parse.quote(q)); add(urllib.parse.unquote(h), "ddg " + q, [TME]); time.sleep(1.5)
-    h = get("https://www.bing.com/search?q=" + urllib.parse.quote(q) + "&count=50"); add(urllib.parse.unquote(h), "bing " + q, [TME]); time.sleep(1.0)
+    h = get("https://html.duckduckgo.com/html/?q=" + urllib.parse.quote(q)); add(urllib.parse.unquote(h), "ddg " + q, [TME]); time.sleep(18)
+    h = get("https://www.bing.com/search?q=" + urllib.parse.quote(q) + "&count=50"); add(urllib.parse.unquote(h).replace(" › ", "/"), "bing " + q, [TME]); time.sleep(2)
 AT = re.compile(r"(?<![A-Za-z0-9_@])@([A-Za-z][A-Za-z0-9_]{4,31})")
 for s in [l.strip() for l in open(sys.argv[2]) if l.strip()]:
     url = f"https://t.me/s/{s}"
-    for page in range(3):
+    for page in range(5):
         h = get(url)
         add(h, "deep " + s, [TME, AT])
         ids = re.findall(r'data-post="[^/]+/(\d+)"', h)

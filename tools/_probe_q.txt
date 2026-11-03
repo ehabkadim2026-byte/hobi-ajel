@@ -1,40 +1,30 @@
 site:t.me قيادة شرطة محافظة
-site:t.me دائرة صحة البصرة
-site:t.me دائرة صحة ذي قار
-site:t.me دائرة صحة بابل
-site:t.me ديوان محافظة
-site:t.me مكتب محافظ
-site:t.me الدفاع المدني العراق
-site:t.me مديرية الدفاع المدني
-site:t.me هيئة المنافذ الحدودية
-site:t.me هيئة النزاهة الاتحادية
-site:t.me قيادة العمليات المشتركة
+site:t.me اعلام قيادة شرطة
+site:t.me قسم العلاقات والاعلام شرطة
+site:t.me دائرة صحة
+site:t.me اعلام دائرة صحة
+site:t.me الدفاع المدني
+site:t.me مديرية الدفاع المدني في محافظة
+site:t.me المنافذ الحدودية
+site:t.me هيئة النزاهة
+site:t.me العمليات المشتركة
 site:t.me قيادة عمليات
-site:t.me وزارة الكهرباء العراقية
-site:t.me مطار بغداد الدولي
-site:t.me اخبار الناصرية
-site:t.me اخبار ميسان
-site:t.me اخبار الديوانية
-site:t.me اخبار الموصل
-site:t.me اخبار البصرة
-site:t.me اخبار الكوت
-site:t.me اخبار الحلة
-site:t.me اخبار كربلاء
-site:t.me اخبار النجف
-site:t.me اخبار السماوة
-site:t.me اخبار الانبار الرمادي
-site:t.me اخبار تكريت صلاح الدين
-site:t.me اخبار ديالى بعقوبة
-site:t.me اخبار كركوك
-site:t.me شبكة اخبار
-site:t.me مديرية شرطة
+site:t.me وزارة الكهرباء
+site:t.me مطار
+site:t.me الناصرية
+site:t.me ميسان
+site:t.me الديوانية
+site:t.me الموصل
+site:t.me البصرة
+site:t.me الكوت
+site:t.me الحلة
+site:t.me كربلاء
+site:t.me النجف
+site:t.me السماوة
+site:t.me الرمادي
+site:t.me تكريت
+site:t.me بعقوبة
+site:t.me كركوك
+site:t.me ديوان محافظة
+site:t.me مجلس محافظة
 site:t.me الشرطة الاتحادية
-site:t.me مديرية المرور العامة
-site:t.me وزارة الاتصالات العراقية
-site:t.me وزارة النقل العراقية
-site:t.me محافظة ذي قار
-site:t.me محافظة ميسان
-site:t.me محافظة النجف
-site:t.me محافظة كربلاء
-site:t.me محافظة بابل
-site:t.me محافظة الانبار

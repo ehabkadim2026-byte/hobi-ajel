@@ -40,7 +40,7 @@ for s in seeds:
     h = get(f"https://t.me/s/{s}")
     for m in mentions(h, s):
         cnt[m] += 1; via[m].add(s)
-    time.sleep(0.4)
+    time.sleep(0.25)
 cands = [g for g in dict.fromkeys(guesses) if g.lower() not in known]
 snow = [m for m, c in cnt.most_common() if m not in known and m not in {g.lower() for g in cands}][:int(sys.argv[5])]
 res = []
@@ -50,6 +50,6 @@ for u in cands + snow:
     except Exception as e:
         r = {"u": u, "err": str(e)}
     r["src"] = "guess" if u in cands else "snow"; r["refs"] = cnt.get(u.lower(), 0); r["via"] = sorted(via.get(u.lower(), []))[:5]
-    res.append(r); time.sleep(0.4)
+    res.append(r); time.sleep(0.25)
 json.dump(res, open(sys.argv[4], "w"), ensure_ascii=False, indent=0)
 print(len(res), sum(1 for r in res if r.get("n")))
