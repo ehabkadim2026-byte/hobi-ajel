@@ -103,8 +103,14 @@ def main():
     stats = {"loops": 0, "posted": 0, "skipped": {}, "errors": 0}
     from tools.editorial import edit_headline
     from tools import tg_card
+    from tools import manual_pub as MP
+    seen_manual = MP.done_ids()
     while time.time() < run_until:
         t0 = time.time()
+        try:  # أوامر المحررين /نشر و/عاجل: تُنشر خلال ثوانٍ
+            stats["manual"] = stats.get("manual", 0) + MP.poll(token, chat_id, seen_manual)
+        except Exception as e:  # noqa: BLE001
+            print("::warning title=manual_pub::", type(e).__name__)
         stats["loops"] += 1
         main_sigs = (gh_get("main_sigs.json") + gh_get("tv_sigs.json")) if stats["loops"] % 4 == 1 else main_sigs if stats["loops"] > 1 else []
         now = datetime.now(timezone.utc)

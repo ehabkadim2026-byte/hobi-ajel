@@ -1251,6 +1251,19 @@ def _vgrad(W, H, stops):
     return m.resize((W, H))
 
 
+def looks_like_logo(jpg):
+    """صورة ليست صورة خبر: شعار موقع أو رسم بألوان مسطحة قليلة أو صورة صغيرة جداً — نستخدم خلفية الهوية بدلها."""
+    try:
+        im = Image.open(io.BytesIO(jpg)).convert("RGB")
+    except Exception:  # noqa: BLE001
+        return True
+    if im.width < 300 or im.height < 200:
+        return True
+    q = im.resize((64, 64)).quantize(colors=32)
+    counts = sorted((c for c, _ in q.getcolors(64 * 64) or []), reverse=True)
+    return sum(counts[:3]) / (64 * 64) > 0.62
+
+
 def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=None, style="A"):
     """ثلاث هويات للمعاينة (1080×1350):
     A «شاشة الحدث»: صورة كاملة سينمائية، العنوان أبيض كبير فوق تدرّج أسود، لسان أحمر حاد بأسلوب الشاشات الإخبارية.
@@ -1268,7 +1281,7 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
     im = Image.new("RGB", (W, H), NAVY)
 
     def photo(h):
-        if photo_jpg:
+        if photo_jpg and not looks_like_logo(photo_jpg):
             from PIL import ImageFilter as _F
             src = Image.open(io.BytesIO(photo_jpg)).convert("RGB")
             if src.width >= 460 and src.height >= 300:  # ملء الإطار بالكامل بدل صورة صغيرة داخل إطار مغبّش
@@ -1411,4 +1424,58 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
 
     buf = io.BytesIO()
     im.save(buf, "JPEG", quality=92, optimize=True, progressive=True)
+    return buf.getvalue()
+
+
+def card_digest(title, sub, date, heads):
+    """بوستر الموجز (1080×1350): عنوان كبير، ثم أهم الأخبار مرقّمة بدوائر حمراء — يُشارك بسهولة في واتساب وفيسبوك."""
+    from PIL import ImageDraw as _D, ImageFilter
+    W, H, P = 1080, 1350, 72
+    RED, NAVY = (222, 18, 30), (9, 22, 52)
+    morning = "صباح" in title
+    acc = (255, 190, 64) if morning else RED
+    im = Image.new("RGB", (W, H), NAVY)
+    d = _D.Draw(im)
+    for y in range(H):
+        k = y / H
+        d.line([(0, y), (W, y)], fill=(int(14 - 6 * k), int(34 - 14 * k), int(80 - 34 * k)))
+    lw = _logo_white(560)
+    if lw:
+        a = lw.split()[3].point(lambda v: int(v * 0.05))
+        im.paste(Image.new("RGB", lw.size, (255, 255, 255)), (W - lw.width + 120, H - lw.height + 60), a)
+    d = _D.Draw(im)
+    b = _logo_badge(92)
+    if b:
+        im.paste(b, (W - P - b.width + 10, 56), b)
+        d = _D.Draw(im)
+    _draw_rtl(d, W - P, 160, title, _cairo(104, 900), (255, 255, 255))
+    _draw_rtl(d, W - P, 350, sub, _cairo(40, 800), acc)
+    _draw_rtl(d, W - P, 408, date, _cairo(30, 600), (170, 184, 214))
+    d.rectangle([P, 428, P + 120, 434], fill=acc)
+    y = 492
+    avail = H - 120 - y
+    per = avail // max(1, len(heads))
+    for i, h in enumerate(heads, 1):
+        f, sz, lines = _fit_font(d, h, W - 2 * P - 92, 2, [42, 39, 36, 33], lambda s: _cairo(s, 800))
+        lh = int(sz * 1.42)
+        cy = y + 30
+        cx = W - P - 30
+        d.ellipse([cx - 30, cy - 30, cx + 30, cy + 30], fill=RED)
+        num = str(i)
+        fn = _cairo(34, 900)
+        nw = d.textlength(num, font=fn)
+        d.text((cx - nw / 2, cy - 26), num, font=fn, fill=(255, 255, 255))
+        ty = y + max(0, (60 - lh * len(lines)) // 2) if len(lines) == 1 else y
+        for ln in lines:
+            _draw_rtl(d, W - P - 92, ty, ln, f, (255, 255, 255))
+            ty += lh
+        y += per
+        if i < len(heads):
+            d.line([(P, y - 18), (W - P - 92, y - 18)], fill=(40, 58, 98), width=2)
+    d.rectangle([0, H - 12, W, H], fill=acc)
+    fy = H - 86
+    _draw_rtl(d, W - P, fy, "عاجل هسه وصل", _cairo(30, 800), (220, 226, 240))
+    d.text((P, fy + 2), "@hassawassal", font=_cairo(29, 700), fill=(170, 184, 214), **({"direction": "ltr"} if RAQM else {}))
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=92, optimize=True)
     return buf.getvalue()

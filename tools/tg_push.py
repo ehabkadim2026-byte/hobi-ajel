@@ -808,28 +808,45 @@ def send_pending(token, chat_id, only_breaking=False):
 
 
 def evening_digest(token, chat_id, msgs):
-    """موجز المساء 9 مساءً بغداد بالقناة: أبرز 5 أخبار عراقية نُشرت اليوم (حسب عدد الجهات)، كل سطر رابط للمنشور نفسه."""
+    """موجزان يومياً بالقناة ببوستر مصمم + روابط المنشورات: الصباح 8 (ما حدث خلال الليل) والمساء 9 (أبرز اليوم)."""
     now = datetime.now(timezone.utc)
     bgd = now + timedelta(hours=3)
     today = bgd.strftime("%Y-%m-%d")
-    if bgd.hour != 21 or msgs.get("_evening") == today:
+    slot = "_morning" if bgd.hour == 8 else "_evening" if bgd.hour == 21 else None
+    if not slot or msgs.get(slot) == today:
         return None
     news = load(PWA / "news.json", [])
-    start = (bgd.replace(hour=0, minute=0, second=0) - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
+    hrs = 12 if slot == "_morning" else 15
+    start = (now - timedelta(hours=hrs)).strftime("%Y-%m-%dT%H:%M:%S")
     pool = [n for n in news if n["id"] in msgs and (n.get("first_utc") or "") >= start and (n.get("about_iraq") or n.get("pmf"))]
-    top = sorted(pool, key=lambda n: (-(n.get("n_sources") or 1), -rank(n)))[:5]
+    top = sorted(pool, key=lambda n: -importance(n))[:5]
     if len(top) < 3:
         return None
+    from tools.editorial import clean_headline
+    from tools import tg_card
+    months = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول']
+    date = f"{bgd.day} {months[bgd.month - 1]} {bgd.year}"
+    title = "صباح العراق" if slot == "_morning" else "حصاد اليوم"
+    sub = "أبرز ما حدث خلال الليل" if slot == "_morning" else "أبرز أخبار العراق اليوم"
+    heads = [clean_headline(n["title"], 110) for n in top]
     ch = CHANNEL.rstrip("/").split("/")[-1]
-    lines = [f"🗞 <b>أبرز أخبار العراق اليوم</b> — {bgd.day} {['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'][bgd.month - 1]}", ""]
-    for i, n in enumerate(top, 1):
-        from tools.editorial import clean_headline
-        lines.append(f"{i}. <a href=\"https://t.me/{ch}/{msgs[n['id']]}\">{H.escape(clean_headline(n['title'], 120))}</a>")
+    lines = [f"🗞 <b>{title}</b> — {sub}", date, ""]
+    for i, (n, h) in enumerate(zip(top, heads), 1):
+        lines.append(f"{i}. <a href=\"https://t.me/{ch}/{msgs[n['id']]}\">{H.escape(h)}</a>")
     lines += ["", f"تابعونا لحظة بلحظة 👇\n{CHANNEL}"]
-    r = api(token, "sendMessage", chat_id=chat_id, text="\n".join(lines), parse_mode="HTML", disable_web_page_preview="true", disable_notification="true")
+    cap = "\n".join(lines)
+    r = {"ok": False}
+    try:
+        card = tg_card.card_digest(title, sub, date, heads)
+        r = api(token, "sendPhoto", files={"photo": ("digest.jpg", card)}, chat_id=chat_id, caption=cap[:1024], parse_mode="HTML",
+                disable_notification="true")
+    except Exception as e:  # noqa: BLE001
+        DEBUG.append(f"digestcard:{type(e).__name__}:{str(e)[:40]}")
+    if not r.get("ok"):
+        r = api(token, "sendMessage", chat_id=chat_id, text=cap, parse_mode="HTML", disable_web_page_preview="true", disable_notification="true")
     if r.get("ok"):
-        msgs["_evening"] = today
-        return {"evening_digest": True}
+        msgs[slot] = today
+        return {"digest": slot}
     return None
 
 

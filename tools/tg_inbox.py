@@ -25,6 +25,7 @@ HELP = ("أهلاً بك في صندوق محرري «هوبي عاجل».\n\n"
         "• حكم تحقق: /حكم <رقم الحدث> كاذب|متنازع|مستقل|رسمي|إلغاء [ملاحظة]\n"
         "  (رقم الحدث تجده أسفل تفاصيل الخبر في التطبيق)\n"
         "• نشر فيديو: حوّل (Forward) منشور الفيديو للبوت ← ينتشر بالقناة بأي حجم مع ذكر المصدر. أو أرسل رابط المنشور (للفيديوات الصغيرة فقط).\n"
+        "• نشر فوري بالقناة: /نشر عنوان الخبر — وللعاجل الذي يومض: /عاجل عنوان الخبر. سطر اختياري «المصدر: الجهة»، وتكدر ترفق صورة وتكتب الأمر بتعليقها. يُنشر خلال ثوانٍ بالقالب.\n"
         "• تنبيهات المتابعة (الشخصيات والقضايا) تصلك هنا بالخاص.")
 
 
@@ -115,6 +116,17 @@ def main():
                 else:
                     msg = "الصيغة: /حكم <رقم الحدث> كاذب|متنازع|مستقل|رسمي|إلغاء [ملاحظة]"
                 api(token, "sendMessage", chat_id=cid, text=msg)
+                continue
+            from tools import manual_pub as MP
+            if MP.is_cmd(m):  # احتياط: إذا المسار السريع متوقف ننشر من هنا، وإلا نتجاوز ما نشره
+                key = f"{cid}:{m['message_id']}"
+                done_m = MP.done_ids()
+                if key not in done_m:
+                    ok, msg = MP.publish(token, chat_id, m, editors.get(uid, "محرر"))
+                    done_m.add(key)
+                    MP.mark_done(done_m)
+                    api(token, "sendMessage", chat_id=cid, reply_to_message_id=m["message_id"], text=msg[:1000])
+                    stats["manual_pub"] = stats.get("manual_pub", 0) + int(ok)
                 continue
             from tools import tg_video
             if tg_video.handle_forward(token, chat_id, cid, m):
