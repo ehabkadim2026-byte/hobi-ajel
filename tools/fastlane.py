@@ -155,9 +155,11 @@ def main():
                         ok = ok and by == "Gemini" and not T.ROUTINE_RX.search(first)
                 elif tier == "breaking":
                     # قنوات الأخبار السريعة: فقط ما وسمته «عاجل» ويذكر العراق صراحة
-                    if not FLAG.search(p["text"][:40]) or not T.iraq_strict(first):
+                    if not T.iraq_strict(first):
+                        skip("ليس عراقياً"); continue
+                    if not (FLAG.search(p["text"][:40]) or T.SEC_RX.search(first)):
                         skip("ليس عاجلاً عراقياً"); continue
-                    ok = True
+                    ok = True  # عاجل عراقي، أو خبر أمني عراقي حتى بلا وسم «عاجل» (الأمني لا ينتظر)
                 else:
                     ok, by = important(p["text"][:600])
                     if by != "Gemini":
@@ -172,7 +174,7 @@ def main():
                     except Exception:  # noqa: BLE001
                         pass
                 loud = ch in CFG["loud"] or bool(FLAG.search(p["text"][:40]))
-                card = tg_card.card_news2(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"))
+                card = tg_card.card_news3(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), source=re.sub(r" — .*$", "", cname))
                 tags = T.province_tags(first)
                 cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}" + \
                       (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"

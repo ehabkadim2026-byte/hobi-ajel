@@ -76,6 +76,9 @@ def rank(n):
     return 3 if n.get("source_flag") else RANK.get(n.get("level"), 0)
 
 
+FRESH_MIN = 15  # خبر نشرته أي جهة مرصودة قبل أكثر من 15 دقيقة لا يُنشر (طلب إيهاب 2026-11-03)
+SEC_RX = re.compile(r"(خلية الإعلام الأمني|الإعلام الأمني|قيادة العمليات|عمليات بغداد|الاستخبارات|جهاز الأمن الوطني|مكافحة الإرهاب|داعش|إرهابي|ارهابي|"
+                    r"عبوة|انفجار|تفجير|اشتباك|هجوم|استهداف|قصف|طائرة مسيرة|مسيّرة|اغتيال|اختطاف|مقتل|استشهاد|القبض على|اعتقال|تسلل|صاروخ|إطلاق نار|اطلاق نار)")
 SURGE_MIN = 5  # 5 جهات مختلفة خلال 20 دقيقة = خبر يتصاعد الآن
 
 
@@ -93,6 +96,7 @@ def importance(n):
     sc = rank(n) * 2.0 + math.log2(1 + (n.get("independent") or n.get("n_sources") or 1))
     sc += 2.5 if surging(n) else (1.0 if n.get("escalating") else 0)
     sc += 1.0 if OFFICIAL_RX.search(t) else 0
+    sc += 2.5 if SEC_RX.search(t) and iraq_strict(t) else 0  # الأمني العراقي أولاً
     sc += 1.0 if EVENT_RX.search(t) else 0
     sc -= 1.5 if ROUTINE_RX.search(t) else 0
     sc -= 1.0 if STATEMENT_RX.search(t) and not OFFICIAL_RX.search(t) else 0
@@ -228,7 +232,7 @@ def worthy(n, now):
     if not seen or datetime.fromisoformat(seen.replace("Z", "+00:00")) < now - timedelta(minutes=12):
         return False
     first = n.get("first_utc")  # أول نشر للخبر لدى أي مصدر مرصود: إذا انتشر قبل أكثر من 25 دقيقة فهو ليس «جديداً» للقناة
-    if first and datetime.fromisoformat(first.replace("Z", "+00:00")) < now - timedelta(minutes=25):
+    if first and datetime.fromisoformat(first.replace("Z", "+00:00")) < now - timedelta(minutes=FRESH_MIN):
         return False
     t = n.get("title") or ""
     from tools.editorial import clean_headline
@@ -548,7 +552,7 @@ def publish_main_sigs(titles, name="main_sigs.json"):
 
 CARDS = PWA / "cards"
 ANIM = DATA / "anim"
-CARD_STYLE = "news2"  # «نشرة ٢» شريط تلفزيوني كامل وشعار مفرّغ — طلب إيهاب 2026-11-02 (قبلها «news»)  # «نشرة» بأسلوب القنوات الإخبارية وخط Cairo — طلب إيهاب 2026-11-01 (قبلها «lux»)  # «أ» الفاخر (زجاج مغبّش + معالجة سينمائية) — طلب إيهاب قالباً أفخم 2026-11-01 (قبلها «a»)
+CARD_STYLE = "news3"  # «نشرة ٣» عمودي 4:5 بشعار ملوّن مميز، يُرسل صورة قابلة للحفظ — طلب إيهاب 2026-11-03. قبلها: # «نشرة ٢» شريط تلفزيوني كامل وشعار مفرّغ — طلب إيهاب 2026-11-02 (قبلها «news»)  # «نشرة» بأسلوب القنوات الإخبارية وخط Cairo — طلب إيهاب 2026-11-01 (قبلها «lux»)  # «أ» الفاخر (زجاج مغبّش + معالجة سينمائية) — طلب إيهاب قالباً أفخم 2026-11-01 (قبلها «a»)
 PENDING = DATA / "tg_pending.json"
 
 
@@ -584,7 +588,9 @@ def prepare_card(n, tag=None):
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"imgfail:{type(e).__name__}")
     maker = {"news2": tg_card.card_news2, "news": tg_card.card_news, "lux": tg_card.card_lux, "a": tg_card.card_a, "b": tg_card.card_b, "c": tg_card.card_c, "v3": tg_card.news_card3}.get(CARD_STYLE, tg_card.news_card2)
-    if CARD_STYLE == "news2":
+    if CARD_STYLE == "news3":
+        jpg = tg_card.card_news3(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"), tag=tag, source=src(n)[0])
+    elif CARD_STYLE == "news2":
         jpg = tg_card.card_news2(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"), tag=tag)
     else:
         jpg = maker(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"))
@@ -644,7 +650,15 @@ def send_pending(token, chat_id, only_breaking=False):
         except Exception:  # noqa: BLE001
             pass
 
+    late_sigs = None
     for p in pend:
+        if p.get("sig") and not p.get("textonly"):
+            # فحص أخير قبل الإرسال: هل نشر المسار السريع أو التلفزيون الخبر نفسه خلال دقائق هذه الجولة؟
+            if late_sigs is None:
+                late_sigs = [x for x in fastlane_sigs() + fastlane_sigs("tv_sigs.json") if x.get("ts", 0) >= _t.time() - 3 * 3600]
+            if any(same_story((set(p["sig"]["w"]), set(p["sig"]["d"])), x) for x in late_sigs):
+                done["late_dup"] = done.get("late_dup", 0) + 1
+                continue
         if p.get("textonly"):
             try:
                 r = api(token, "sendMessage", chat_id=chat_id, text=p["text"], disable_web_page_preview="true", **common(p))
@@ -666,8 +680,8 @@ def send_pending(token, chat_id, only_breaking=False):
             except Exception as e:  # noqa: BLE001
                 DEBUG.append(f"animsend:{type(e).__name__}:{str(e)[:50]}")
         cu = APP_URL + "cards/" + p["card"]
-        ok = False
-        while not only_breaking and _t.time() < deadline:
+        ok = False  # كل المنشورات صورة (sendPhoto): تُحفظ بالضغط عليها، ولا ننتظر نشر الموقع — أسرع بدقائق (طلب إيهاب 2026-11-03)
+        while CARD_STYLE != "news3" and not only_breaking and _t.time() < deadline:
             if url_ok(cu):
                 ok = True
                 break
@@ -1029,7 +1043,7 @@ def main():
                 continue
             status["images"][kind] = status["images"].get(kind, 0) + 1
             pend.append({"id": n["id"], "card": card, "text": fmt(n, upd), "b": is_breaking(n), "kb": buttons(n),
-                         "now": bool(n.get("about_iraq") and (n.get("level") in ("عاجل", "مهم") or surging(n)))})  # المهم العراقي يُرسل فوراً بلا انتظار نشر الموقع
+                         "now": True, "sig": {"w": sorted(sig[0]), "d": sorted(sig[1])}})  # صورة مباشرة: لا داعي لانتظار نشر الموقع  # المهم العراقي يُرسل فوراً بلا انتظار نشر الموقع
             sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "b": is_breaking(n)}
             status["sent_now"] += 1
         for n, orig in updates:  # تحديثات كرد على المنشور الأصلي (نص فقط، بلا بطاقة)
@@ -1084,7 +1098,7 @@ def main():
                     n0 = next((x for x in news if x["id"] == a["id"]), None)
                     photo = news_photo(n0) if n0 else None
                     try:
-                        card = save_card(tg_card.card_news2(photo, otitle, False, now.strftime("%Y-%m-%dT%H:%M:%SZ"), tag="رأي"), "op_" + a["id"])
+                        card = save_card(tg_card.card_news3(photo, otitle, False, now.strftime("%Y-%m-%dT%H:%M:%SZ"), tag="رأي"), "op_" + a["id"])
                         text = (f"🎙 <b>قراءة هسة وصل</b>\n<b>{H.escape(otitle)}</b>\n\n{body}\n\n"
                                 f"<i>رأي تحريري لقناة «هسة وصل» مبني على ما نُشر عن الخبر، بصياغة آلية بحارس حقائق.</i>\n\n#قراءة_هسة_وصل\n{CHANNEL}")
                         pend.append({"id": "op_" + a["id"], "card": card, "text": text[:4000], "b": False, "kb": buttons(n0) if n0 else None})

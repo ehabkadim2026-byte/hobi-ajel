@@ -1083,6 +1083,37 @@ def card_news2(photo_jpg, title, breaking=True, when_utc=None, tag=None, stats=N
     return _jpg(im)
 
 
+_BADGE = {}
+
+
+def _logo_badge(h):
+    """شعار «هسة وصل» بألوانه الأصلية (أحمر وكحلي) على لوح أبيض مستدير بحافة حمراء رفيعة: علامة تُعرف من أول نظرة."""
+    if h in _BADGE:
+        return _BADGE[h]
+    if not LOGO.exists():
+        return None
+    from PIL import ImageDraw as _D
+    lg = Image.open(LOGO).convert("RGB")
+    a = lg.convert("L").point(lambda v: 0 if v > 238 else 255)
+    bbox = a.getbbox()
+    lg = lg.crop(bbox)
+    lh = h - 30
+    lg = lg.resize((int(lg.width * lh / lg.height), lh), Image.LANCZOS)
+    pad = 22
+    W2, H2 = lg.width + 2 * pad, h
+    b = Image.new("RGBA", (W2, H2), (0, 0, 0, 0))
+    d = _D.Draw(b)
+    d.rounded_rectangle([0, 0, W2 - 1, H2 - 1], radius=24, fill=(255, 255, 255, 255))
+    d.rounded_rectangle([0, H2 - 9, W2 - 1, H2 - 1], radius=4, fill=(222, 18, 30, 255))
+    d.rounded_rectangle([0, 0, W2 - 1, H2 - 1], radius=24, outline=(255, 255, 255, 255), width=2)
+    b.paste(lg, (pad, 10))
+    m = Image.new("L", (W2, H2), 0)
+    _D.Draw(m).rounded_rectangle([0, 0, W2 - 1, H2 - 1], radius=24, fill=255)
+    b.putalpha(m)
+    _BADGE[h] = b
+    return b
+
+
 def card_news3(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=None):
     """«نشرة ٣» عمودي 4:5 (1080×1350) — يأخذ مساحة أكبر في شاشة الهاتف داخل تلغرام.
     صورة كاملة أعلى البطاقة تذوب في لوح حبر كحلي، لسان وسم مستدير على الحد، شريط لوني رفيع بجانب العنوان،
@@ -1129,12 +1160,15 @@ def card_news3(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
         dt.line([(0, y), (W, y)], fill=int(120 * (1 - y / 170) ** 1.8))
     im.paste(Image.new("RGB", (W, 170), (0, 0, 0)), (0, 0), gt)
     d = _D.Draw(im)
-    lw = _logo_white(74)
-    if lw:
-        x0, y0 = W - P - lw.width + 14, 40
-        sh = lw.split()[3].filter(ImageFilter.GaussianBlur(6)).point(lambda v: int(v * 0.55))
-        im.paste(Image.new("RGB", lw.size, (0, 0, 0)), (x0 + 2, y0 + 3), sh)
-        im.paste(Image.new("RGB", lw.size, (255, 255, 255)), (x0, y0), lw.split()[3])
+    badge = _logo_badge(104)
+    if badge:
+        bx, by = W - P - badge.width + 18, 36
+        m = 24
+        sm = Image.new("L", (badge.width + 2 * m, badge.height + 2 * m), 0)
+        sm.paste(badge.split()[3], (m, m))
+        sm = sm.filter(ImageFilter.GaussianBlur(12)).point(lambda v: int(v * 0.32))
+        im.paste(Image.new("RGB", sm.size, (0, 0, 0)), (bx - m, by - m + 6), sm)
+        im.paste(badge, (bx, by), badge)
         d = _D.Draw(im)
     # لسان الوسم المستدير على حد اللوح
     ft = _cairo(36, 900)
