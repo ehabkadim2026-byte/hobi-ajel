@@ -192,7 +192,7 @@ def main():
                         photo = tg_card.fetch_jpeg(p["img"])
                     except Exception:  # noqa: BLE001
                         pass
-                loud = ch in CFG["loud"] or bool(FLAG.search(p["text"][:40]))
+                loud = (ch in CFG["loud"] or bool(FLAG.search(p["text"][:40]))) and not T.NOT_URGENT_RX.search(head)  # سعر الدولار/السلف/التقديم بلا «عاجل» (تدقيق 2835)
                 card = tg_card.card_news3(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), source=re.sub(r" — .*$", "", cname))
                 tags = T.province_tags(first)
                 cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}" + \
