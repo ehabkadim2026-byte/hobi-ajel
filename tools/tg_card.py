@@ -1268,6 +1268,10 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
 
     def photo(h):
         if photo_jpg:
+            from PIL import ImageFilter as _F
+            src = Image.open(io.BytesIO(photo_jpg)).convert("RGB")
+            if src.width >= 460 and src.height >= 300:  # ملء الإطار بالكامل بدل صورة صغيرة داخل إطار مغبّش
+                return _grade(_cover(src, W, h).filter(_F.UnsharpMask(radius=1.6, percent=55, threshold=3)))
             return _grade(_photo_frame(photo_jpg, W, h))
         g = Image.new("RGB", (W, h), NAVY)
         dd = _D.Draw(g)
