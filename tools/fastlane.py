@@ -192,16 +192,26 @@ def main():
                         photo = tg_card.fetch_jpeg(p["img"])
                     except Exception:  # noqa: BLE001
                         pass
-                loud = (ch in CFG["loud"] or bool(FLAG.search(p["text"][:40]))) and not T.NOT_URGENT_RX.search(head)  # سعر الدولار/السلف/التقديم بلا «عاجل» (تدقيق 2835)
-                card = tg_card.card_news3(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), source=re.sub(r" — .*$", "", cname))
+                # «عاجل» (شارة حمراء + وميض) فقط لما وسمته المصادر عاجلاً أو حدث أمني عراقي — لا لكل منشورات الجهات الرسمية
+                loud = (bool(FLAG.search(p["text"][:40])) or bool(T.SEC_RX.search(first) and T.iraq_strict(first))) and not T.NOT_URGENT_RX.search(head)  # سعر الدولار/السلف/التقديم بلا «عاجل» (تدقيق 2835)
+                card = tg_card.card_news4(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), source=re.sub(r" — .*$", "", cname), style="A")
                 tags = T.province_tags(first)
                 cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}" + \
                       (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"
                 kb = json.dumps({"inline_keyboard": [[{"text": "📖 المصدر", "url": f"https://t.me/{ch}/{p['id']}"},
                                                       {"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fhassawassal"}]]})
+                r = {"ok": False}
+                if loud:  # العاجل يومض: بطاقة متحركة (تُحفظ فيديو من تلغرام)، والصورة احتياط
+                    try:
+                        anim = tg_card.breaking_anim(photo, head, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), style="news4A", source=re.sub(r" — .*$", "", cname))
+                        r = T.api(token, "sendAnimation", files={"animation": ("breaking.mp4", anim, "video/mp4")}, chat_id=chat_id, caption=cap[:1024],
+                                  parse_mode="HTML", reply_markup=kb, width="1080", height="1350", disable_notification="false")
+                    except Exception as e:  # noqa: BLE001
+                        print("::warning title=fastlane anim::", type(e).__name__)
                 try:
-                    r = T.api(token, "sendPhoto", files={"photo": ("card.jpg", card)}, chat_id=chat_id, caption=cap[:1024], parse_mode="HTML",
-                              reply_markup=kb, disable_notification="false" if loud else "true")
+                    if not r.get("ok"):
+                        r = T.api(token, "sendPhoto", files={"photo": ("card.jpg", card)}, chat_id=chat_id, caption=cap[:1024], parse_mode="HTML",
+                                  reply_markup=kb, disable_notification="false" if loud else "true")
                 except Exception as e:  # noqa: BLE001
                     r = {"ok": False}
                     print("::warning title=fastlane send::", type(e).__name__)

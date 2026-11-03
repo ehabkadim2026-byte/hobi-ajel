@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
-      - run: sudo apt-get install -y -q libraqm0 >/dev/null 2>&1 || true; pip install -q pillow arabic-reshaper python-bidi
+      - run: sudo apt-get install -y -q libraqm0 >/dev/null 2>&1 || true; pip install -q pillow arabic-reshaper python-bidi imageio-ffmpeg
       - uses: actions/cache/restore@v4
         with: {path: data/fastlane_state.json, key: "fastlane-${{ github.run_id }}", restore-keys: "fastlane-"}
       - run: python3 -m tools.fastlane

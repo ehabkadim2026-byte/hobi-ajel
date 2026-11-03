@@ -85,6 +85,9 @@ def handle(token, chat_id, post, sent, editors_chats):
         build_idf([x.get("title") or "" for x in others])
     if any(same_story(sig, x) for x in st["sigs"]) or any(same_story(sig, x) for x in sent.get("_titles", []) + others):
         return "مكرر"
+    from tools.tg_push import low_value
+    if low_value((cap.split("\n") or [""])[0]):
+        return "ليس خبراً أو عامية"
     if not iraq_strict(cap[:300]):
         return "ليس عراقياً"  # القناة لأخبار العراق: مقاطع الشأن الأجنبي لا تُنشر
     ok, by = important(cap)

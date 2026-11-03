@@ -527,13 +527,14 @@ def news_card3(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hass
     return buf.getvalue()
 
 
-def breaking_anim(photo_jpg, title, when_utc=None, style="v3"):
+def breaking_anim(photo_jpg, title, when_utc=None, style="v3", source=None):
     """بطاقة عاجل متحركة (MP4 صامت يتكرر تلقائياً في تلغرام): شارة «عاجل» تومض وأشعة الإشارة تنبض. ~2 ثانية."""
     import os
     import subprocess
     import tempfile
     import imageio_ffmpeg
-    fn = {"a": card_a, "b": card_b, "c": card_c, "lux": globals().get("card_lux"), "news": globals().get("card_news"), "news2": globals().get("card_news2")}.get(style)
+    fn = {"a": card_a, "b": card_b, "c": card_c, "lux": globals().get("card_lux"), "news": globals().get("card_news"), "news2": globals().get("card_news2"),
+          "news4A": lambda p, t, b, w: globals()["card_news4"](p, t, b, w, source=source, style="A")}.get(style)
     if fn:
         a = Image.open(io.BytesIO(fn(photo_jpg, title, True, when_utc)))
         _DIM[0] = True
@@ -1314,11 +1315,16 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
         tw = d.textlength(_shape(label), font=ft, **kw)
         bw = int(tw + 52)
         x1 = W - P
-        d.polygon([(x1 - bw - 18, y_tag + 62), (x1 - bw, y_tag), (x1, y_tag), (x1, y_tag + 62)], fill=RED if hot or tag == "خبر" else (196, 150, 54))
-        _draw_rtl(d, x1 - 26, y_tag + 4, label, ft, (255, 255, 255))
+        dim = hot and _DIM[0]
+        fill = ((96, 8, 16) if dim else RED) if hot else ((196, 150, 54) if tag in ("رأي", "تحليل") else (255, 255, 255))
+        d.polygon([(x1 - bw - 18, y_tag + 62), (x1 - bw, y_tag), (x1, y_tag), (x1, y_tag + 62)], fill=fill)
+        _draw_rtl(d, x1 - 26, y_tag + 4, label, ft, (255, 170, 176) if dim else (NAVY if fill == (255, 255, 255) else (255, 255, 255)))
+        if hot:  # نقطة «مباشر» تنبض مع الوميض
+            cx, cy = x1 - bw - 44, y_tag + 31
+            d.ellipse([cx - 9, cy - 9, cx + 9, cy + 9], fill=(120, 20, 28) if dim else (255, 60, 70))
         if w:
             fw = _cairo(28, 700)
-            _draw_rtl(d, x1 - bw - 40, y_tag + 15, w, fw, (225, 230, 240))
+            _draw_rtl(d, x1 - bw - (66 if hot else 40), y_tag + 15, w, fw, (225, 230, 240))
         y = y_tag + 62 + 26
         if kick:
             _draw_rtl(d, W - P, y, kick, _cairo(38, 800), (255, 196, 70))
@@ -1326,7 +1332,7 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
         for ln in lines:
             _draw_rtl(d, W - P, y, ln, f, (255, 255, 255))
             y += lh
-        d.rectangle([0, H - 12, W, H], fill=RED)
+        d.rectangle([0, H - 12, W, H], fill=((96, 8, 16) if _DIM[0] else RED) if hot else (34, 92, 220))
         fy = H - 84
         d.line([(P, fy - 18), (W - P, fy - 18)], fill=(255, 255, 255, 60), width=1)
         _draw_rtl(d, W - P, fy, src_name or "عاجل هسه وصل", _cairo(28, 700), (200, 208, 224))

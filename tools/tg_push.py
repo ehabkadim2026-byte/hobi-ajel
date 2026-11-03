@@ -76,6 +76,7 @@ def rank(n):
     return 3 if n.get("source_flag") else RANK.get(n.get("level"), 0)
 
 
+_SIGS = {}
 FRESH_MIN = 15  # خبر نشرته أي جهة مرصودة قبل أكثر من 15 دقيقة لا يُنشر (طلب إيهاب 2026-11-03)
 SEC_RX = re.compile(r"(خلية الإعلام الأمني|الإعلام الأمني|قيادة العمليات|عمليات بغداد|الاستخبارات|جهاز الأمن الوطني|مكافحة الإرهاب|داعش|إرهابي|ارهابي|"
                     r"عبوة|انفجار|تفجير|اشتباك|هجوم|استهداف|قصف|طائرة مسيرة|مسيّرة|اغتيال|اختطاف|مقتل|استشهاد|القبض على|اعتقال|تسلل|صاروخ|إطلاق نار|اطلاق نار)")
@@ -257,16 +258,28 @@ LOWVAL_RX = re.compile(r"(؟\s*$|\?\s*$|مسلسل|الحلقة|حلقة|تعت�
 PRESS_RX = re.compile(r"^(?:صحيفة|جريدة|موقع|مجلة|وكالة\s+الأنباء\s+(?:الإيرانية|الإسرائيلية|التركية)|وسائل إعلام|إعلام)\s+[^:]{2,40}:")
 
 
+# عناوين باللهجة العراقية العامية (منشورات مدونين وصفحات تعليق): القناة تنشر بالفصحى فقط — طلب إيهاب 2026-11-03
+DIALECT_STRONG = re.compile(r"(?<![\w])(شنو|شلون|اشلون|ماكو|اكو|أكو|هواية|ديگول|يگول|گال|گالوا|گاعد|كاعد|ديصير|ديروح|دنروح|شكد|شگد|اشكد|يمعود|لعد|چان|چذي|هيچ|هيج|"
+                            r"اكدر|يكدر|نكدر|مايكدر|ماكدر|عدهم|عدنا|ماعدنا|ماعدهم|كلش|ديسوون|يسوون|سوّوا|سوو|ديحچي|يحچي|حچي|دنشوف|دشوف|هسه|هسا|"
+                            r"بلكي|خوش|شبيك|شبيه|ولك|يابه|اغاتي|عيوني|اخوية|تره|ترا|ويه|وياهم|وياه)(?![\w])")
+DIALECT_WEAK = re.compile(r"(?<![\w])(مو|بس|زين|راح|دا|هم|شي|لو|ليش|جان|هاي|هذول|هاذ|هذا الشي)(?![\w])")
+
+
+def dialect(t):
+    t = re.sub(r"هسة?\s*وصل", "", t or "")
+    return bool(DIALECT_STRONG.search(t)) or len(DIALECT_WEAK.findall(t)) >= 3
+
+
 def low_value(t):
-    """عنوان ليس خبراً: سؤال/برنامج/فتوى/عرض صحف/شعار (فقرات بنقاط تعليق بلا فعل)."""
+    """عنوان ليس خبراً: سؤال/برنامج/فتوى/عرض صحف/شعار (فقرات بنقاط تعليق بلا فعل)، أو مكتوب بالعامية."""
     t = (t or "").strip()
-    if LOWVAL_RX.search(t):
+    if LOWVAL_RX.search(t) or dialect(t):
         return True
     m = re.match(r"^([^:…]{2,40}?)\s*(?:…|\.\.\.)", t)
     if m and len(m.group(1).split()) <= 3 and not VERB_RX.search(m.group(1)):
         return True  # «القائم وحصيبة… انتصارٌ حاسم» / «سلاح الفصائل… اتفاق بنهايات مفتوحة»: شعار أو مقال تحليلي لا خبر (تدقيق 2815، 2783)
     return t.count("…") + t.count("...") >= 2 and not VERB_RX.search(t)
-ROUTINE_RX = re.compile(r"(يستقبل|استقبل|یستقبل|يبحث مع|بحث مع|يلتقي|التقى|يزور|زار|جولة ميدانية|يتابع|يترأس|ترأس|يستعرض|تستعرض|يشيد|تشيد|يهنئ|يعزي|"
+ROUTINE_RX = re.compile(r"(يستقبل|استقبل|یستقبل|يبحث مع|بحث مع|يلتقي|التقى|يزور|(?<![\w])زار(?![\w])|جولة ميدانية|يتابع|يترأس|ترأس|يستعرض|تستعرض|يشيد|تشيد|يهنئ|يعزي|"
                         r"لترؤس|يترؤس|حملة تشجير|تحتفي|يحتفي|ورشة|ندوة|مؤتمر صحفي مشترك|^(?:بحث|يبحث|تبحث|ناقش|يناقش|تناقش)\s)")
 ROLE_START = re.compile(r"^(رئيس|نائب|وزير|وزيرة|محافظ|مستشار|مدير|وكيل|قائد|المتحدث|الناطق|السفير|عضو)")
 VERB_RX = re.compile(r"(يعلن|تعلن|أعلن|اعلن|أعلنت|يؤكد|تؤكد|أكد|اكد|يوجه|وجه|يقرر|قرر|يكشف|كشف|يحذر|حذر|ينفي|نفى|يطالب|طالب|يدعو|دعا|"
@@ -600,7 +613,7 @@ def publish_main_sigs(titles, name="main_sigs.json"):
 
 CARDS = PWA / "cards"
 ANIM = DATA / "anim"
-CARD_STYLE = "news3"  # «نشرة ٣» عمودي 4:5 بشعار ملوّن مميز، يُرسل صورة قابلة للحفظ — طلب إيهاب 2026-11-03. قبلها: # «نشرة ٢» شريط تلفزيوني كامل وشعار مفرّغ — طلب إيهاب 2026-11-02 (قبلها «news»)  # «نشرة» بأسلوب القنوات الإخبارية وخط Cairo — طلب إيهاب 2026-11-01 (قبلها «lux»)  # «أ» الفاخر (زجاج مغبّش + معالجة سينمائية) — طلب إيهاب قالباً أفخم 2026-11-01 (قبلها «a»)
+CARD_STYLE = "news4A"  # «شاشة الحدث» 2026-11-03: صورة كاملة، أحمر للعاجل فقط مع وميض متحرك. قبلها news3 # «نشرة ٣» عمودي 4:5 بشعار ملوّن مميز، يُرسل صورة قابلة للحفظ — طلب إيهاب 2026-11-03. قبلها: # «نشرة ٢» شريط تلفزيوني كامل وشعار مفرّغ — طلب إيهاب 2026-11-02 (قبلها «news»)  # «نشرة» بأسلوب القنوات الإخبارية وخط Cairo — طلب إيهاب 2026-11-01 (قبلها «lux»)  # «أ» الفاخر (زجاج مغبّش + معالجة سينمائية) — طلب إيهاب قالباً أفخم 2026-11-01 (قبلها «a»)
 PENDING = DATA / "tg_pending.json"
 
 
@@ -636,7 +649,9 @@ def prepare_card(n, tag=None):
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"imgfail:{type(e).__name__}")
     maker = {"news2": tg_card.card_news2, "news": tg_card.card_news, "lux": tg_card.card_lux, "a": tg_card.card_a, "b": tg_card.card_b, "c": tg_card.card_c, "v3": tg_card.news_card3}.get(CARD_STYLE, tg_card.news_card2)
-    if CARD_STYLE == "news3":
+    if CARD_STYLE == "news4A":
+        jpg = tg_card.card_news4(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"), tag=tag, source=src(n)[0], style="A")
+    elif CARD_STYLE == "news3":
         jpg = tg_card.card_news3(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"), tag=tag, source=src(n)[0])
     elif CARD_STYLE == "news2":
         jpg = tg_card.card_news2(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"), tag=tag)
@@ -649,13 +664,13 @@ def prepare_card(n, tag=None):
             f.unlink()
     name = re.sub(r"[^A-Za-z0-9_]", "", n["id"])[:40] + f"_{int(datetime.now(timezone.utc).timestamp())}.jpg"
     (CARDS / name).write_bytes(jpg)
-    if is_breaking(n) and CARD_STYLE in ("v3", "a", "b", "c", "lux", "news", "news2"):  # العاجل: بطاقة متحركة بوميض شارة «عاجل»
+    if is_breaking(n) and CARD_STYLE in ("v3", "a", "b", "c", "lux", "news", "news2", "news4A"):  # العاجل: بطاقة متحركة بوميض شارة «عاجل»
         try:
             ANIM.mkdir(parents=True, exist_ok=True)
             for f in ANIM.glob("*.mp4"):
                 if f.stat().st_mtime < cut:
                     f.unlink()
-            (ANIM / name.replace(".jpg", ".mp4")).write_bytes(tg_card.breaking_anim(photo, headline(n), n.get("first_utc") or n.get("latest_utc"), style=CARD_STYLE))
+            (ANIM / name.replace(".jpg", ".mp4")).write_bytes(tg_card.breaking_anim(photo, headline(n), n.get("first_utc") or n.get("latest_utc"), style=CARD_STYLE, source=src(n)[0]))
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"animfail:{type(e).__name__}:{str(e)[:40]}")
     return name, "source" if photo else "card"
@@ -707,6 +722,13 @@ def send_pending(token, chat_id, only_breaking=False):
             if any(same_story((set(p["sig"]["w"]), set(p["sig"]["d"])), x) for x in late_sigs):
                 done["late_dup"] = done.get("late_dup", 0) + 1
                 continue
+        if p.get("first") and not p.get("textonly"):
+            try:  # فحص العمر لحظة الإرسال: الجولة قد تطول، وخبر تجاوز 15 دقيقة منذ أول نشر لا يُرسل (تدقيق 2822، 2841)
+                if _t.time() - datetime.fromisoformat(p["first"].replace("Z", "+00:00")).timestamp() > (FRESH_MIN + 3) * 60:
+                    done["stale"] = done.get("stale", 0) + 1
+                    continue
+            except ValueError:
+                pass
         if p.get("textonly"):
             try:
                 r = api(token, "sendMessage", chat_id=chat_id, text=p["text"], disable_web_page_preview="true", **common(p))
@@ -719,7 +741,7 @@ def send_pending(token, chat_id, only_breaking=False):
         if av.exists():  # عاجل: بطاقة متحركة تومض + النص كاملاً كتعليق
             try:
                 r = api(token, "sendAnimation", files={"animation": (av.name, av.read_bytes(), "video/mp4")}, chat_id=chat_id,
-                        caption=p["text"][:1024], width="1280", height="720", **common(p))
+                        caption=p["text"][:1024], width="1080" if CARD_STYLE == "news4A" else "1280", height="1350" if CARD_STYLE == "news4A" else "720", **common(p))
                 av.unlink()
                 if r.get("ok"):
                     keep(p, r)
@@ -729,7 +751,7 @@ def send_pending(token, chat_id, only_breaking=False):
                 DEBUG.append(f"animsend:{type(e).__name__}:{str(e)[:50]}")
         cu = APP_URL + "cards/" + p["card"]
         ok = False  # كل المنشورات صورة (sendPhoto): تُحفظ بالضغط عليها، ولا ننتظر نشر الموقع — أسرع بدقائق (طلب إيهاب 2026-11-03)
-        while CARD_STYLE != "news3" and not only_breaking and _t.time() < deadline:
+        while CARD_STYLE not in ("news3", "news4A") and not only_breaking and _t.time() < deadline:
             if url_ok(cu):
                 ok = True
                 break
@@ -1031,6 +1053,14 @@ def main():
             if n["id"] in sent or not worthy(n, now):
                 continue  # كل خبر يُنشر مرة واحدة فقط (لا إعادة نشر حتى لو تكرر لدى جهات أكثر — طلب إيهاب 2026-11-01)
             sig = title_sig(n["title"])
+            # عنقود آخر للخبر نفسه (صياغة مختلفة) نُشر قبل 15 دقيقة؟ = الخبر قديم حتى لو عنقوده جديد (تدقيق 2822، 2841)
+            if not _SIGS:
+                _SIGS.update({m["id"]: title_sig(m.get("title") or "") for m in news if m.get("first_utc")})
+            old_first = min((m["first_utc"] for m in news if m["id"] != n["id"] and m["id"] in _SIGS and m.get("first_utc")
+                             and same_story(sig, {"w": _SIGS[m["id"]][0], "d": _SIGS[m["id"]][1]})), default=None)
+            if old_first and datetime.fromisoformat(old_first.replace("Z", "+00:00")) < now - timedelta(minutes=FRESH_MIN):
+                status["stale_cluster"] = status.get("stale_cluster", 0) + 1
+                continue
             prev = next((x for x in posted_all if same_story(sig, x)), None)
             if not prev and sec_dup(n.get("title"), posted_all, now.timestamp()):
                 dup_skipped += 1
@@ -1095,7 +1125,7 @@ def main():
                 continue
             status["images"][kind] = status["images"].get(kind, 0) + 1
             pend.append({"id": n["id"], "card": card, "text": fmt(n, upd), "b": is_breaking(n), "kb": buttons(n),
-                         "now": True, "sig": {"w": sorted(sig[0]), "d": sorted(sig[1])}})  # صورة مباشرة: لا داعي لانتظار نشر الموقع  # المهم العراقي يُرسل فوراً بلا انتظار نشر الموقع
+                         "now": True, "sig": {"w": sorted(sig[0]), "d": sorted(sig[1])}, "first": n.get("first_utc")})  # صورة مباشرة: لا داعي لانتظار نشر الموقع  # المهم العراقي يُرسل فوراً بلا انتظار نشر الموقع
             sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "b": is_breaking(n)}
             status["sent_now"] += 1
         for n, orig in updates:  # تحديثات كرد على المنشور الأصلي (نص فقط، بلا بطاقة)
@@ -1150,7 +1180,7 @@ def main():
                     n0 = next((x for x in news if x["id"] == a["id"]), None)
                     photo = news_photo(n0) if n0 else None
                     try:
-                        card = save_card(tg_card.card_news3(photo, otitle, False, now.strftime("%Y-%m-%dT%H:%M:%SZ"), tag="رأي"), "op_" + a["id"])
+                        card = save_card(tg_card.card_news4(photo, otitle, False, now.strftime("%Y-%m-%dT%H:%M:%SZ"), tag="رأي", style="A"), "op_" + a["id"])
                         text = (f"🎙 <b>قراءة هسة وصل</b>\n<b>{H.escape(otitle)}</b>\n\n{body}\n\n"
                                 f"<i>رأي تحريري لقناة «هسة وصل» مبني على ما نُشر عن الخبر، بصياغة آلية بحارس حقائق.</i>\n\n#قراءة_هسة_وصل\n{CHANNEL}")
                         pend.append({"id": "op_" + a["id"], "card": card, "text": text[:4000], "b": False, "kb": buttons(n0) if n0 else None})
