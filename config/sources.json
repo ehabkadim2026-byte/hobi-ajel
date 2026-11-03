@@ -7559,6 +7559,62 @@
    "lang": "ar",
    "official": false,
    "added_by": "توسعة المصادر 2026-11-03"
+  },
+  {
+   "id": "telegram:t.me/PUKMediaArabic",
+   "name": "PUKMedia عربية (إعلام الاتحاد الوطني الكردستاني) — telegram",
+   "url": "https://t.me/PUKMediaArabic",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "قنوات تلغرام",
+   "region": "إقليم كوردستان",
+   "lang": "ar",
+   "official": false,
+   "added_by": "قائمة Ehab 03/11"
+  },
+  {
+   "id": "telegram:t.me/Tahriat",
+   "name": "تحريات — telegram",
+   "url": "https://t.me/Tahriat",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "قنوات تلغرام",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "قائمة Ehab 03/11"
+  },
+  {
+   "id": "telegram:t.me/iq24iraq",
+   "name": "عراق 24 — telegram",
+   "url": "https://t.me/iq24iraq",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "قنوات تلغرام",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "قائمة Ehab 03/11"
+  },
+  {
+   "id": "telegram:t.me/khozkhabar",
+   "name": "شبكة أخبار خوزستان (فارسي) — telegram",
+   "url": "https://t.me/khozkhabar",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "صحافة أجنبية",
+   "region": "أجنبي — إيران",
+   "lang": "fa",
+   "official": false,
+   "added_by": "قائمة Ehab 03/11"
   }
  ]
 }
