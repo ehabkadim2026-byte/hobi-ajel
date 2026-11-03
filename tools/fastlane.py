@@ -150,7 +150,7 @@ def main():
                 if sum(1 for x in mine if x.get("ts", 0) >= time.time() - 3600) >= CFG["per_hour"]:
                     skip("سقف"); continue
                 sig = T.title_sig(first)
-                if any(T.same_story(sig, x) for x in mine + main_sigs):
+                if any(T.same_story(sig, x) for x in mine + main_sigs) or T.sec_dup(first, mine + main_sigs, time.time()):
                     skip("مكرر"); continue
                 lk = T.lead_key(first)
                 if ch not in CFG["loud"] and sum(1 for x in mine + main_sigs if x.get("ts", 0) >= time.time() - 3600 and T.lead_key(x.get("title") or "") == lk) >= 2:

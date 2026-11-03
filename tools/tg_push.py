@@ -261,9 +261,12 @@ def low_value(t):
     t = (t or "").strip()
     if LOWVAL_RX.search(t):
         return True
+    m = re.match(r"^([^:…]{2,40}?)\s*(?:…|\.\.\.)", t)
+    if m and len(m.group(1).split()) <= 3 and not VERB_RX.search(m.group(1)):
+        return True  # «القائم وحصيبة… انتصارٌ حاسم» / «سلاح الفصائل… اتفاق بنهايات مفتوحة»: شعار أو مقال تحليلي لا خبر (تدقيق 2815، 2783)
     return t.count("…") + t.count("...") >= 2 and not VERB_RX.search(t)
 ROUTINE_RX = re.compile(r"(يستقبل|استقبل|یستقبل|يبحث مع|بحث مع|يلتقي|التقى|يزور|زار|جولة ميدانية|يتابع|يترأس|ترأس|يستعرض|تستعرض|يشيد|تشيد|يهنئ|يعزي|"
-                        r"حملة تشجير|تحتفي|يحتفي|ورشة|ندوة|مؤتمر صحفي مشترك)")
+                        r"حملة تشجير|تحتفي|يحتفي|ورشة|ندوة|مؤتمر صحفي مشترك|^(?:بحث|يبحث|تبحث|ناقش|يناقش|تناقش)\s)")
 ROLE_START = re.compile(r"^(رئيس|نائب|وزير|وزيرة|محافظ|مستشار|مدير|وكيل|قائد|المتحدث|الناطق|السفير|عضو)")
 VERB_RX = re.compile(r"(يعلن|تعلن|أعلن|اعلن|أعلنت|يؤكد|تؤكد|أكد|اكد|يوجه|وجه|يقرر|قرر|يكشف|كشف|يحذر|حذر|ينفي|نفى|يطالب|طالب|يدعو|دعا|"
                      r"يصل|وصل|يستقبل|يبحث|يلتقي|يزور|قال|يقول|يصدر|أصدر|يفتتح|افتتح|يوافق|وافق|يصوت|صوت|:)")
@@ -440,6 +443,24 @@ def same_story(sig, prev):
         rare = sum(1 for x in shared if idf(x) >= RARE)  # كلمتان نادرتان مشتركتان على الأقل (اسم/مكان/موضوع محدد)
         return rare >= 2 and len(shared) >= 3 and sw / max(1e-6, min(sum(idf(x) for x in w), sum(idf(x) for x in pw))) >= 0.38
     return len(shared) / min(len(w), len(pw)) >= 0.7 and len(shared) >= 4
+
+
+SOUND_RX = re.compile(r"(انفجار|إنفجار|انفجارات|إنفجارات|دوي|قصف|غارة|غارات|طيران|طيرات|استهداف|صوت)")
+
+
+def sec_dup(title, prev, now_ts, hours=2):
+    """بلاغات الانفجار/القصف في المحافظة نفسها خلال ساعتين = حدث واحد مهما اختلفت الصياغة
+    (ديالى: «سماع انفجار» ثم «دوي انفجارات مصدرها مجهول»، صلاح الدين: «قصف جوي» ثم «سمعنا صوت طيرات» — تدقيق 2820، 2817)."""
+    if not SOUND_RX.search(title or ""):
+        return False
+    tags = set(province_tags(title)) - {"#بغداد"}
+    if not tags:
+        return False
+    for x in prev:
+        pt = x.get("title") or ""
+        if x.get("ts", 0) >= now_ts - hours * 3600 and SOUND_RX.search(pt) and tags & set(province_tags(pt)):
+            return True
+    return False
 
 
 def is_important(n):
@@ -984,6 +1005,10 @@ def main():
                 continue  # كل خبر يُنشر مرة واحدة فقط (لا إعادة نشر حتى لو تكرر لدى جهات أكثر — طلب إيهاب 2026-11-01)
             sig = title_sig(n["title"])
             prev = next((x for x in posted_all if same_story(sig, x)), None)
+            if not prev and sec_dup(n.get("title"), posted_all, now.timestamp()):
+                dup_skipped += 1
+                sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "dup": True}
+                continue
             if prev:
                 dup_skipped += 1
                 sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "dup": True}
@@ -1117,8 +1142,10 @@ def main():
         if 8 <= bh0 < 23 and len(v_today) < VARIETY_MAX_DAY and now.timestamp() - v_last > VARIETY_GAP:
             vc = []
             for n in news:
-                if n["id"] in sent or n["id"] in vs or not n.get("about_iraq") or not iraq_title(n.get("title") or ""):
-                    continue
+                if n["id"] in sent or n["id"] in vs or not n.get("about_iraq") or not iraq_strict(n.get("title") or ""):
+                    continue  # علامة عراقية صريحة: «قاليباف: الكرة في ملعب الولايات المتحدة» مرّ منوعات رياضة (تدقيق 2821)
+                if (n.get("first_utc") or "9") < (now - timedelta(minutes=FRESH_MIN)).strftime("%Y-%m-%dT%H:%M:%S"):
+                    continue  # خبر قديم لدى الجهات الأخرى (2821 نُشر بعد 62 دقيقة)
                 seen = n.get("collected_utc") or ""
                 if seen < (now - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M") or n.get("ctype") == "تحليل/رأي" or is_breaking(n):
                     continue
