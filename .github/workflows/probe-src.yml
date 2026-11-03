@@ -7,7 +7,7 @@ jobs:
     timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
-      - run: python3 tools/_probe_gn.py tools/_probe_gn.txt > gn_test.txt
+      - run: echo skip > gn_test.txt
       - run: |
           python3 - <<'PY' > /tmp/known.txt
           import json
@@ -21,10 +21,10 @@ jobs:
           g = [l.strip() for l in open('tools/_probe_guess.txt') if l.strip()]
           gl = {x.lower() for x in g}
           c = [u for u, n in json.load(open('disc.json'))['counts'] if u not in known and u not in gl]
-          print("\n".join(c[:400] + g))
+          print("\n".join(c[:300] + g))
           PY
           : > /tmp/empty.txt
-          python3 tools/_probe_src.py /tmp/empty.txt /tmp/cands.txt /tmp/known.txt src_probe3.json 0
+          python3 tools/_probe_src.py /tmp/empty.txt /tmp/cands.txt /tmp/known.txt src_probe4.json 0
       - if: always()
         env: {GH_TOKEN: "${{ github.token }}"}
-        run: gh release upload probe disc.json src_probe3.json gn_test.txt --clobber -R ${{ github.repository }}
+        run: gh release upload probe disc.json src_probe4.json gn_test.txt --clobber -R ${{ github.repository }}
