@@ -77,9 +77,10 @@ def handle(token, chat_id, post, sent, editors_chats):
         return "سقف يومي"
     sig = title_sig(cap)
     now = time.time()
-    st["sigs"] = [x for x in st["sigs"] if x.get("ts", 0) >= now - 12 * 3600]
-    from tools.tg_push import fastlane_sigs, iraq_strict, build_idf, IDF
-    others = [x for x in fastlane_sigs() + fastlane_sigs("main_sigs.json") if x.get("ts", 0) >= now - 12 * 3600]
+    from tools.tg_push import fastlane_sigs, iraq_strict, build_idf, IDF, DEDUP_H, publish_main_sigs
+    st["sigs"] = [x for x in st["sigs"] if x.get("ts", 0) >= now - DEDUP_H * 3600]
+    tv_shared = fastlane_sigs("tv_sigs.json")  # نسخة مشتركة على الإصدار: الحالة المحلية قد تضيع بين جولتين متوازيتين (مقطع السومرية نُشر مرتين)
+    others = [x for x in fastlane_sigs() + fastlane_sigs("main_sigs.json") + tv_shared if x.get("ts", 0) >= now - DEDUP_H * 3600]
     if not IDF:
         build_idf([x.get("title") or "" for x in others])
     if any(same_story(sig, x) for x in st["sigs"]) or any(same_story(sig, x) for x in sent.get("_titles", []) + others):
@@ -102,5 +103,6 @@ def handle(token, chat_id, post, sent, editors_chats):
         return "فشل النشر: " + str(r.get("description"))[:80]
     st["n"] += 1
     st["sigs"].append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now})
+    publish_main_sigs(tv_shared + [{"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now, "id": f"tv:{post.get('message_id')}", "title": head[:200]}], "tv_sigs.json")
     sent.setdefault("_titles", []).append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now})
     return f"نُشر ({by})"

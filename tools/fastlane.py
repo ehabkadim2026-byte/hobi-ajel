@@ -93,9 +93,9 @@ def main():
     while time.time() < run_until:
         t0 = time.time()
         stats["loops"] += 1
-        main_sigs = gh_get("main_sigs.json") if stats["loops"] % 4 == 1 else main_sigs if stats["loops"] > 1 else []
+        main_sigs = (gh_get("main_sigs.json") + gh_get("tv_sigs.json")) if stats["loops"] % 4 == 1 else main_sigs if stats["loops"] > 1 else []
         now = datetime.now(timezone.utc)
-        mine = [x for x in mine if x.get("ts", 0) >= time.time() - 12 * 3600]
+        mine = [x for x in mine if x.get("ts", 0) >= time.time() - T.DEDUP_H * 3600]
         T.build_idf([x.get("title", "") for x in mine] + [x.get("title", "") for x in main_sigs][-400:]) if stats["loops"] % 20 == 1 else None
         from concurrent.futures import ThreadPoolExecutor
         allc = [(c, "official") for c in CFG["channels"]] + [(c, "breaking") for c in CFG.get("breaking", []) if c not in CFG["channels"]]
@@ -142,13 +142,17 @@ def main():
                 lk = T.lead_key(first)
                 if ch not in CFG["loud"] and sum(1 for x in mine + main_sigs if x.get("ts", 0) >= time.time() - 3600 and T.lead_key(x.get("title") or "") == lk) >= 2:
                     skip("نفس الجهة خلال ساعة"); continue
-                if T.LOWVAL_RX.search(first) or T.incomplete(first):
+                if T.low_value(first) or T.incomplete(first) or T.PRESS_RX.search(first):
                     skip("عنوان غير صالح"); continue
                 if ch in CFG.get("agency", []):
                     # وكالة موثوقة: عاجلها (أو حدث مهم بكلمات صريحة) عن العراق يُنشر فوراً منسوباً لها، بلا انتظار مصدر ثانٍ
-                    if not (FLAG.search(p["text"][:40]) or STRICT.search(first)) or not T.iraq_strict(first):
-                        skip("وكالة: ليس عاجلاً عراقياً"); continue
-                    ok = True
+                    if not T.iraq_strict(first):
+                        skip("وكالة: ليس عراقياً"); continue
+                    if FLAG.search(p["text"][:40]) or STRICT.search(first):
+                        ok = True
+                    else:  # خبر وكالة غير موسوم: يحكم النموذج على أهميته (واع سبقتنا 12 مرة بأخبار عادية مهمة كنا ننتظرها للجولة الرئيسية)
+                        ok, by = important(p["text"][:600])
+                        ok = ok and by == "Gemini" and not T.ROUTINE_RX.search(first)
                 elif tier == "breaking":
                     # قنوات الأخبار السريعة: فقط ما وسمته «عاجل» ويذكر العراق صراحة
                     if not FLAG.search(p["text"][:40]) or not T.iraq_strict(first):

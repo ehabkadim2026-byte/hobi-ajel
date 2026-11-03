@@ -29,7 +29,7 @@ DEBUG = []
 CHANNEL = "https://t.me/hassawassal"
 RANK = {"عاجل": 3, "مهم": 2, "متابعة": 1}
 MAX_PER_HOUR = 12
-REGION_MIN_SOURCES = 8
+REGION_MIN_SOURCES = 12
 REGION_PER_HOUR = 3
 
 
@@ -74,6 +74,29 @@ def src(n):
 
 def rank(n):
     return 3 if n.get("source_flag") else RANK.get(n.get("level"), 0)
+
+
+SURGE_MIN = 5  # 5 جهات مختلفة خلال 20 دقيقة = خبر يتصاعد الآن
+
+
+def surging(n):
+    return (n.get("surge_n") or 0) >= SURGE_MIN
+
+
+OFFICIAL_RX = re.compile(r"(رئاسة الوزراء|مجلس الوزراء|خلية الإعلام الأمني|وزارة|الحكومة|مجلس النواب|القضاء|مفوضية|البنك المركزي|رئاسة الجمهورية|قيادة العمليات)")
+
+
+def importance(n):
+    """درجة أهمية (لا «كم» بل «نوع»): مستوى الخبر، سرعة انتشاره الآن، مصدر رسمي، تعدد الجهات المستقلة، وحدث فعلي لا تصريح."""
+    import math
+    t = n.get("title") or ""
+    sc = rank(n) * 2.0 + math.log2(1 + (n.get("independent") or n.get("n_sources") or 1))
+    sc += 2.5 if surging(n) else (1.0 if n.get("escalating") else 0)
+    sc += 1.0 if OFFICIAL_RX.search(t) else 0
+    sc += 1.0 if EVENT_RX.search(t) else 0
+    sc -= 1.5 if ROUTINE_RX.search(t) else 0
+    sc -= 1.0 if STATEMENT_RX.search(t) and not OFFICIAL_RX.search(t) else 0
+    return round(sc, 2)
 
 
 IRAQ_T = None
@@ -212,18 +235,29 @@ def worthy(n, now):
     ct = clean_headline(t)
     if JUNK.match(ct or "") or len((ct or "").split()) < 6 or PROMO_RX.search(ct) or ct.lstrip().startswith(("•", "-", "▪")):
         return False
-    if n.get("ctype") == "تحليل/رأي" or LOWVAL_RX.search(ct) or incomplete(ct):
+    if n.get("ctype") == "تحليل/رأي" or low_value(ct) or incomplete(ct) or (PRESS_RX.search(ct) and (n.get("n_sources") or 1) < 4):
         return False
     if (n.get("about_iraq") or n.get("pmf")) and iraq_strict(t) and n.get("origin") != "أجنبي":
         if ROUTINE_RX.search(ct) and n.get("level") != "عاجل" and (n.get("n_sources") or 1) < 6:
             return False  # استقبالات ولقاءات وجولات روتينية: لا تُنشر إلا إذا تداولتها 6 جهات فأكثر
-        return bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم")
+        return bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم") or surging(n)
     return is_regional(n)
 
 
 # عناوين ليست أخباراً: أسئلة رأي وتحليل، مسلسلات، فتاوى، توعية، مقالات رأي
 LOWVAL_RX = re.compile(r"(؟\s*$|\?\s*$|مسلسل|الحلقة|حلقة|تعترف لوالد|ما حكم|حكم إعطاء|زكاة|فتوى|اليوم الدولي|اليوم العالمي|رحلة تبدأ بتجربة|"
-                       r"^بالرغم من|^في كف|يشتكي من|حلاق|فكريات|نرسل لكم|عناوين جريدة|صباحكم|مساءكم)")
+                       r"^بالرغم من|^في كف|يشتكي من|حلاق|فكريات|نرسل لكم|عناوين جريدة|صباحكم|مساءكم|تصفح جريدة|تصفح العدد|عدد اليوم|"
+                       r"^بسم الله|صدق الله|الرصد اليومي|لبرنامج|في برنامج|ضيف برنامج|\|\s*\S+(?:\s+\S+){0,3}\s+مع\s+\S+|الميدان مع)")
+# عرض صحف ومواقع ومقالات: «صحيفة الشرق الأوسط: …»، «موقع الحرة: …»، «وكالة الأنباء الإيرانية: …» — ليست خبراً أولياً
+PRESS_RX = re.compile(r"^(?:صحيفة|جريدة|موقع|مجلة|وكالة\s+الأنباء\s+(?:الإيرانية|الإسرائيلية|التركية)|وسائل إعلام|إعلام)\s+[^:]{2,40}:")
+
+
+def low_value(t):
+    """عنوان ليس خبراً: سؤال/برنامج/فتوى/عرض صحف/شعار (فقرات بنقاط تعليق بلا فعل)."""
+    t = (t or "").strip()
+    if LOWVAL_RX.search(t):
+        return True
+    return t.count("…") + t.count("...") >= 2 and not VERB_RX.search(t)
 ROUTINE_RX = re.compile(r"(يستقبل|استقبل|یستقبل|يبحث مع|بحث مع|يلتقي|التقى|يزور|زار|جولة ميدانية|يتابع|يترأس|ترأس|يستعرض|تستعرض|يشيد|تشيد|يهنئ|يعزي|"
                         r"حملة تشجير|تحتفي|يحتفي|ورشة|ندوة|مؤتمر صحفي مشترك)")
 ROLE_START = re.compile(r"^(رئيس|نائب|وزير|وزيرة|محافظ|مستشار|مدير|وكيل|قائد|المتحدث|الناطق|السفير|عضو)")
@@ -238,6 +272,8 @@ def incomplete(t):
         return True
     if w[-1] in ("في", "من", "على", "إلى", "الى", "عن", "مع", "واقع", "بشأن", "حول", "الى", "و", "أو", "التي", "الذي", "بعد", "قبل", "ضد", "عبر"):
         return True
+    if re.search(r"\sلـ\s*\S+(?:\s+\S+)?$", t.strip()) or re.search(r"(?:لـ|ل)(?:قناة|وكالة|موقع|برنامج)\s*\S*$", t.strip()):
+        return True  # «النائب فلان لـ ntv عراق» = اسم المتحدث بلا تصريحه
     return bool(ROLE_START.search(t)) and not VERB_RX.search(t) and len(w) <= 12
 
 
@@ -248,6 +284,8 @@ def is_regional(n):
         return False
     if far_title(t) or not me_title(t) or MINOR_RX.search(t):
         return False
+    if STATEMENT_RX.search(t) or PRESS_RX.search(t) or not EVENT_RX.search(t):
+        return False  # الإقليمي = حدث كبير (ضربة، انفجار، هجوم) لا تصريح ترمب أو وزير خارجية أو عرض صحيفة
     return (bool(n.get("source_flag")) or n.get("level") in ("عاجل", "مهم")) and (n.get("n_sources") or 1) >= REGION_MIN_SOURCES
 
 
@@ -265,12 +303,16 @@ def is_breaking(n):
     """عاجل: خبر عراقي عاجل، أو خبر إقليمي عاجل كبير جداً (8 جهات فأكثر). لا يكفي تكرار النشر وحده."""
     if rank(n) < 3:
         return False
+    if NOT_URGENT_RX.search(n.get("title") or "") or low_value(n.get("title") or ""):
+        return False  # خدمات وإعلانات وتصريحات بروتوكولية: تُنشر خبراً عادياً بلا شارة «عاجل»
     if iraq_strict(n.get("title") or "") and (n.get("about_iraq") or n.get("pmf")):
         return True
     t = n.get("title") or ""
     return (not far_title(t) and me_title(t) and (n.get("n_sources") or 1) >= 25 and bool(EVENT_RX.search(t)) and not STATEMENT_RX.search(t))
 
 
+NOT_URGENT_RX = re.compile(r"(تصفح|جريدة|السلف|سلفة|التقديم|استمارة|نتائج القبول|المنحة|يوجه بفتح|قاعة|نسخة متميزة|أسعار خام|سعر خام|"
+                           r"ضعف عام|تطبيق|يهنئ|يعزي|يستقبل|استقبل|يلتقي|التقى|يشيد|الأنواء|طقس|درجات الحرارة)")
 EVENT_RX = re.compile(r"(مقتل|قتلى|انفجار|انفجارات|قصف|غارة|غارات|هجوم|اغتيال|زلزال|اشتباكات|سقوط صاروخ|صواريخ|إغلاق مضيق|اجتياح|حرب)")
 STATEMENT_RX = re.compile(r"^[^:]{2,40}:|(يؤكد|أكد|يقول|قال|يرى|يعتبر|صرح|يصرح|يشير)")
 
@@ -485,14 +527,17 @@ def fastlane_sigs(name="fast_sigs.json"):
         return []
 
 
-def publish_main_sigs(titles):
-    """بصمات ما نشرته الجولة الرئيسية (آخر 12 ساعة) ليقرأها المسار السريع فلا يكرره."""
+DEDUP_H = 36  # نافذة منع التكرار: خبر الأمس نفسه لا يُعاد اليوم (احتجاج الشاحنات تكرر في يومين)
+
+
+def publish_main_sigs(titles, name="main_sigs.json"):
+    """بصمات ما نُشر (آخر 36 ساعة) على إصدار fastlane ليقرأها كل مسار (رئيسي/سريع/تلفزيون) فلا يكرر غيره."""
     import subprocess
     import tempfile
     try:
         with tempfile.TemporaryDirectory() as td:
-            p = Path(td) / "main_sigs.json"
-            p.write_text(json.dumps([x for x in titles if x.get("ts", 0) >= datetime.now(timezone.utc).timestamp() - 12 * 3600], ensure_ascii=False), encoding="utf-8")
+            p = Path(td) / name
+            p.write_text(json.dumps([x for x in titles if x.get("ts", 0) >= datetime.now(timezone.utc).timestamp() - DEDUP_H * 3600][-600:], ensure_ascii=False), encoding="utf-8")
             if subprocess.run(["gh", "release", "view", "fastlane"], capture_output=True, timeout=25).returncode:
                 subprocess.run(["gh", "release", "create", "fastlane", "--title", "المسار السريع", "--notes", "بصمات المنشور بين المسارين", "--prerelease"],
                                capture_output=True, timeout=25)
@@ -773,6 +818,33 @@ def digest(news, now):
     return "\n".join(out)[:4000]
 
 
+def surge_alerts(token, sent, news, now, msgs):
+    """تنبيه مبكر للمحررين بالخاص: خبر عراقي يتصاعد الآن (5 جهات فأكثر خلال 20 دقيقة). مرة واحدة لكل خبر."""
+    chats = list((sent.get("_editor_chats") or {}).values())
+    done = sent.setdefault("_surge", {})
+    for k in [k for k, v in done.items() if v < now.timestamp() - 48 * 3600]:
+        done.pop(k, None)
+    n_sent = 0
+    for n in sorted(news, key=lambda n: -(n.get("surge_n") or 0)):
+        if not surging(n) or n["id"] in done or not (n.get("about_iraq") or n.get("pmf")) or not iraq_strict(n.get("title") or ""):
+            continue
+        if low_value(n.get("title") or "") or n_sent >= 3:
+            continue
+        done[n["id"]] = now.timestamp()
+        fs = n.get("first_src") or {}
+        posted = "✅ منشور بالقناة" if n["id"] in msgs else "⏳ لم يُنشر بعد بالقناة"
+        txt = (f"🚀 يتصاعد الآن\n<b>{H.escape(n['title'][:300])}</b>\n\n{n.get('surge_n')} جهات خلال 20 دقيقة · {n.get('n_sources') or 1} جهات إجمالاً\n"
+               f"أول ظهور: {H.escape(fs.get('name') or '?')} {bg(fs.get('time')) if fs.get('time') else ''}\n"
+               f"الحالة: {H.escape(n.get('status') or 'غير مؤكد')} · {posted}\nالانتشار ليس تأكيداً.")
+        for c in chats:
+            try:
+                api(token, "sendMessage", chat_id=c, text=txt[:4000], parse_mode="HTML", disable_web_page_preview="true")
+            except Exception:  # noqa: BLE001
+                pass
+        n_sent += 1
+    return n_sent
+
+
 def watch_alerts(token, sent, news, now):
     """تنبيهات قوائم المتابعة بالخاص للمحررين (لا للقناة العامة): حدث واحد = تنبيه واحد، وتحديث واحد إذا صار عاجلاً."""
     chats = list((sent.get("_editor_chats") or {}).values())
@@ -881,18 +953,19 @@ def main():
         first_run = not sent.get("_init")
         out = []
         build_idf([x.get("title") or "" for x in news])
-        posted = [x for x in sent.get("_titles", []) if x.get("ts", 0) >= now.timestamp() - 12 * 3600]
-        fast = fastlane_sigs()  # ما نشره المسار السريع: لا نكرره، ويُحسب بالسقف الساعي
-        posted_all = posted + [x for x in fast if x.get("ts", 0) >= now.timestamp() - 12 * 3600]
+        posted = [x for x in sent.get("_titles", []) if x.get("ts", 0) >= now.timestamp() - DEDUP_H * 3600]
+        fast = fastlane_sigs() + fastlane_sigs("tv_sigs.json")  # ما نشره المسار السريع ومقاطع التلفزيون: لا نكرره، ويُحسب بالسقف الساعي
+        posted_all = posted + [x for x in fast if x.get("ts", 0) >= now.timestamp() - DEDUP_H * 3600]
         # نسخة البصمات المنشورة على الإصدار: حماية من ذاكرة مخبأة قديمة (جولتان متوازيتان أو كاش لم يُحفظ)
         mine_ts = {round(x.get("ts", 0)) for x in posted}
-        posted_all += [x for x in fastlane_sigs("main_sigs.json") if x.get("ts", 0) >= now.timestamp() - 12 * 3600 and round(x.get("ts", 0)) not in mine_ts]
+        posted_all += [x for x in fastlane_sigs("main_sigs.json") if x.get("ts", 0) >= now.timestamp() - DEDUP_H * 3600 and round(x.get("ts", 0)) not in mine_ts]
         hour_n = sum(1 for x in posted_all if x.get("id") and x.get("ts", 0) >= now.timestamp() - 3600)  # منشورات النظام الجديد + السريع
         reg_n = sum(1 for x in posted if x.get("reg") and x.get("ts", 0) >= now.timestamp() - 3600)
         dup_skipped = 0
         msgs = load(MSGS, {})
         updates = []
-        for n in sorted(news, key=lambda n: n.get("collected_utc") or ""):
+        # الأهم أولاً: السقف الساعي يذهب لأقوى الأخبار لا لأقدمها جمعاً
+        for n in sorted(news, key=lambda n: (-importance(n), n.get("collected_utc") or "")):
             if n["id"] in sent or not worthy(n, now):
                 continue  # كل خبر يُنشر مرة واحدة فقط (لا إعادة نشر حتى لو تكرر لدى جهات أكثر — طلب إيهاب 2026-11-01)
             sig = title_sig(n["title"])
@@ -915,6 +988,10 @@ def main():
                 sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "dup": True}
                 continue  # منشوران عن الجهة نفسها خلال ساعة يكفيان (اجتماع واحد نزل 6 مرات)
             reg = is_regional(n)
+            if reg and IDF and any(x.get("reg") and x.get("ts", 0) >= now.timestamp() - 6 * 3600 and
+                                   any(IDF.get(w, 6.0) >= RARE + 1 for w in set(x.get("w") or []) & sig[0]) for x in posted_all):
+                status["region_topic_dup"] = status.get("region_topic_dup", 0) + 1
+                continue  # الحدث الإقليمي نفسه (قشم، سيستان) يُنشر مرة واحدة خلال 6 ساعات مهما تعددت صياغاته
             if reg and reg_n >= REGION_PER_HOUR and not is_breaking(n):
                 status["region_cap"] = status.get("region_cap", 0) + 1
                 continue
@@ -932,7 +1009,7 @@ def main():
             hour_n += 1
             reg_n += reg
             out.append((n, False))
-        sent["_titles"] = posted[-400:]
+        sent["_titles"] = posted[-600:]
         publish_main_sigs(sent["_titles"])
         status["dup_skipped"] = dup_skipped
         status["candidates"] = len(out)
@@ -952,7 +1029,7 @@ def main():
                 continue
             status["images"][kind] = status["images"].get(kind, 0) + 1
             pend.append({"id": n["id"], "card": card, "text": fmt(n, upd), "b": is_breaking(n), "kb": buttons(n),
-                         "now": bool(n.get("about_iraq") and n.get("level") in ("عاجل", "مهم"))})  # المهم العراقي يُرسل فوراً بلا انتظار نشر الموقع
+                         "now": bool(n.get("about_iraq") and (n.get("level") in ("عاجل", "مهم") or surging(n)))})  # المهم العراقي يُرسل فوراً بلا انتظار نشر الموقع
             sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "b": is_breaking(n)}
             status["sent_now"] += 1
         for n, orig in updates:  # تحديثات كرد على المنشور الأصلي (نص فقط، بلا بطاقة)
@@ -1053,7 +1130,7 @@ def main():
                     vs[n["id"]] = {"d": day, "t": now.timestamp(), "k": k}
                     entry = {"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp(), "id": n["id"], "title": (n.get("title") or "")[:200]}
                     posted.append(entry)
-                    sent["_titles"] = posted[-400:]
+                    sent["_titles"] = posted[-600:]
                     status["variety_post"] = {"id": n["id"], "k": k}
                 except Exception as e:  # noqa: BLE001
                     DEBUG.append(f"variety:{type(e).__name__}:{str(e)[:40]}")
@@ -1081,6 +1158,10 @@ def main():
             sent["_digest"] = today
             status["digest"] = today
         status["watch_alerts"] = watch_alerts(token, sent, news, now)
+        try:
+            status["surge_alerts"] = surge_alerts(token, sent, news, now, msgs)
+        except Exception as e:  # noqa: BLE001
+            status["surge_alerts"] = f"خطأ {type(e).__name__}"
         cut = now.timestamp() - 3 * 86400
         sent = {k: v for k, v in sent.items() if k.startswith("_") or v.get("t", 0) >= cut}
         wa = sent.get("_walert", {})

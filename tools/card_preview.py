@@ -26,9 +26,12 @@ for n in items:
     except Exception:  # noqa: BLE001
         continue
     h = headline(n)
-    (out / f"{done}_news.jpg").write_bytes(tg_card.card_news(ph, h, done % 2 == 0, n.get("first_utc")))
+    name, _ = src(n)
+    (out / f"{done}_news2.jpg").write_bytes(tg_card.card_news2(ph, h, is_breaking(n), n.get("first_utc")))
+    (out / f"{done}_news3.jpg").write_bytes(tg_card.card_news3(ph, h, is_breaking(n), n.get("first_utc"), source=name))
     print(done, n["title"][:80], "=>", h)
     done += 1
-    if done >= 4:
+    if done >= 5:
         break
-(out / "nophoto_news.jpg").write_bytes(tg_card.card_news(None, headline(items[0]), True, items[0].get("first_utc")))
+(out / "nophoto_news3.jpg").write_bytes(tg_card.card_news3(None, headline(items[0]), True, items[0].get("first_utc")))
+(out / "opinion_news3.jpg").write_bytes(tg_card.card_news3(None, "تثبيت سقف الإنتاج يمنح الاستقرار المالي ويدعم التخطيط الاقتصادي للعراق", False, items[0].get("first_utc"), tag="رأي"))

@@ -364,6 +364,8 @@ def main(hours=24):
             except Exception as e:  # noqa: BLE001
                 print("::warning title=spread::", type(e).__name__, str(e)[:100])
         recent_n = sum(1 for r in irows if r["collected_utc"] and r["collected_utc"] >= iso(now - timedelta(minutes=60)))
+        # سرعة الانتشار (مثل Dataminr): عدد الجهات المختلفة التي نشرته خلال آخر 20 دقيقة — قفزة مفاجئة = خبر يتصاعد الآن
+        surge_n = len({r["source_name"] for r in irows if r["collected_utc"] and r["collected_utc"] >= iso(now - timedelta(minutes=20))})
         alts, lead = None, None
         if not title_ar and (about_iraq or pmf) and (level in ("عاجل", "مهم", "متابعة") or source_flag):
             seen_a = set()
@@ -386,7 +388,7 @@ def main(hours=24):
                     "sources": [{"name": e["source"], "url": e["url"], "time": e["time"]} for e in ev][:6],
                     "why": d.get("why") or [], "source_flag": source_flag, "ctype": ctype, "pmf": pmf, "pmf_kind": pmf_kind,
                     "edited": bool(edited), "detect_delay_min": round(delays[0], 1) if delays and delays[0] >= -5 else None,
-                    "escalating": recent_n >= 3 and (c["n_items"] or 0) >= 4,
+                    "escalating": recent_n >= 3 and (c["n_items"] or 0) >= 4, "surge_n": surge_n,
                     "trending_unconfirmed": (d["n_sources"] or 0) >= 3 and st != "مؤكد",
                     "pmf_class": pmf_class, "watch": watch_hits, "vstatus": va["vstatus"], "vwhy": va["vwhy"], "cited": va["cited"],
                     "origin_rec": va["origin"], "independent": va["independent"], "manual": any(r["platform"] == "manual" for r in irows),

@@ -1081,3 +1081,99 @@ def card_news2(photo_jpg, title, breaking=True, when_utc=None, tag=None, stats=N
             _draw_rtl(d, xr, y - 4, str(val), _cairo(38, 800), (232, 196, 120))
             _draw_rtl(d, xr, y + 44, lab, _cairo(21, 600), (170, 184, 210))
     return _jpg(im)
+
+
+def card_news3(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=None):
+    """«نشرة ٣» عمودي 4:5 (1080×1350) — يأخذ مساحة أكبر في شاشة الهاتف داخل تلغرام.
+    صورة كاملة أعلى البطاقة تذوب في لوح حبر كحلي، لسان وسم مستدير على الحد، شريط لوني رفيع بجانب العنوان،
+    عنوان Cairo عريض كبير حتى 4 أسطر، وتذييل هادئ فيه الجهة والوقت والمعرّف. بلا زخارف لا وظيفة لها."""
+    from PIL import ImageDraw as _D, ImageFilter
+    W, H, P = 1080, 1350, 64
+    tag = tag or ("عاجل" if breaking else "خبر")
+    col, fg_col = TAGS.get(tag, TAGS["خبر"])
+    if tag in ("خبر", "تحديث"):
+        col = (34, 92, 220)  # أزرق أوضح من الكحلي حتى لا يذوب اللسان في اللوح
+    ink = (8, 17, 40)
+    kw = {"direction": "rtl", "language": "ar"} if RAQM else {}
+    tmp = _D.Draw(Image.new("RGB", (10, 10)))
+    kick, head = split_kicker(title)
+    f, sz, lines = _fit_cairo(tmp, head, W - 2 * P - 26, 4, [74, 68, 62, 58, 54, 50], weight=850, lh_k=1.42)
+    lh = int(sz * 1.42)
+    kick_h = 54 if kick else 0
+    foot_h = 96
+    panel_h = 98 + kick_h + lh * len(lines) + 40 + foot_h
+    ph_h = H - panel_h + 70  # الصورة تمتد تحت أول اللوح ليذوب فيها
+    im = Image.new("RGB", (W, H), ink)
+    if photo_jpg:
+        im.paste(_photo_frame(photo_jpg, W, ph_h), (0, 0))
+    else:
+        d0 = _D.Draw(im)
+        for y in range(ph_h):
+            k = y / ph_h
+            d0.line([(0, y), (W, y)], fill=(int(18 - 8 * k), int(42 - 22 * k), int(92 - 46 * k)))
+        lw = _logo_white(300)
+        if lw:
+            a = lw.split()[3].point(lambda v: int(v * 0.10))
+            im.paste(Image.new("RGB", lw.size, (255, 255, 255)), (W // 2 - lw.width // 2, ph_h // 2 - 150), a)
+    top = H - panel_h
+    # ذوبان الصورة في اللوح + تعتيم خفيف أعلى الصورة لوضوح الشعار
+    g = Image.new("L", (W, 260), 0)
+    dg = _D.Draw(g)
+    for y in range(260):
+        dg.line([(0, y), (W, y)], fill=int(255 * (y / 260) ** 1.6))
+    im.paste(Image.new("RGB", (W, 260), ink), (0, top - 190), g)
+    im.paste(Image.new("RGB", (W, H - top - 70), ink), (0, top + 70))
+    gt = Image.new("L", (W, 170), 0)
+    dt = _D.Draw(gt)
+    for y in range(170):
+        dt.line([(0, y), (W, y)], fill=int(120 * (1 - y / 170) ** 1.8))
+    im.paste(Image.new("RGB", (W, 170), (0, 0, 0)), (0, 0), gt)
+    d = _D.Draw(im)
+    lw = _logo_white(74)
+    if lw:
+        x0, y0 = W - P - lw.width + 14, 40
+        sh = lw.split()[3].filter(ImageFilter.GaussianBlur(6)).point(lambda v: int(v * 0.55))
+        im.paste(Image.new("RGB", lw.size, (0, 0, 0)), (x0 + 2, y0 + 3), sh)
+        im.paste(Image.new("RGB", lw.size, (255, 255, 255)), (x0, y0), lw.split()[3])
+        d = _D.Draw(im)
+    # لسان الوسم المستدير على حد اللوح
+    ft = _cairo(36, 900)
+    label = tag
+    tw = d.textlength(_shape(label), font=ft, **kw)
+    dot = 26 if tag == "عاجل" else 0
+    pw, phh = int(tw + 56 + dot), 66
+    px1, py0 = W - P, top + 6
+    d.rounded_rectangle([px1 - pw, py0, px1, py0 + phh], radius=33, fill=col)
+    if dot:
+        cx, cy = px1 - 30, py0 + phh // 2
+        d.ellipse([cx - 8, cy - 8, cx + 8, cy + 8], fill=(255, 255, 255))
+    _draw_rtl(d, px1 - 28 - dot, py0 + 5, label, ft, fg_col)
+    sub = {"عاجل": "الآن", "رأي": "قراءة هسة وصل", "تحليل": "قراءة في حدث اليوم", "منوعات": "من العراق"}.get(tag)
+    if sub:
+        _draw_rtl(d, px1 - pw - 22, py0 + 14, sub, _cairo(28, 700), (205, 214, 232))
+    y = py0 + phh + 26
+    if kick:
+        _draw_rtl(d, W - P, y, kick, _cairo(36, 750), (255, 196, 92) if tag in ("تحليل", "رأي") else (122, 178, 255))
+        y += kick_h
+    # الشريط اللوني الرفيع بجانب العنوان (بداية السطر العربي)
+    d.rounded_rectangle([W - P + 18, y + 10, W - P + 26, y + lh * len(lines) - int(sz * 0.25)], radius=4, fill=col)
+    for ln in lines:
+        _draw_rtl(d, W - P - 10, y, ln, f, (255, 255, 255))
+        y += lh
+    # التذييل
+    fy = H - foot_h + 18
+    d.line([(P, fy - 14), (W - P, fy - 14)], fill=(38, 54, 88), width=2)
+    fs = _cairo(27, 700)
+    right = source if source and source != kick else "عاجل هسه وصل"
+    _draw_rtl(d, W - P, fy, right, fs, (196, 206, 226))
+    ffl = _cairo(26, 600)
+    hd = "@hassawassal"
+    d.text((P, fy + 1), hd, font=ffl, fill=(140, 156, 188), **({"direction": "ltr"} if RAQM else {}))
+    w = _when(when_utc)
+    if w:
+        xw = P + d.textlength(hd, font=ffl) + 22
+        d.text((xw, fy + 1), "·", font=ffl, fill=(90, 106, 140))
+        _draw_rtl(d, xw + 22 + d.textlength(_shape(w), font=ffl, **kw), fy + 1, w, ffl, (140, 156, 188))
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=90, optimize=True, progressive=True)
+    return buf.getvalue()
