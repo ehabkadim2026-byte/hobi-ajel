@@ -110,6 +110,22 @@
    "added_by": "محرك الاكتشاف",
    "evidence": "درجة 52 · صلة 0.5 · أصالة 0.1 · 10/24س · https://news.imn.iq · كانت تصلنا عبر Google News (32/24س)",
    "priority": 1
+  },
+  {
+   "id": "rss:https://ashourland.net/feed/",
+   "name": "ارض اشور — RSS",
+   "url": "https://ashourland.net/feed/",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مسار السرعة (بديل Google News)",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "محرك الاكتشاف",
+   "evidence": "درجة 50 · صلة 0.4 · أصالة 0.1 · 10/24س · https://ashourland.net · كانت تصلنا عبر Google News (29/24س)",
+   "priority": 1
   }
  ]
 }
