@@ -109,7 +109,10 @@ if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "deep":
     for x, v in sl.items():
         if x.lower() not in existing and not x.lower().endswith("bot") and x.lower() not in ("share", "joinchat", "addlist", "s", "proxy"):
             cited[x] |= {"q:" + q for q in v}
-    top = sorted(cited, key=lambda k: -len(cited[k]))[:350]
+    extra = [x.strip() for x in open(".github/probe_tg.txt", encoding="utf-8") if x.strip() and not x.startswith("#")]
+    for x in extra:
+        if x.lower() not in existing: cited[x].add("guess")
+    top = sorted(cited, key=lambda k: -len(cited[k]))[:400]
     res = list(ex.map(tg, top))
     for r in res:
         r["cited_by"] = sorted(cited[r["u"]])[:8]; r["n_cited"] = len(cited[r["u"]]); r.pop("refs", None)
