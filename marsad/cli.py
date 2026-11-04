@@ -41,7 +41,10 @@ def clean_source_name(r):
     """اسم المصدر لازم يكون اسم جهة، مو عنوان خبر (بعض المواقع تضع آخر عنوان باسم الخلاصة)."""
     name = r.get("name") or ""
     base, _, suf = name.rpartition(" — ")
-    base = base or name
+    if not base:  # بلا فاصل: rpartition يرجع الاسم كله باللاحقة فصار «X — X (Google News)» (فحص 2، تدقيق 22:11 04/11)
+        base, suf = name, ""
+    elif suf.startswith(base.strip()):  # إصلاح ما خرب سابقاً: «X — X (Google News)» ← X
+        return base.strip()
     if base.strip().lower() not in ("t.me", "telegram.me") and not re.search(r"[ەێۆڵڕڤ]", base) and len(base.split()) <= 6 and not re.search(r"[.!؟?:«»\"]|\b(تعدم|يعلن|تعلن|يستقيل|مقتل|قتلى)\b", base):
         return name
     hl = re.compile(r"[.!؟?:«»\"]|\b(تعدم|يعلن|تعلن|يستقيل|مقتل|قتلى)\b")
