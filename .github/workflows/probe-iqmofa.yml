@@ -1,0 +1,24 @@
+name: probe-iqmofa
+on: {push: {branches: [probe-iqmofa]}}
+permissions: {contents: write}
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env: {GH_TOKEN: "${{ github.token }}", GH_REPO: "${{ github.repository }}"}
+        run: |
+          curl -sSL -m 30 -A "Mozilla/5.0" https://t.me/s/iqmofa -o probe_iqmofa.html || true
+          python3 - <<'PY'
+          import re, json, html
+          p = open("probe_iqmofa.html", encoding="utf-8", errors="replace").read()
+          out = []
+          for b in p.split('class="tgme_widget_message_wrap')[1:]:
+              pid = re.search(r'data-post="([^"]+)"', b); t = re.search(r'<time[^>]+datetime="([^"]+)"', b)
+              tx = re.search(r'tgme_widget_message_text[^>]*>(.*?)</div>', b, re.S)
+              out.append({"post": pid and pid.group(1), "t": t and t.group(1), "text": html.unescape(re.sub(r"<[^>]+>", " ", tx.group(1)))[:200] if tx else ""})
+          title = re.search(r'<meta property="og:title" content="([^"]*)"', p)
+          subs = re.search(r'tgme_page_extra">([^<]+)<', p)
+          json.dump({"bytes": len(p), "title": title and html.unescape(title.group(1)), "extra": subs and subs.group(1), "posts": out}, open("probe_iqmofa.json", "w"), ensure_ascii=False, indent=1)
+          PY
+          gh release upload probe probe_iqmofa.json --clobber
