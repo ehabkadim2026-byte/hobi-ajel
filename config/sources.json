@@ -1042,19 +1042,6 @@
    "official": false
   },
   {
-   "id": "telegram:t.me/almaalomah",
-   "name": "المعلومة — telegram",
-   "url": "https://t.me/almaalomah",
-   "platform": "telegram",
-   "method": "telegram_preview",
-   "status": "لم يُجمع بعد",
-   "frequency": "ساعي",
-   "category": "وكالات ومواقع",
-   "region": "العراق",
-   "lang": "ar",
-   "official": false
-  },
-  {
    "id": "telegram:t.me/almadatelegram",
    "name": "AlMada - المدى — telegram",
    "url": "https://t.me/almadatelegram",
@@ -3316,9 +3303,9 @@
    "official": false
   },
   {
-   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=site:kurdistan24.net%20OR%20site:alforatnews.iq%20OR%20site:almaalomah.me%20OR%20site:almasalah.com%20when:1d",
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=site:kurdistan24.net%20OR%20site:alforatnews.iq%20OR%20site:almasalah.com%20when:1d",
    "name": "مواقع عراقية — كوردستان 24، الفرات نيوز، المعلومة، المسلة (Google News)",
-   "url": "https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=site:kurdistan24.net%20OR%20site:alforatnews.iq%20OR%20site:almaalomah.me%20OR%20site:almasalah.com%20when:1d",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=site:kurdistan24.net%20OR%20site:alforatnews.iq%20OR%20site:almasalah.com%20when:1d",
    "platform": "web",
    "method": "rss",
    "status": "لم يُجمع بعد",
