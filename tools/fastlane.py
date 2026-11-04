@@ -23,6 +23,19 @@ CFG = json.loads((ROOT / "config" / "fastlane.json").read_text(encoding="utf-8")
 UA = {"User-Agent": "Mozilla/5.0 (Linux; Android 14) Chrome/126 Mobile"}
 STRICT = re.compile(r"(عاجل|مقتل|قتلى|استشهاد|انفجار|قصف|استهداف|اشتباك|اغتيال|القبض|اعتقال|حريق|غرق|زلزال|هزة|سيول|تعطيل|عطلة|الدوام|"
                     r"رواتب|الرواتب|قرار|يقرر|تقرر|إقالة|استقالة|تعيين|إعفاء|حظر|منع|إغلاق|فتح|الموازنة|سعر الصرف|الدولار|انتخابات|المفوضية|حكم|يقضي|الإعدام|السجن)")
+ME_RX = re.compile(r"(فلسطين|غزة|الضفة|لبنان|بيروت|سوريا|دمشق|إيران|طهران|تركيا|أنقرة|السعودية|الرياض|الخليج|اليمن|صنعاء|الأردن|مصر|القاهرة|إسرائيل|الاحتلال|الكويت|قطر|الإمارات|البحرين|هرمز|البحر الأحمر)")
+FAR_RX = re.compile(r"(الانتخابات الأمريكية|الكونغرس|مجلس النواب الأمريكي|الديمقراطيون|الجمهوريون|أوكرانيا|روسيا|الصين|تايوان|كوريا)")
+
+
+def regional_ok(ch, text, first, mine):
+    """حدث إقليمي كبير (عربي/شرق أوسط) موسوم «عاجل» من العربية/الحدث/الجزيرة — طلب إيهاب 04/11، بسقف منفصل بالساعة."""
+    if ch not in CFG.get("intl", []) or not FLAG.search(text[:40]) or FAR_RX.search(first) or not ME_RX.search(first):
+        return False
+    if not (T.SEC_RX.search(first) or T.EVENT_RX.search(first)):
+        return False
+    return sum(1 for x in mine if x.get("ts", 0) >= time.time() - 3600 and x.get("reg")) < CFG.get("region_per_hour", 6)
+
+
 FLAG = re.compile(r"^\W{0,6}(عاجل|عــاجل|عاااجل|⚡|🔴|🚨)")
 ROUTINE = re.compile(r"(يهنئ|تهنئ|تبارك|يبارك|تهنئة|يعزي|تعزية|ينعى|نعى|بمناسبة|ذكرى|عيد|يستذكر|صباح الخير|جمعة مباركة|رحم الله|إنا لله|تابعونا|رابط القناة)")
 STATE = ROOT / "data" / "fastlane_state.json"
@@ -291,6 +304,7 @@ def main():
                     skip("روتيني", "routine" if first else "short"); continue
                 if sum(1 for x in mine if x.get("ts", 0) >= time.time() - 3600) >= CFG["per_hour"]:
                     skip("سقف"); continue
+                regional = False
                 sig = T.title_sig(first)
                 if any(T.same_story(sig, x) for x in mine + main_sigs) or T.sec_dup(first, mine + main_sigs, time.time()):
                     skip("مكرر"); continue
@@ -307,10 +321,12 @@ def main():
                 iraqi = T.iraq_strict(first) or (ch not in CFG.get("intl", []) and T.iraq_domestic(first))
                 if ch in CFG.get("agency", []) or tier == "rss" or (tier == "breaking" and ttier == "موثوقة"):
                     # وكالة موثوقة (أو موقعها مباشرة عبر RSS): عاجلها (أو حدث مهم بكلمات صريحة) عن العراق يُنشر فوراً منسوباً لها، بلا انتظار مصدر ثانٍ
-                    if not iraqi:
+                    if not iraqi and regional_ok(ch, p["text"], first, mine):
+                        regional = True
+                    elif not iraqi:
                         skip("وكالة: ليس عراقياً"); continue
                     why_no = "no_strict"
-                    if FLAG.search(p["text"][:40]) or STRICT.search(first):
+                    if regional or FLAG.search(p["text"][:40]) or STRICT.search(first):
                         ok = True
                     else:  # خبر وكالة غير موسوم: يحكم النموذج على أهميته (واع سبقتنا 12 مرة بأخبار عادية مهمة كنا ننتظرها للجولة الرئيسية)
                         ok, by = important(p["text"][:600], news=True) if gem_ok() else (False, "سقف")
@@ -318,10 +334,12 @@ def main():
                         ok = ok and by == "Gemini" and not T.ROUTINE_RX.search(first)
                 elif tier == "breaking":
                     # قنوات الأخبار السريعة: فقط ما وسمته «عاجل» ويذكر العراق صراحة
-                    if not iraqi:
+                    if not iraqi and regional_ok(ch, p["text"], first, mine):
+                        regional = True
+                    elif not iraqi:
                         skip("ليس عراقياً"); continue
                     why_no = "no_strict"
-                    if FLAG.search(p["text"][:40]) or T.SEC_RX.search(first):
+                    if regional or FLAG.search(p["text"][:40]) or T.SEC_RX.search(first):
                         ok = True  # عاجل عراقي، أو خبر أمني عراقي حتى بلا وسم «عاجل» (الأمني لا ينتظر)
                     elif gem_ok():
                         # خبر عراقي غير موسوم من قناة سريعة (دجلة، السومرية، 964…): المسار السريع هو الناشر الأساسي الآن،
@@ -381,7 +399,7 @@ def main():
                 if r.get("ok"):
                     stats["posted"] += 1
                     mine.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time(), "title": first[:200], "id": f"fast:{ch}/{p['id']}",
-                                 "lag_min": round(age, 1)})
+                                 "lag_min": round(age, 1), "reg": regional})
                     gh_put("fast_sigs.json", mine)
                     decide(ch, p["id"], head, "post", "loud" if loud else tier)
                     try:  # تغذية لحظية للتطبيق (موقّعة) — يظهر بالتطبيق خلال ثوانٍ بدل انتظار الجولة
