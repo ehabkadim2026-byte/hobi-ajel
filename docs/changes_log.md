@@ -3,3 +3,4 @@
 سطر لكل تعديل على `tools/tg_push.py`، `tools/fastlane.py`، `tools/tv_source.py`، `tools/confirm.py`، `tools/manual_pub.py`، `config/fastlane.json` (القاعدة في `docs/agents/README.md` — «قاعدة التعديل الحساس»).
 الصيغة: `- YYYY-MM-DD HH:MM بغداد | الملفات | السبب | commit`
 
+- 2026-11-04 16:19 بغداد | config/fastlane.json، config/sources.json | توسعة التغطية: +45 مصدراً موثّقاً بالفحص (19 قناة محافظات/عاجل عراقية، 19 خلاصة إعلام عربي ودولي عن العراق، 7 خلاصات صحفيين ومحللين)، و«breaking» +25 (20 قناة مرصودة سبقت بأخبار عراقية ببيانات الرصد + 5 قنوات محافظات جديدة) و«intl» +3 (التلفزيون العربي، الأناضول، الشرق) | (هذا الـcommit)
