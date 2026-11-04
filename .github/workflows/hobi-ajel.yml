@@ -181,6 +181,7 @@ jobs:
         env:
           MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
           MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
+          GH_TOKEN: ${{ github.token }}  # سجل «أكدته» وبصمات المسار السريع على إصدار fastlane
       - uses: actions/cache/save@v4
         if: always()
         with: {path: data/tg_msgs.json, key: "tgmsg-${{ github.run_id }}"}

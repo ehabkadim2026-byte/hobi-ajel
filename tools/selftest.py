@@ -21,4 +21,6 @@ assert T.iraq_title("البنك المركزي العراقي") and not T.iraq_t
 T.fmt({"title": "وزارة الداخلية تعلن القبض على عصابة", "level": "مهم", "sources": [{"name": "x", "url": "https://ina.iq/1"}]})
 from tools import tg_card as C  # noqa: E402
 assert len(C.card_a(None, "البنك المركزي العراقي: شحنة جديدة من الدولار", True, "2026-11-01T10:00:00Z")) > 10000
+from tools import test_confirm  # noqa: E402
+test_confirm.run()  # «✅ أكدته» وسجل قرارات المسار السريع بواجهة تلغرام وهمية
 print("selftest ok")

@@ -651,6 +651,33 @@ def fmt(n, update=False, kind="news"):
     return "\n\n".join([lines[0], "\n".join(lines[1:])] if len(lines) > 1 else lines) + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
 
 
+def is_official_post(n):
+    """منشورنا صادر عن جهة رسمية أصلاً (سطر التحقق ✅ أو المصدر المنسوب رسمي) ← لا يحتاج «أكدته»."""
+    from tools import confirm as CF
+    return verify_line(n).startswith("✅") or bool(CF.official_name(src(n)[1]))
+
+
+def confirm_round(token, chat_id, news, now, api_fn=None, ledger=None):
+    """عناقيد فيها جهة رسمية مُصدِرة ← «✅ أكدته» على منشوراتنا غير الرسمية للخبر نفسه (آخر 6 ساعات، مرة لكل منشور)."""
+    from tools import confirm as CF
+    hits = [(n, CF.official_hits(n)) for n in news if n.get("title")]
+    hits = [(n, h) for n, h in hits if h]
+    if not hits:
+        return 0
+    led = ledger or CF.Ledger("main")
+    if not any(True for _ in led.candidates(now.timestamp())):
+        return 0
+    done = 0
+    for n, h in hits:
+        for name, ts in h:
+            if ts < now.timestamp() - CF.WINDOW_H * 3600:
+                continue
+            done += CF.check(led, api_fn or api, token, chat_id, name, n["title"], ts, nid=n["id"], now=now.timestamp(), max_edits=5 - done)
+            if done >= 5:
+                return done
+    return done
+
+
 def buttons(n):
     import urllib.parse as _u
     row = []
@@ -796,12 +823,20 @@ def send_pending(token, chat_id, only_breaking=False):
             kw["reply_parameters"] = json.dumps({"message_id": msgs[p["reply_to"]], "allow_sending_without_reply": True})
         return kw
 
-    def keep(p, r):
+    ledger = [None]
+
+    def keep(p, r, kind=None, text=None, lp=None):
         try:
             if r.get("ok"):
                 msgs[p["id"]] = r["result"]["message_id"]
-        except Exception:  # noqa: BLE001
-            pass
+                if kind and p.get("sig") and not p.get("textonly"):  # سجل «أكدته الجهة الرسمية»: ما يلزم لتعديل التعليق لاحقاً
+                    from tools import confirm as CF
+                    if ledger[0] is None:
+                        ledger[0] = CF.Ledger("main")
+                    ledger[0].add_post(r["result"]["message_id"], p["sig"], text if text is not None else p["text"], kind, p.get("off", False),
+                                       title=p.get("title") or "", kb=p.get("kb"), lp=lp, nid=p["id"], src=p.get("src"))
+        except Exception as e:  # noqa: BLE001
+            DEBUG.append(f"keep:{type(e).__name__}:{str(e)[:40]}")
 
     late_sigs = None
     for p in pend:
@@ -834,7 +869,7 @@ def send_pending(token, chat_id, only_breaking=False):
                         caption=p["text"][:1024], width="1080" if CARD_STYLE == "news4A" else "1280", height="1350" if CARD_STYLE == "news4A" else "720", **common(p))
                 av.unlink()
                 if r.get("ok"):
-                    keep(p, r)
+                    keep(p, r, "animation", p["text"][:1024])
                     done["anim"] += 1
                     continue
             except Exception as e:  # noqa: BLE001
@@ -848,19 +883,20 @@ def send_pending(token, chat_id, only_breaking=False):
             _t.sleep(4)
         try:
             if ok:
-                r = api(token, "sendMessage", chat_id=chat_id, text=p["text"],
-                        link_preview_options=json.dumps({"url": cu, "prefer_large_media": True, "show_above_text": True}), **common(p))
+                lp = json.dumps({"url": cu, "prefer_large_media": True, "show_above_text": True})
+                r = api(token, "sendMessage", chat_id=chat_id, text=p["text"], link_preview_options=lp, **common(p))
                 done["preview"] += 1
+                keep(p, r, "text", p["text"], lp)
             else:
                 r = api(token, "sendPhoto", files={"photo": (p["card"], (CARDS / p["card"]).read_bytes())}, chat_id=chat_id,
                         caption=p["text"][:1024], **common(p))
                 done["photo"] += 1
-            keep(p, r)
+                keep(p, r, "photo", p["text"][:1024])
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"sendfail:{type(e).__name__}:{str(e)[:60]}")
             try:
                 r = api(token, "sendMessage", chat_id=chat_id, text=p["text"], parse_mode="HTML", disable_web_page_preview="true")
-                keep(p, r)
+                keep(p, r, "text", p["text"])
                 done["text"] += 1
             except Exception:  # noqa: BLE001
                 try:  # آخر محاولة: نص خام بلا تنسيق (خطأ HTML لا يُسقط المنشور)
@@ -876,6 +912,8 @@ def send_pending(token, chat_id, only_breaking=False):
         done["subs"] = SB.dispatch(token, api, items, load(SENT, {}), msgs, APP_URL)
     except Exception as e:  # noqa: BLE001
         DEBUG.append(f"subs:{type(e).__name__}:{str(e)[:40]}")
+    if ledger[0] is not None:
+        ledger[0].save()
     PENDING.write_text(json.dumps(later, ensure_ascii=False), encoding="utf-8")
     if only_breaking:
         MSGS.write_text(json.dumps(msgs, ensure_ascii=False), encoding="utf-8")
@@ -1156,6 +1194,10 @@ def main():
         reg_n = sum(1 for x in posted if x.get("reg") and x.get("ts", 0) >= now.timestamp() - 3600)
         dup_skipped = 0
         msgs = load(MSGS, {})
+        try:
+            status["confirmed"] = confirm_round(token, chat_id, news, now)
+        except Exception as e:  # noqa: BLE001
+            DEBUG.append(f"confirm:{type(e).__name__}:{str(e)[:50]}")
         updates = []
         # الأهم أولاً: السقف الساعي يذهب لأقوى الأخبار لا لأقدمها جمعاً
         for n in sorted(news, key=lambda n: (-importance(n), n.get("collected_utc") or "")):
@@ -1233,8 +1275,10 @@ def main():
                 DEBUG.append(f"cardfail:{type(e).__name__}")
                 continue
             status["images"][kind] = status["images"].get(kind, 0) + 1
+            nsig = title_sig(n["title"])  # بصمة الخبر نفسه (كانت تُؤخذ من آخر خبر فُحص في حلقة الاختيار)
             pend.append({"id": n["id"], "card": card, "text": fmt(n, upd), "b": is_breaking(n), "kb": buttons(n),
-                         "now": True, "sig": {"w": sorted(sig[0]), "d": sorted(sig[1])}, "first": n.get("first_utc")})  # صورة مباشرة: لا داعي لانتظار نشر الموقع  # المهم العراقي يُرسل فوراً بلا انتظار نشر الموقع
+                         "now": True, "sig": {"w": sorted(nsig[0]), "d": sorted(nsig[1])}, "first": n.get("first_utc"),
+                         "off": is_official_post(n), "title": (n.get("title") or "")[:200], "src": src(n)[1]})  # صورة مباشرة: لا داعي لانتظار نشر الموقع  # المهم العراقي يُرسل فوراً بلا انتظار نشر الموقع
             sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "b": is_breaking(n)}
             status["sent_now"] += 1
         for n, orig in updates:  # تحديثات كرد على المنشور الأصلي (نص فقط، بلا بطاقة)

@@ -100,6 +100,37 @@ def gem_ok():
     return True
 
 
+DECISIONS = []  # سجل دائري لقرارات المسار السريع (لماذا رُفض/نُشر كل منشور) يُرفع fast_decisions.json للمدقق
+DEC_MAX = 400
+REASON = {"قديم": "fresh", "روتيني": "routine", "سقف": "cap", "مكرر": "dup", "نفس الجهة خلال ساعة": "same_actor",
+          "وكالة: ليس عراقياً": "not_iraq", "ليس عراقياً": "not_iraq", "سقف النموذج بالساعة": "gem_cap"}
+
+
+def decide(ch, pid, head, decision, reason):
+    DECISIONS.append({"t": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "ch": ch, "id": pid, "head": (head or "")[:80],
+                      "decision": decision, "reason": reason})
+    del DECISIONS[:-DEC_MAX]
+
+
+def bad_title_reason(t):
+    """سبب دقيق لرفض «عنوان غير صالح» (عامية، جهة مستبعدة، مبتور، عرض صحف، قيمة منخفضة)."""
+    if T.dialect(t):
+        return "dialect"
+    if T.EXCL_RX.search(t):
+        return "excluded"
+    if T.incomplete(t):
+        return "incomplete"
+    if T.PRESS_RX.search(t):
+        return "press"
+    return "low_value"
+
+
+def official_ch(ch, tier):
+    """قناة جهة رسمية مُصدِرة (قائمة channels + رسمية في sources.json، لا وكالة ولا إعلام حكومي ناقل)."""
+    from tools import confirm as CF
+    return CF.official_name(ch) if tier == "official" else None
+
+
 def iraq_strong(t):
     from marsad.textnorm import norm_ar
     iq, _ = T._markers()
@@ -129,6 +160,15 @@ def main():
     UL.start(token, _all0, run_until - 60)  # حساب الرصد: منشورات لحظية بدل انتظار الفحص الدوري
     LOWER = {c.lower(): c for c in _all0}
     NAMES = {}
+    from tools import confirm as CF
+    try:
+        ledger = CF.Ledger("fast")
+    except Exception as e:  # noqa: BLE001
+        ledger = None
+        print("::warning title=confirm ledger::", type(e).__name__)
+    LAST_DEC = [time.time()]
+    prev_dec = gh_get("fast_decisions.json")  # السجل الدائري يستمر عبر إعادة التشغيل
+    DECISIONS[:] = (prev_dec.get("items") or [])[-DEC_MAX:] if isinstance(prev_dec, dict) else []
     while time.time() < run_until:
         t0 = time.time()
         try:  # أوامر المحررين /نشر و/عاجل: تُنشر خلال ثوانٍ
@@ -137,6 +177,11 @@ def main():
             print("::warning title=manual_pub::", type(e).__name__)
         stats["loops"] += 1
         main_sigs = (gh_get("main_sigs.json") + gh_get("tv_sigs.json")) if stats["loops"] % 4 == 1 else main_sigs if stats["loops"] > 1 else []
+        if ledger is not None and stats["loops"] % 4 == 1:
+            try:
+                ledger.refresh_other()  # منشورات الجولة الرئيسية المرشحة لـ«أكدته»
+            except Exception:  # noqa: BLE001
+                pass
         now = datetime.now(timezone.utc)
         mine = [x for x in mine if x.get("ts", 0) >= time.time() - T.DEDUP_H * 3600]
         T.build_idf([x.get("title", "") for x in mine] + [x.get("title", "") for x in main_sigs][-400:]) if stats["loops"] % 20 == 1 else None
@@ -181,16 +226,27 @@ def main():
             if not seen:
                 continue  # أول مرة: نسجل خط الأساس فقط
             for p in new:
-                def skip(why):
-                    stats["skipped"][why] = stats["skipped"].get(why, 0) + 1
-                age = (now - p["t"]).total_seconds() / 60
                 from tools.editorial import complete_line
-                first = complete_line(p["text"])
+                raw = first = complete_line(p["text"])
+
+                def skip(why, code=None):
+                    stats["skipped"][why] = stats["skipped"].get(why, 0) + 1
+                    decide(ch, p["id"], raw, "skip", code or REASON.get(why, why))
+                age = (now - p["t"]).total_seconds() / 60
+                oname = official_ch(ch, tier)
+                if oname and ledger is not None and first and age <= CF.WINDOW_H * 60:
+                    try:  # جهة رسمية نشرت: هل نشرنا الخبر نفسه من مصدر غير رسمي؟ ← «✅ أكدته» على منشورنا (قبل فلاتر النشر: غالباً يُرفض هنا كمكرر)
+                        c_n = CF.check(ledger, T.api, token, chat_id, oname, first, p["t"].timestamp())
+                        if c_n:
+                            stats["confirmed"] = stats.get("confirmed", 0) + c_n
+                            decide(ch, p["id"], first, "confirm", f"edited:{c_n}")
+                    except Exception as e:  # noqa: BLE001
+                        print("::warning title=confirm::", type(e).__name__, str(e)[:80])
                 first = first if len(first.split()) >= 6 and not T.PROMO_RX.search(first) else ""
                 if age > CFG["max_age_min"]:
                     skip("قديم"); continue
                 if not first or PROMO.search(first) or ROUTINE.search(first):
-                    skip("روتيني"); continue
+                    skip("روتيني", "routine" if first else "short"); continue
                 if sum(1 for x in mine if x.get("ts", 0) >= time.time() - 3600) >= CFG["per_hour"]:
                     skip("سقف"); continue
                 sig = T.title_sig(first)
@@ -200,40 +256,46 @@ def main():
                 if ch not in CFG["loud"] and sum(1 for x in mine + main_sigs if x.get("ts", 0) >= time.time() - 3600 and T.lead_key(x.get("title") or "") == lk) >= 2:
                     skip("نفس الجهة خلال ساعة"); continue
                 if T.low_value(first) or T.incomplete(first) or T.PRESS_RX.search(first):
-                    skip("عنوان غير صالح"); continue
+                    skip("عنوان غير صالح", bad_title_reason(first)); continue
                 # قناة عراقية (لا عربية/دولية): خبر جهة رسمية بصيغة محلية بلا اسم العراق يكفي إذا خلا من أي علامة أجنبية («التقاعد: …»، «شرطة …»)
                 iraqi = T.iraq_strict(first) or (ch not in CFG.get("intl", []) and T.iraq_domestic(first))
                 if ch in CFG.get("agency", []) or tier == "rss":
                     # وكالة موثوقة (أو موقعها مباشرة عبر RSS): عاجلها (أو حدث مهم بكلمات صريحة) عن العراق يُنشر فوراً منسوباً لها، بلا انتظار مصدر ثانٍ
                     if not iraqi:
                         skip("وكالة: ليس عراقياً"); continue
+                    why_no = "no_strict"
                     if FLAG.search(p["text"][:40]) or STRICT.search(first):
                         ok = True
                     else:  # خبر وكالة غير موسوم: يحكم النموذج على أهميته (واع سبقتنا 12 مرة بأخبار عادية مهمة كنا ننتظرها للجولة الرئيسية)
                         ok, by = important(p["text"][:600], news=True) if gem_ok() else (False, "سقف")
+                        why_no = "gem_cap" if by == "سقف" else "gem_unavailable" if by != "Gemini" else "gem_no" if not ok else "routine"
                         ok = ok and by == "Gemini" and not T.ROUTINE_RX.search(first)
                 elif tier == "breaking":
                     # قنوات الأخبار السريعة: فقط ما وسمته «عاجل» ويذكر العراق صراحة
                     if not iraqi:
                         skip("ليس عراقياً"); continue
+                    why_no = "no_strict"
                     if FLAG.search(p["text"][:40]) or T.SEC_RX.search(first):
                         ok = True  # عاجل عراقي، أو خبر أمني عراقي حتى بلا وسم «عاجل» (الأمني لا ينتظر)
                     elif gem_ok():
                         # خبر عراقي غير موسوم من قناة سريعة (دجلة، السومرية، 964…): المسار السريع هو الناشر الأساسي الآن،
                         # والجولة الرئيسية تتأخر 5–10 دقائق بطبيعتها — يحكم النموذج على أهميته (تحليل السبق 2026-11-03)
                         ok, by = important(p["text"][:600], news=True)
+                        why_no = "gem_unavailable" if by != "Gemini" else "gem_no" if not ok else "routine"
                         ok = ok and by == "Gemini" and not T.ROUTINE_RX.search(first)
                     else:
                         skip("سقف النموذج بالساعة"); continue
                 else:
                     ok, by = important(p["text"][:600], news=True)
+                    why_no = "gem_no"
                     if by != "Gemini":
                         ok = bool(STRICT.search(p["text"][:400]))  # بلا نموذج لغوي: كلمات الحدث المهم فقط (لا «يلتقي/يستقبل»)
+                        why_no = "gem_unavailable"  # والكلمات الصريحة لم تكفِ
                 if not ok:
-                    skip("غير مهم"); continue
+                    skip("غير مهم", why_no); continue
                 head = edit_headline(first, context=p["text"][:500])
                 if T.low_value(head) or T.incomplete(head) or len(head.split()) < 5:
-                    skip("عنوان غير صالح"); continue  # التحرير قد يبتر العنوان (حذف هاشتاغ/سطر): نفحص الناتج النهائي لا الخام (تدقيق 2883، 2884)
+                    skip("عنوان غير صالح", "edited_" + (bad_title_reason(head) if len(head.split()) >= 5 else "short")); continue  # التحرير قد يبتر العنوان (حذف هاشتاغ/سطر): نفحص الناتج النهائي لا الخام (تدقيق 2883، 2884)
                 photo = p.get("img_bytes")
                 if not photo and p["img"]:
                     try:
@@ -250,11 +312,13 @@ def main():
                 kb = json.dumps({"inline_keyboard": [[{"text": "📖 المصدر", "url": p.get("url") or f"https://t.me/{ch}/{p['id']}"},
                                                       {"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fhassawassal"}]]})
                 r = {"ok": False}
+                kind = "photo"
                 if loud:  # العاجل يومض: بطاقة متحركة (تُحفظ فيديو من تلغرام)، والصورة احتياط
                     try:
                         anim = tg_card.breaking_anim(photo, head, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), style="news4A", source=re.sub(r" — .*$", "", cname))
                         r = T.api(token, "sendAnimation", files={"animation": ("breaking.mp4", anim, "video/mp4")}, chat_id=chat_id, caption=cap[:1024],
                                   parse_mode="HTML", reply_markup=kb, width="1080", height="1350", disable_notification="false")
+                        kind = "animation" if r.get("ok") else "photo"
                     except Exception as e:  # noqa: BLE001
                         print("::warning title=fastlane anim::", type(e).__name__)
                 try:
@@ -264,20 +328,36 @@ def main():
                 except Exception as e:  # noqa: BLE001
                     r = {"ok": False}
                     print("::warning title=fastlane send::", type(e).__name__)
+                if not r.get("ok"):
+                    decide(ch, p["id"], head, "fail", "send_failed")
                 if r.get("ok"):
                     stats["posted"] += 1
                     mine.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time(), "title": first[:200], "id": f"fast:{ch}/{p['id']}",
                                  "lag_min": round(age, 1)})
                     gh_put("fast_sigs.json", mine)
+                    decide(ch, p["id"], head, "post", "loud" if loud else tier)
+                    if ledger is not None:
+                        try:  # سجل «أكدته الجهة الرسمية»: منشور من جهة غير رسمية قد تؤكده جهة رسمية لاحقاً
+                            ledger.add_post(r["result"]["message_id"], sig, cap[:1024], kind, bool(official_ch(ch, tier)), title=first,
+                                            kb=kb, src=ch)
+                            ledger.save()
+                        except Exception as e:  # noqa: BLE001
+                            print("::warning title=confirm add::", type(e).__name__)
                     print(f"::notice title=fastlane posted::{ch}/{p['id']} بعد {age:.1f} د من نشر المصدر — {head[:80]}")
         if stats["loops"] % 10 == 0:
-            gh_put("fast_status.json", {**stats, "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")})
+            from tools import confirm as _CF
+            gh_put("fast_status.json", {**stats, "confirm_log": _CF.LOG[-10:], "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")})
+        if time.time() - LAST_DEC[0] >= 300 and DECISIONS:  # سجل القرارات كل ~5 دقائق
+            LAST_DEC[0] = time.time()
+            gh_put("fast_decisions.json", {"at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "n": len(DECISIONS), "items": DECISIONS})
         STATE.parent.mkdir(exist_ok=True)
         STATE.write_text(json.dumps({"last": last}, ensure_ascii=False), encoding="utf-8")
         # تهدئة تلقائية إذا كثرت أخطاء الجلب (حماية من حدود الطلبات)
         err_rate = sum(1 for _, r in results if r is None) / max(1, len(results))
         step = CFG.get("hot_every_sec", 8) * (3 if err_rate > 0.3 else 1)
         UL.WAKE.wait(max(2, step - (time.time() - t0)))  # يستيقظ فوراً إذا وصل منشور لحظي
+    if DECISIONS:
+        gh_put("fast_decisions.json", {"at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "n": len(DECISIONS), "items": DECISIONS})
     print(f"::notice title=fastlane::{json.dumps(stats, ensure_ascii=False)}")
 
 

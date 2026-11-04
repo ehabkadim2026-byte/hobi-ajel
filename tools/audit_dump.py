@@ -1,4 +1,5 @@
-"""تفريغ للتدقيق: آخر منشورات القناة (نص كامل + وقت + مشاهدات) وملفات الحالة. للقراءة فقط."""
+"""تفريغ للتدقيق: آخر منشورات القناة (نص كامل + وقت + مشاهدات) وملفات الحالة. للقراءة فقط.
+سير audit.yml ينسخ معه من إصدار fastlane إلى probe: fast_status.json وfast_decisions.json (قرارات المسار السريع وأسبابها) وposted_fast/main.json."""
 import html as H, json, re, urllib.request
 from datetime import datetime, timedelta, timezone
 UA = {"User-Agent": "Mozilla/5.0"}
