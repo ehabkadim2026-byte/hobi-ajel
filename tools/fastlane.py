@@ -104,7 +104,12 @@ def main():
     from tools.editorial import edit_headline
     from tools import tg_card
     from tools import manual_pub as MP
+    from tools import tg_user_listener as UL
     seen_manual = MP.done_ids()
+    _all0 = list(dict.fromkeys(CFG.get("hot", []) + CFG["channels"] + CFG.get("breaking", [])))  # الأسرع أولاً للاشتراك التدريجي
+    UL.start(token, _all0, run_until - 60)  # حساب الرصد: منشورات لحظية بدل انتظار الفحص الدوري
+    LOWER = {c.lower(): c for c in _all0}
+    NAMES = {}
     while time.time() < run_until:
         t0 = time.time()
         try:  # أوامر المحررين /نشر و/عاجل: تُنشر خلال ثوانٍ
@@ -120,7 +125,8 @@ def main():
         allc = [(c, "official") for c in CFG["channels"]] + [(c, "breaking") for c in CFG.get("breaking", []) if c not in CFG["channels"]]
         hot = set(CFG.get("hot", []))
         full = time.time() - LAST_FULL[0] >= CFG["every_sec"] or stats["loops"] == 1
-        chans = allc if full else [x for x in allc if x[0] in hot]  # الأكثر سبقاً كل 8 ثوانٍ، الكل كل 25
+        woke = UL.WAKE.is_set()
+        chans = allc if full else ([] if woke else [x for x in allc if x[0] in hot])  # الأكثر سبقاً كل 8 ثوانٍ، الكل كل 25، ولا فحص إذا أيقظنا منشور لحظي
         if full:
             LAST_FULL[0] = time.time()
 
@@ -130,7 +136,17 @@ def main():
             except Exception:  # noqa: BLE001
                 return c, None
         with ThreadPoolExecutor(10) as ex:
-            results = list(ex.map(fetch, chans))
+            results = list(ex.map(fetch, chans)) if chans else []
+        tiers = dict(allc)
+        for (c, _t), r in results:
+            if r:
+                NAMES[c] = r[1]
+        for lc, ps in UL.drain().items():  # ما وصل لحظياً من حساب الرصد يُعالج بنفس المسار والفلاتر
+            c = LOWER.get(lc)
+            if c and c in tiers:
+                results.append(((c, tiers[c]), (sorted(ps, key=lambda x: x["id"]), NAMES.get(c, c))))
+                stats["live"] = stats.get("live", 0) + len(ps)
+        stats["listener"] = dict(UL.STATUS)
         for (ch, tier), res in results:
             if res is None:
                 stats["errors"] += 1
@@ -194,8 +210,8 @@ def main():
                 head = edit_headline(first, context=p["text"][:500])
                 if T.low_value(head) or T.incomplete(head) or len(head.split()) < 5:
                     skip("عنوان غير صالح"); continue  # التحرير قد يبتر العنوان (حذف هاشتاغ/سطر): نفحص الناتج النهائي لا الخام (تدقيق 2883، 2884)
-                photo = None
-                if p["img"]:
+                photo = p.get("img_bytes")
+                if not photo and p["img"]:
                     try:
                         photo = tg_card.fetch_jpeg(p["img"])
                     except Exception:  # noqa: BLE001
@@ -237,7 +253,7 @@ def main():
         # تهدئة تلقائية إذا كثرت أخطاء الجلب (حماية من حدود الطلبات)
         err_rate = sum(1 for _, r in results if r is None) / max(1, len(results))
         step = CFG.get("hot_every_sec", 8) * (3 if err_rate > 0.3 else 1)
-        time.sleep(max(2, step - (time.time() - t0)))
+        UL.WAKE.wait(max(2, step - (time.time() - t0)))  # يستيقظ فوراً إذا وصل منشور لحظي
     print(f"::notice title=fastlane::{json.dumps(stats, ensure_ascii=False)}")
 
 
