@@ -1,0 +1,14 @@
+name: probe-ntfy
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - run: |
+          curl -s -m 20 "https://ntfy.sh/hobi-ajel-live-v1-9c4e27/json?poll=1&since=2h" > ntfy.txt || true
+          wc -l ntfy.txt; head -c 600 ntfy.txt
+          gh release upload probe ntfy.txt --clobber -R ${{ github.repository }}
