@@ -43,6 +43,11 @@ PERSONAL = re.compile(r"(منشورك|صورتك|تعليقك|قصتك|منشو�
 POSTED = re.compile(r"(نشر|نشرت|شارك|شاركت|بث مباشر|بثاً مباشراً|أضاف|أضافت|posted|shared|is live|went live|added|updated)", re.I)
 
 
+# صفحة جهة دولة عراقية (حسب اسمها بالإشعار): وزارة، محافظة، ديوان، قيادة، شرطة، مديرية، هيئة، البنك المركزي...
+GOV_PAGE = re.compile(r"(وزارة|محافظة|ديوان|قيادة|شرطة|مديرية|هيئة|البنك المركزي|مجلس النواب|مجلس الوزراء|المكتب الإعلامي|جهاز|دائرة|الدفاع المدني|"
+                      r"المحكمة|مجلس القضاء|مفوضية|خلية الإعلام|العمليات المشتركة|Ministry|Governorate|Central Bank|Police|Commission)", re.I)
+
+
 def allowed(page, text):
     """القائمة البيضاء في config/fb_pages.json (إن وُجدت) لها الأولوية؛ وإلا: «صفحة نشرت» وليس إشعاراً شخصياً."""
     try:
@@ -98,7 +103,8 @@ def main():
             if len(text) < 10 or not allowed(page, text):
                 stats["filtered_private"] = stats.get("filtered_private", 0) + 1
                 continue
-            items.append({"source_id": "fb:notifications", "source_name": f"إشعار فيسبوك — {page[:60]}",
+            off = bool(GOV_PAGE.search(page))  # قرار إيهاب 04/11: صفحات الجهات الحكومية اللي يتابعها تُعامل رسمية
+            items.append({"source_id": "fb:official" if off else "fb:notifications", "source_name": f"{page[:60]} — فيسبوك" if off else f"إشعار فيسبوك — {page[:60]}",
                           "url": f"https://fb-notification.hobi-ajel.local/{ev['id']}", "platform": "facebook_notif",
                           "title": text.split("\n")[0][:220], "text": text,
                           "published_utc": datetime.fromtimestamp(ev["time"], timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -108,6 +114,8 @@ def main():
             con = core.connect()
             con.execute("INSERT OR IGNORE INTO sources(id, name, url, platform, category, region, lang, method, official, status, added_by) "
                         "VALUES('fb:notifications', 'إشعارات فيسبوك (هاتف المحرر)', 'https://www.facebook.com', 'facebook', 'إشعارات فيسبوك', 'العراق', 'ar', 'manual', 0, 'يعمل', 'MacroDroid')")
+            con.execute("INSERT OR IGNORE INTO sources(id, name, url, platform, category, region, lang, method, official, status, added_by) "
+                        "VALUES('fb:official', 'صفحات فيسبوك رسمية (هاتف المحرر)', 'https://www.facebook.com', 'facebook', 'مصادر رسمية وأولية', 'العراق', 'ar', 'manual', 1, 'يعمل', 'MacroDroid')")
             core.ingest_batch(con, {"items": items})
             con.commit()
             stats["new"] = len(items)
