@@ -1,0 +1,25 @@
+name: probe-name
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - run: |
+          for u in geedarbaghdad alhashed_alshaebe; do
+            h=$(curl -sL "https://t.me/s/$u")
+            echo "== $u" >> o.txt
+            echo "$h" | grep -o 'property="og:title" content="[^"]*' >> o.txt
+            echo "$h" | grep -o 'property="og:description" content="[^"]*' | head -c 300 >> o.txt; echo >> o.txt
+            echo "$h" | grep -o '<span class="counter_value">[^<]*</span> <span class="counter_type">[^<]*' | head -3 >> o.txt
+            echo "$h" | grep -o 'datetime="[^"]*"' | tail -3 >> o.txt
+            echo "$h" | grep -o 'tgme_widget_message_text js-message_text" dir="auto">[^<]*' | tail -4 | cut -c50-260 >> o.txt
+          done
+          echo "== site" >> o.txt
+          for p in "" feed rss index.php/feed; do echo "-- /$p $(curl -s -o /dev/null -w '%{http_code} %{content_type}' -m 20 https://al-hashed.gov.iq/$p)" >> o.txt; done
+          curl -s -m 20 https://al-hashed.gov.iq/ | grep -io '<link[^>]*rss[^>]*>' | head -3 >> o.txt
+          cat o.txt
+          gh release upload probe o.txt --clobber -R ${{ github.repository }}
