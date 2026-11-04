@@ -15,6 +15,11 @@ try:
     IRAQ_ONLY = {x["id"] for x in json.loads((ROOT / "config" / "sources.json").read_text(encoding="utf-8"))["sources"] if x.get("iraq_only")}
 except Exception:  # noqa: BLE001
     IRAQ_ONLY = set()
+try:  # طبقات موثوقية المصادر (tools/reliability.py يكتبها قبل هذه الخطوة)
+    TRUSTED = {k for k, v in (json.loads((ROOT / "pwa" / "source_trust.json").read_text(encoding="utf-8")).get("sources") or {}).items()
+               if v.get("tier") == "موثوقة"}
+except Exception:  # noqa: BLE001
+    TRUSTED = set()
 WNAMES = {f["id"]: f.get("name", f["id"]) for f in W.load()}
 WKIND = {f["id"]: f.get("kind") for f in W.load()}
 from marsad.collect import IRAQ_RX as IRAQ_MULTI  # noqa: E402
@@ -431,8 +436,11 @@ def main(hours=24):
                     "trending_unconfirmed": (d["n_sources"] or 0) >= 3 and st != "مؤكد",
                     "pmf_class": pmf_class, "watch": watch_hits, "vstatus": va["vstatus"], "vwhy": va["vwhy"], "cited": va["cited"],
                     "origin_rec": va["origin"], "independent": va["independent"], "manual": any(r["platform"] == "manual" for r in irows),
-                    "timeline": [{"source": r["source_name"], "url": r["url"], "pub": r["published_utc"], "seen": r["collected_utc"],
-                                  "cited": V.cited_source((r["title"] or "") + " " + (r["text"] or "")), "manual": r["platform"] == "manual"} for r in irows][:12]})
+                    "timeline": [{"source": r["source_name"], "url": r["url"], "pub": r["published_utc"], "seen": r["collected_utc"], "sid": r["source_id"],
+                                  "cited": V.cited_source((r["title"] or "") + " " + (r["text"] or "")), "manual": r["platform"] == "manual",
+                                  # عنوان المادة لمصادر «موثوقة» ولمصدر منشورنا فقط: سطر «☑️ تطابق» يقارن الأرقام ويكشف النسخ (tools/confirm.py)
+                                  **({"t": (r["title"] or "")[:200]} if r["source_id"] in TRUSTED or (ev and r["url"] == ev[0]["url"]) else {})}
+                                 for r in irows][:12]})
     V.cross_disputes(out)
     try:
         edit_titles(out)  # التحرير تحسين، لا يجوز أن يوقف نشر الأخبار أبداً

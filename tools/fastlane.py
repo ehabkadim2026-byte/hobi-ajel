@@ -120,6 +120,8 @@ def decide(ch, pid, head, decision, reason):
 
 def bad_title_reason(t):
     """سبب دقيق لرفض «عنوان غير صالح» (عامية، جهة مستبعدة، مبتور، عرض صحف، قيمة منخفضة)."""
+    if T.offensive(t):
+        return "offensive"
     if T.dialect(t):
         return "dialect"
     if T.EXCL_RX.search(t):
@@ -135,6 +137,19 @@ def official_ch(ch, tier):
     """قناة جهة رسمية مُصدِرة (قائمة channels + رسمية في sources.json، لا وكالة ولا إعلام حكومي ناقل)."""
     from tools import confirm as CF
     return CF.official_name(ch) if tier == "official" else None
+
+
+def trust_tier(ch, tier):
+    """طبقة موثوقية القناة/الموقع (source_trust.json): موثوقة/عادية/ضعيفة/غير كافٍ أو None."""
+    from tools import reliability as R
+    return R.tier_of(RSS[ch]["url"] if tier == "rss" and ch in RSS else ch)
+
+
+def load_trust():
+    from tools import reliability as R
+    d = gh_get("source_trust.json")
+    R.load(data=d if isinstance(d, dict) else {})
+    return bool(isinstance(d, dict) and d.get("sources"))
 
 
 def iraq_strong(t):
@@ -173,6 +188,10 @@ def main():
         ledger = None
         print("::warning title=confirm ledger::", type(e).__name__)
     LAST_DEC = [time.time()]
+    try:
+        stats["trust"] = load_trust()  # طبقات المصادر (تُحدَّث يومياً بالجولة الرئيسية)
+    except Exception as e:  # noqa: BLE001
+        print("::warning title=trust::", type(e).__name__)
     prev_dec = gh_get("fast_decisions.json")  # السجل الدائري يستمر عبر إعادة التشغيل
     DECISIONS[:] = (prev_dec.get("items") or [])[-DEC_MAX:] if isinstance(prev_dec, dict) else []
     while time.time() < run_until:
@@ -184,6 +203,11 @@ def main():
         stats["loops"] += 1
         main_sigs = (gh_get("main_sigs.json") + gh_get("tv_sigs.json")) if stats["loops"] % 4 == 1 else main_sigs if stats["loops"] > 1 else []
         stories = gh_get("story_first.json") if stats["loops"] % 4 == 1 else stories if stats["loops"] > 1 else []
+        if stats["loops"] % 2000 == 0:
+            try:
+                load_trust()
+            except Exception:  # noqa: BLE001
+                pass
         if ledger is not None and stats["loops"] % 4 == 1:
             try:
                 ledger.refresh_other()  # منشورات الجولة الرئيسية المرشحة لـ«أكدته»
@@ -249,6 +273,17 @@ def main():
                             decide(ch, p["id"], first, "confirm", f"edited:{c_n}")
                     except Exception as e:  # noqa: BLE001
                         print("::warning title=confirm::", type(e).__name__, str(e)[:80])
+                ttier = None if oname else trust_tier(ch, tier)
+                if ttier == "موثوقة" and ledger is not None and first and age <= CF.WINDOW_H * 60:
+                    try:  # مصدر مستقل «موثوق» نقل الخبر نفسه ← «☑️ تطابق لدى مصدر موثوق» على منشورنا (شبكة مختلفة، ليس نسخاً، أرقام متسقة)
+                        ref = RSS[ch]["url"] if tier == "rss" and ch in RSS else ch
+                        t_n = CF.check_trusted(ledger, T.api, token, chat_id, re.sub(r" — .*$", "", NAMES.get(ch) or (RSS.get(ch) or {}).get("name") or ch),
+                                               first, p["t"].timestamp(), ref)
+                        if t_n:
+                            stats["trusted"] = stats.get("trusted", 0) + t_n
+                            decide(ch, p["id"], first, "confirm", f"trusted:{t_n}")
+                    except Exception as e:  # noqa: BLE001
+                        print("::warning title=trusted::", type(e).__name__, str(e)[:80])
                 first = first if len(first.split()) >= 6 and not T.PROMO_RX.search(first) else ""
                 if age > CFG["max_age_min"]:
                     skip("قديم"); continue
@@ -266,9 +301,11 @@ def main():
                     skip("نفس الجهة خلال ساعة"); continue
                 if T.low_value(first) or T.incomplete(first) or T.PRESS_RX.search(first):
                     skip("عنوان غير صالح", bad_title_reason(first)); continue
+                if ttier == "ضعيفة":
+                    skip("مصدر ضعيف", "weak_src"); continue  # مصدر وحيد بطبقة «ضعيفة»: لا نشر سريع، والجولة الرئيسية تنشره إذا عززه مصدر آخر
                 # قناة عراقية (لا عربية/دولية): خبر جهة رسمية بصيغة محلية بلا اسم العراق يكفي إذا خلا من أي علامة أجنبية («التقاعد: …»، «شرطة …»)
                 iraqi = T.iraq_strict(first) or (ch not in CFG.get("intl", []) and T.iraq_domestic(first))
-                if ch in CFG.get("agency", []) or tier == "rss":
+                if ch in CFG.get("agency", []) or tier == "rss" or (tier == "breaking" and ttier == "موثوقة"):
                     # وكالة موثوقة (أو موقعها مباشرة عبر RSS): عاجلها (أو حدث مهم بكلمات صريحة) عن العراق يُنشر فوراً منسوباً لها، بلا انتظار مصدر ثانٍ
                     if not iraqi:
                         skip("وكالة: ليس عراقياً"); continue
@@ -350,7 +387,7 @@ def main():
                     if ledger is not None:
                         try:  # سجل «أكدته الجهة الرسمية»: منشور من جهة غير رسمية قد تؤكده جهة رسمية لاحقاً
                             ledger.add_post(r["result"]["message_id"], sig, cap[:1024], kind, bool(official_ch(ch, tier)), title=first,
-                                            kb=kb, src=ch)
+                                            kb=kb, src=RSS[ch]["url"] if tier == "rss" and ch in RSS else ch, src_ts=p["t"].timestamp())
                             ledger.save()
                         except Exception as e:  # noqa: BLE001
                             print("::warning title=confirm add::", type(e).__name__)

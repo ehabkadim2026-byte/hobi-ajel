@@ -38,4 +38,6 @@ _now = _dt.now(_tz.utc)
 _st = [{"w": sorted(T.title_sig("تأجيل محاكمة 7 متهمين فرنسيين من داعش في بغداد")[0]), "d": ["7"], "ts": _now.timestamp() - 3600}]
 assert FL.story_old(T.title_sig("تأجيل محاكمة 7 متهمين فرنسيين من داعش في بغداد… تفاصيل"), _st, _now)
 assert not FL.story_old(T.title_sig("هجوم مسلح أمام مبنى مديرية بلديات أربيل"), _st, _now)
+from tools import test_reliability  # noqa: E402
+test_reliability.run()  # موثوقية المصادر، «☑️ تطابق لدى مصدر موثوق»، بوابة «ضعيفة»، بوابة الإساءة
 print("selftest ok")

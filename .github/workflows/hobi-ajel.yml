@@ -92,6 +92,11 @@ jobs:
         continue-on-error: true
         env: {GH_TOKEN: "${{ github.token }}"}
         run: gh release download tv-pilot -p tv.json -D pwa --clobber || echo "no tv yet"
+      - name: "موثوقية المصادر (حساب يومي من القاعدة؛ باقي الجولات تنسخ نسخة اليوم من إصدار fastlane إلى pwa/)"
+        continue-on-error: true
+        timeout-minutes: 4
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: python3 -m tools.reliability
       - run: python3 -m tools.export_pwa
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

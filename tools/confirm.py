@@ -4,7 +4,9 @@
 السجل على إصدار fastlane، ملف لكل كاتب حتى لا يمسح أحدهما كتابة الآخر:
   posted_fast.json (المسار السريع) و posted_main.json (الجولة الرئيسية) = {"posts": [...], "edited": [...]}
   posts: {sig:{w,d}, message_id, posted_ts, official, confirmed, caption, kind(photo/animation/text), kb, lp, title, nid, src}
-  edited: {mid, ts, ok, by, why} — كل محاولة تعديل (ناجحة أو فاشلة) تُسجَّل فلا تُعاد، وتُحسب بسقف 20 تعديلاً بالساعة.
+  edited: {mid, ts, ok, by, why, type(off/trust), cap} — كل محاولة تعديل (ناجحة أو فاشلة) تُسجَّل فلا تُعاد (مرة لكل نوع)، وتُحسب
+  بسقف 20 تعديلاً بالساعة للنوعين معاً. cap = التعليق بعد التعديل الناجح (أساس أي تعديل لاحق من الكاتب الآخر).
+«☑️ تطابق لدى مصدر موثوق: <مصدر>» (check_trusted): مصدر مستقل بطبقة «موثوقة» في source_trust.json نقل الخبر نفسه بأرقام متسقة.
 """
 import html as H
 import json
@@ -23,7 +25,11 @@ MAX_EDITS_HOUR = 20
 FILES = {"fast": "posted_fast.json", "main": "posted_main.json"}
 LIMIT = {"photo": 1024, "animation": 1024, "text": 4096}
 VERIFY_RX = re.compile(r"^(⏳|☑️|⚠️|✅) التحقق:")
-DENY_RX = re.compile(r"(لا صحة|لاصحة|عار[يٍ]? عن الصحة|غير صحيح|ينفي|تنفي|نفى|نفت|تكذيب|يكذب|تكذب|شائعة|شائعات|مفبرك|مزيف)")
+# بحدود كلمة: بلا حدود كانت «نفت» تطابق «نفتح» و«تنفي» تطابق «تنفيذ» فتُعامل بيانات رسمية عادية كنفي
+DENY_RX = re.compile(r"(?<![\u0600-\u06FF])[وف]?(?:لا صحة|لاصحة|عار[يٍ]? عن الصحة|غير صحيح[ةه]?|ينفي|تنفي|ننفي|نفى|نفت|نفي|تكذيب|يكذب|تكذب|"
+                     r"شائعة|شائعات|مفبرك[ةه]?|مزيف[ةه]?)(?![\u0600-\u06FF])")
+AR_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
+TRUST_TAG = "☑️ تطابق لدى مصدر موثوق"
 LOG = []  # آخر الأحداث (تُعرض في fast_status/tg_status)
 
 
@@ -146,9 +152,16 @@ def confirm_line(name, ts):
     return f"✅ أكدته: {H.escape(name[:60])} — {datetime.fromtimestamp(ts, timezone.utc) + timedelta(hours=3):%H:%M} بغداد"
 
 
+def trust_line(name):
+    return f"{TRUST_TAG}: {H.escape(name[:60])}"
+
+
 def add_confirm(caption, line, kind="photo"):
-    """يضيف السطر بعد سطر التحقق (أو بعد «📌 المصدر»، أو قبل دعوة القناة). None إذا لا يصح التعديل."""
+    """يضيف السطر بعد سطر التحقق (أو بعد «📌 المصدر»، أو قبل دعوة القناة). None إذا لا يصح التعديل.
+    سطر «☑️ تطابق» لا يُضاف إذا وُجد «✅ أكدته» (التأكيد الرسمي أولى) أو سطر تطابق سابق."""
     if not caption or "✅ أكدته" in caption or "❌ التحقق" in caption or not html_ok(caption):
+        return None
+    if line.startswith(TRUST_TAG) and TRUST_TAG in caption:
         return None
     lines = caption.split("\n")
     at = next((i + 1 for i, x in enumerate(lines) if VERIFY_RX.match(x)), None)
@@ -181,26 +194,35 @@ class Ledger:
         self.data["posts"] = [p for p in self.data["posts"] if p.get("posted_ts", 0) >= now - KEEP_H * 3600][-800:]
         self.data["edited"] = [e for e in self.data["edited"] if e.get("ts", 0) >= now - KEEP_H * 3600][-800:]
 
-    def add_post(self, message_id, sig, caption, kind, official, title="", kb=None, lp=None, nid=None, src=None, ts=None):
+    def add_post(self, message_id, sig, caption, kind, official, title="", kb=None, lp=None, nid=None, src=None, ts=None, src_ts=None):
         if not message_id or not sig:
             return
         w, d = (sig.get("w"), sig.get("d")) if isinstance(sig, dict) else sig
         self.data["posts"].append({"sig": {"w": sorted(w), "d": sorted(d)}, "message_id": int(message_id), "posted_ts": ts or time.time(),
                                    "official": bool(official), "confirmed": False, "caption": caption, "kind": kind, "kb": kb, "lp": lp,
-                                   "title": (title or "")[:200], "nid": nid, "src": src})
+                                   "title": (title or "")[:200], "nid": nid, "src": src, "src_ts": src_ts})
         self.prune()
         self.dirty = True
 
-    def edited_ids(self):
-        return {e.get("mid") for e in self.data["edited"] + self.other["edited"]}
+    def edited_ids(self, typ="off"):
+        """منشورات عُدّلت (أو جُرّبت) بهذا النوع: «off» تأكيد رسمي (والسجلات القديمة بلا نوع)، «trust» تطابق مصدر موثوق."""
+        return {e.get("mid") for e in self.data["edited"] + self.other["edited"] if (e.get("type") or "off") == typ}
+
+    def caption_of(self, rec):
+        """أحدث تعليق للمنشور: آخر تعديل ناجح من أي كاتب (حتى لا يمحو تعديلٌ سطراً أضافه الكاتب الآخر)، وإلا تعليق السجل."""
+        last = max((e for e in self.data["edited"] + self.other["edited"] if e.get("mid") == rec.get("message_id") and e.get("ok") and e.get("cap")),
+                   key=lambda e: e.get("ts", 0), default=None)
+        return last["cap"] if last else (rec.get("caption") or "")
 
     def edits_last_hour(self, now=None):
         now = now or time.time()
         return sum(1 for e in self.data["edited"] + self.other["edited"] if e.get("ts", 0) >= now - 3600)
 
-    def candidates(self, now=None):
+    def candidates(self, now=None, typ="off"):
         now = now or time.time()
-        done = self.edited_ids()
+        done = self.edited_ids(typ)
+        if typ == "trust":  # «✅ أكدته» أولى: منشور أكدته جهة رسمية لا يحتاج سطر التطابق
+            done |= {e.get("mid") for e in self.data["edited"] + self.other["edited"] if (e.get("type") or "off") == "off" and e.get("ok")}
         seen = set()
         for p in self.data["posts"] + self.other["posts"]:
             mid = p.get("message_id")
@@ -209,11 +231,17 @@ class Ledger:
             seen.add(mid)
             yield p
 
-    def mark(self, rec, ok, by, why=""):
-        self.data["edited"].append({"mid": rec.get("message_id"), "ts": time.time(), "ok": bool(ok), "by": by[:60], "why": why[:80]})
+    def mark(self, rec, ok, by, why="", typ="off", cap=None):
+        e = {"mid": rec.get("message_id"), "ts": time.time(), "ok": bool(ok), "by": by[:60], "why": why[:80], "type": typ}
+        if ok and cap:
+            e["cap"] = cap
+        self.data["edited"].append(e)
         for p in self.data["posts"]:
             if p.get("message_id") == rec.get("message_id"):
-                p["confirmed"] = bool(ok)
+                if typ == "off":
+                    p["confirmed"] = bool(ok)
+                elif ok:
+                    p["caption"] = cap or p.get("caption")
         self.dirty = True
 
     def save(self):
@@ -237,13 +265,37 @@ def matches(sig, rec):
     return len(set(w) & pw) >= 3
 
 
+def _edit(ledger, api, token, chat_id, rec, new, name, typ):
+    kind = rec.get("kind") or "photo"
+    kw = {"chat_id": chat_id, "message_id": str(rec["message_id"]), "parse_mode": "HTML"}
+    if rec.get("kb"):
+        kw["reply_markup"] = rec["kb"]  # بدون إعادة الأزرار يحذفها تلغرام مع التعديل
+    try:
+        if kind == "text":
+            if rec.get("lp"):
+                kw["link_preview_options"] = rec["lp"]
+            else:
+                kw["disable_web_page_preview"] = "true"
+            r = api(token, "editMessageText", text=new, **kw)
+        else:
+            r = api(token, "editMessageCaption", caption=new, **kw)
+        ok = bool(r.get("ok"))
+        why = "" if ok else str(r.get("description") or "")[:80]
+    except Exception as e:  # noqa: BLE001
+        ok, why = False, f"{type(e).__name__}: {str(e).replace(token, '***')[:60]}"
+    ledger.mark(rec, ok, name, why, typ=typ, cap=new if ok else None)
+    if ok:
+        rec["caption"] = new
+    return ok, why
+
+
 def check(ledger, api, token, chat_id, name, title, pub_ts, nid=None, now=None, max_edits=3):
     """جهة رسمية «name» نشرت «title» وقت pub_ts. يعدّل منشوراتنا المطابقة (غير الرسمية، أحدث من 6 ساعات، غير المعدّلة). يرجع عدد التعديلات."""
     from tools import tg_push as T
     now = now or time.time()
     if not name or not title or DENY_RX.search(title):
         return 0  # نفي رسمي ليس تأكيداً
-    sig = T.title_sig(title)
+    sig = T.title_sig(title.translate(AR_DIGITS))
     n = 0
     for rec in list(ledger.candidates(now)):
         if n >= max_edits or ledger.edits_last_hour(now) >= MAX_EDITS_HOUR:
@@ -254,35 +306,64 @@ def check(ledger, api, token, chat_id, name, title, pub_ts, nid=None, now=None, 
             continue
         if DENY_RX.search(rec.get("title") or "") or (rec.get("src") and official_name(rec["src"]) == name):
             continue
-        kind = rec.get("kind") or "photo"
-        new = add_confirm(rec.get("caption") or "", confirm_line(name, pub_ts), kind)
+        new = add_confirm(ledger.caption_of(rec), confirm_line(name, pub_ts), rec.get("kind") or "photo")
         if not new:
             ledger.mark(rec, False, name, "تعليق غير قابل للتعديل")
             _log(f"تخطي {rec.get('message_id')}: تعليق طويل/غير صالح")
             continue
-        kw = {"chat_id": chat_id, "message_id": str(rec["message_id"]), "parse_mode": "HTML"}
-        if rec.get("kb"):
-            kw["reply_markup"] = rec["kb"]  # بدون إعادة الأزرار يحذفها تلغرام مع التعديل
-        try:
-            if kind == "text":
-                if rec.get("lp"):
-                    kw["link_preview_options"] = rec["lp"]
-                else:
-                    kw["disable_web_page_preview"] = "true"
-                r = api(token, "editMessageText", text=new, **kw)
-            else:
-                r = api(token, "editMessageCaption", caption=new, **kw)
-            ok = bool(r.get("ok"))
-            why = "" if ok else str(r.get("description") or "")[:80]
-        except Exception as e:  # noqa: BLE001
-            ok, why = False, f"{type(e).__name__}: {str(e).replace(token, '***')[:60]}"
-        ledger.mark(rec, ok, name, why)
+        ok, why = _edit(ledger, api, token, chat_id, rec, new, name, "off")
         if ok:
-            rec["caption"] = new
             n += 1
             _log(f"أكدته {name}: منشور {rec['message_id']} — {(rec.get('title') or '')[:60]}")
         else:
             _log(f"فشل تعديل {rec['message_id']}: {why}")
+    if n or ledger.dirty:
+        ledger.save()
+    return n
+
+
+def near_identical(a, b):
+    """نص منسوخ تقريباً (البصمة شبه متطابقة) — نسخ لا تأكيد مستقل."""
+    from tools import tg_push as T
+    wa, wb = T.title_sig((a or "").translate(AR_DIGITS))[0], T.title_sig((b or "").translate(AR_DIGITS))[0]
+    return bool(wa and wb) and len(wa & wb) / len(wa | wb) >= 0.8
+
+
+def check_trusted(ledger, api, token, chat_id, name, title, pub_ts, ref, nid=None, now=None, max_edits=3):
+    """مصدر مستقل بطبقة «موثوقة» (source_trust.json) نشر «title» وقت pub_ts ← «☑️ تطابق لدى مصدر موثوق: name» على منشوراتنا للخبر نفسه
+    مرة واحدة. شروط صارمة: ليس نفياً، مطابقة confirm.matches (تشمل اتفاق الأرقام)، شبكة مختلفة عن مصدر منشورنا (لا قناة وموقع وتلفزيون
+    الجهة نفسها)، وليس نسخاً (نص شبه متطابق نُشر بعد مصدرنا أو خلال دقيقتين منه). «✅ أكدته» أولى ويمنع هذا السطر."""
+    from tools import reliability as R
+    from tools import tg_push as T
+    now = now or time.time()
+    if not name or not title or DENY_RX.search(title) or R.tier_of(ref, name) != "موثوقة" or official_name(ref or ""):
+        return 0
+    ynet = R.net_of(ref, name)
+    sig = T.title_sig(title.translate(AR_DIGITS))
+    n = 0
+    for rec in list(ledger.candidates(now, typ="trust")):
+        if n >= max_edits or ledger.edits_last_hour(now) >= MAX_EDITS_HOUR:
+            break
+        if abs(pub_ts - rec.get("posted_ts", 0)) > WINDOW_H * 3600:
+            continue
+        if not matches(sig, rec) or DENY_RX.search(rec.get("title") or ""):  # العنقود نفسه (nid) لا يكفي هنا: المطابقة والأرقام شرط دائماً
+            continue
+        xnet = R.net_of(rec.get("src") or "")
+        if not ynet or ynet == xnet:
+            continue  # الشبكة نفسها (قناة الجهة وموقعها) ليست مصدراً مستقلاً
+        xts = rec.get("src_ts") or rec.get("posted_ts", 0)
+        if near_identical(title, rec.get("title") or "") and (pub_ts >= xts or abs(pub_ts - xts) < 120):
+            continue  # نسخ نص مصدرنا
+        new = add_confirm(ledger.caption_of(rec), trust_line(name), rec.get("kind") or "photo")
+        if not new:
+            ledger.mark(rec, False, name, "تعليق غير قابل للتعديل", typ="trust")
+            continue
+        ok, why = _edit(ledger, api, token, chat_id, rec, new, name, "trust")
+        if ok:
+            n += 1
+            _log(f"تطابق {name}: منشور {rec['message_id']} — {(rec.get('title') or '')[:60]}")
+        else:
+            _log(f"فشل تعديل تطابق {rec['message_id']}: {why}")
     if n or ledger.dirty:
         ledger.save()
     return n

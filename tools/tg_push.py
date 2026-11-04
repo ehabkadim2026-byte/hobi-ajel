@@ -307,10 +307,45 @@ PROTOCOL_RX = re.compile(r"(?:يؤكدان|تؤكدان|ويؤكدان|أكدا|
 PUNDIT_RX = re.compile(r"^(?:ال)?(?:خبير|باحث|محلل|أكاديمي|اكاديمي|كاتب|مختص|متخصص|مراقب|إعلامي|اعلامي|ناشط|مدون)\s[^:]{0,60}:")  # آراء المحللين ليست أخباراً (2936، 2943)
 
 
+# قاعدة المالك الثابتة: لا ننقل أي محتوى يسيء للعراق أو العراقيين أو أي مكوّن عراقي. الأنماط على نص مُطبَّع (أ/إ/آ←ا، ة←ه، ى←ي، بلا تشكيل).
+# لا تُحجب الأخبار السلبية الواقعية (هجمات، قضايا فساد رسمية، أزمات): الاتهام يُحجب فقط إذا خلا من جهة رسمية/قضائية.
+_AR = r"\u0600-\u06FF"
+_COMP = r"(?:الشيعه|السنه|الكرد|الاكراد|العرب|المسيحيين|المسيحيون|الايزيديين|الايزيديون|الايزيديه|التركمان|الصابئه|الشبك|العراقيين|العراقيون|الشعب العراقي|شعب العراق|اهل العراق|اهل الجنوب|اهل الغربيه)"
+OFFENSIVE_RX = re.compile(
+    # ألفاظ طائفية/عرقية مهينة
+    rf"(?<![{_AR}])[وفبل]?(?:ال)?(?:روافض|رافضي|رافضيه|نواصب|ناصبي|صفوي|صفويين|صفويون|مجوس|مجوسي|شروك|شروكي|شروكيه|شروكيين|شروگ|شروگي|"
+    rf"عربان|جوكريه|جوكري|ذيول|اذناب|عبده الشيطان|صليبيين|صليبيون|نغوله|حثاله)(?![{_AR}])|"
+    # تحقير العراقيين أو مكوّن عراقي
+    rf"{_COMP}\s+(?:كلهم\s+|جميعهم\s+)?(?:حراميه|لصوص|متخلفين|متخلفون|جهله|اغبياء|همج|حمير|عبيد|خونه|جبناء|كذابين|كذابون|منافقين|منافقون|كفار|كفره|"
+    rf"انجاس|مجوس|دواعش|ارهابيين|ارهابيون|ذيول|عملاء|حثاله|قذرين|اوباش|رعاع)(?![{_AR}])|"
+    rf"(?:العراق|بغداد)\s+(?:مزبله|بلد فاشل|دوله فاشله|بلد الحراميه|بلد اللصوص|حظيره|مستنقع|خرابه)|(?:بلد|شعب)\s+(?:الحراميه|اللصوص|الجهله|المتخلفين|الهمج)(?![{_AR}])|"
+    # سخرية وتهكم
+    rf"(?:يسخر|تسخر|سخريه|يستهزئ|تستهزئ|استهزاء|يتهكم|تتهكم|تهكم)\s+(?:من\s+|ب|على\s+)?(?:{_COMP}|اللهجه العراقيه|المنتخب العراقي|العشائر|العراق)(?![{_AR}])|"
+    rf"(?:مهزله|مسخره|اضحوكه|نكته)\s+(?:العراق|العراقيين|الشعب العراقي|البرلمان العراقي|الحكومه العراقيه|الدوله العراقيه)|"
+    # تحريض وخطاب كراهية
+    rf"(?<![{_AR}])(?:اقتلوا|اذبحوا|ابيدوا|اطردوا|احرقوا|اسحقوا|يجب قتل|يجب طرد|يجب اباده|الموت ل|الموت لل)\s*(?:ال)?(?:شيعه|سنه|كرد|اكراد|عرب|مسيحيين|ايزيديين|تركمان|"
+    rf"صابئه|شبك|روافض|نواصب|عراقيين)")
+# اتهام شخص مسمّى بصيغة الحقيقة بلا جهة رسمية: «فضيحة النائب فلان»، «تورط الوزير فلان بسرقة…»
+ACCUSE_RX = re.compile(rf"(?<![{_AR}])(?:فضيحه|فضائح)(?![{_AR}])|(?<![{_AR}])(?:العميل|الخائن|الحرامي|اللص|المرتشي|الماسوني)\s+[{_AR}]{{3,}}|"
+                       rf"(?:تورط|متورط|سرق|سرقه|اختلس|اختلاس|نهب|رشاوى|رشوه)[^.،:]{{0,60}}(?:النائب|النائبه|الوزير|الوزيره|المحافظ|القاضي|نجل|شقيق|زوجه)\s+[{_AR}]{{3,}}|"
+                       rf"(?:النائب|النائبه|الوزير|الوزيره|المحافظ|القاضي|نجل|شقيق|زوجه)\s+[{_AR}]{{3,}}[^.،:]{{0,40}}(?:تورط|متورط|سرق|اختلس|نهب)")
+OFFICIAL_CTX_RX = re.compile(r"(النزاهه|محكمه|المحكمه|القضاء|الادعاء العام|مذكره قبض|امر قبض|(?<![\u0600-\u06FF])حكم|الحبس|السجن|توقيف|القبض|اعتقال|احاله|التحقيق|"
+                             r"لجنه تحقيقيه|بيان رسمي|وزاره|هيئه|ديوان الرقابه|الرقابه الماليه|استجواب|اعدام|الامن الوطني|خليه الاعلام الامني)")
+_OFF_TR = str.maketrans("أإآٱىة", "اااايه")
+
+
+def offensive(t):
+    """إساءة للعراق/العراقيين/مكوّن عراقي، أو سخرية، أو تحريض، أو اتهام شخص مسمّى كحقيقة بلا جهة رسمية."""
+    x = re.sub(r"[ً-ْٰـ]", "", t or "").translate(_OFF_TR)
+    # الاتهام/«الفضيحة» يخص الشأن العراقي فقط (فضائح سياسيين أجانب أخبار خارجية لا إساءة لمكوّن عراقي)
+    return bool(OFFENSIVE_RX.search(x) or (ACCUSE_RX.search(x) and not OFFICIAL_CTX_RX.search(x) and iraq_title(t)
+                                            and not any(w in x for w in ("امريك", "ترامب", "اسرائيل", "الاحتلال", "اوكران", "الفيفا"))))
+
+
 def low_value(t):
-    """عنوان ليس خبراً: سؤال/برنامج/فتوى/عرض صحف/شعار (فقرات بنقاط تعليق بلا فعل)، أو مكتوب بالعامية، أو تصريح جهة مستبعدة."""
+    """عنوان ليس خبراً: سؤال/برنامج/فتوى/عرض صحف/شعار (فقرات بنقاط تعليق بلا فعل)، أو مكتوب بالعامية، أو تصريح جهة مستبعدة، أو مسيء."""
     t = (t or "").strip()
-    if LOWVAL_RX.search(t) or dialect(t) or EXCL_RX.search(t) or PROTOCOL_RX.search(t) or PUNDIT_RX.search(t):
+    if LOWVAL_RX.search(t) or dialect(t) or EXCL_RX.search(t) or PROTOCOL_RX.search(t) or PUNDIT_RX.search(t) or offensive(t):
         return True
     m = re.match(r"^([^:…]{2,40}?)\s*(?:…|\.\.\.)\s*(.*)$", t)
     if m and len(m.group(1).split()) <= 3 and not VERB_RX.search(m.group(1)) and not re.match(r"^[^:…]{2,30}:\s*\S", m.group(2)):
@@ -696,6 +731,20 @@ def fmt(n, update=False, kind="news"):
     return "\n\n".join([lines[0], "\n".join(lines[1:])] if len(lines) > 1 else lines) + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
 
 
+def weak_only(n):
+    """مصادر الخبر كلها «ضعيفة» حسب tools/reliability.py (بلا جهة رسمية ولا مصدر غير ضعيف). بلا ملف الطبقات = False (لا تغيير)."""
+    from tools import reliability as R
+    R.load(PWA / "source_trust.json")
+    ent = [(e.get("sid") or e.get("url"), e.get("source"), e.get("url")) for e in (n.get("timeline") or [])]
+    if not ent:
+        ent = [(s.get("url"), s.get("name"), s.get("url")) for s in (n.get("sources") or [])]
+    return R.weak_only(ent)
+
+
+def _clean_src_name(name):
+    return re.sub(r"\s*—\s*(telegram|RSS|rss|يوتيوب)$", "", (name or "").replace(" (عبر Google News)", "")).strip()
+
+
 def is_official_post(n):
     """منشورنا صادر عن جهة رسمية أصلاً (سطر التحقق ✅ أو المصدر المنسوب رسمي) ← لا يحتاج «أكدته»."""
     from tools import confirm as CF
@@ -703,14 +752,23 @@ def is_official_post(n):
 
 
 def confirm_round(token, chat_id, news, now, api_fn=None, ledger=None):
-    """عناقيد فيها جهة رسمية مُصدِرة ← «✅ أكدته» على منشوراتنا غير الرسمية للخبر نفسه (آخر 6 ساعات، مرة لكل منشور)."""
+    """عناقيد فيها جهة رسمية مُصدِرة ← «✅ أكدته» على منشوراتنا غير الرسمية للخبر نفسه (آخر 6 ساعات، مرة لكل منشور)،
+    ثم مصادر مستقلة بطبقة «موثوقة» ← «☑️ تطابق لدى مصدر موثوق» (مرة لكل منشور، السقف نفسه 5 بالجولة)."""
     from tools import confirm as CF
+    from tools import reliability as R
+    R.load(PWA / "source_trust.json")
     hits = [(n, CF.official_hits(n)) for n in news if n.get("title")]
     hits = [(n, h) for n, h in hits if h]
-    if not hits:
+    trusted = []
+    for n in news:
+        for e in n.get("timeline") or []:
+            ref = e.get("sid") or e.get("url")
+            if e.get("t") and e.get("pub") and R.tier_of(ref, e.get("source")) == "موثوقة" and not CF.official_name(e.get("url") or ""):
+                trusted.append((n, e, ref))
+    if not hits and not trusted:
         return 0
     led = ledger or CF.Ledger("main")
-    if not any(True for _ in led.candidates(now.timestamp())):
+    if not any(True for _ in led.candidates(now.timestamp())) and not any(True for _ in led.candidates(now.timestamp(), typ="trust")):
         return 0
     done = 0
     for n, h in hits:
@@ -720,6 +778,17 @@ def confirm_round(token, chat_id, news, now, api_fn=None, ledger=None):
             done += CF.check(led, api_fn or api, token, chat_id, name, n["title"], ts, nid=n["id"], now=now.timestamp(), max_edits=5 - done)
             if done >= 5:
                 return done
+    for n, e, ref in trusted:
+        try:
+            ts = datetime.fromisoformat(e["pub"].replace("Z", "+00:00")).timestamp()
+        except ValueError:
+            continue
+        if ts < now.timestamp() - CF.WINDOW_H * 3600:
+            continue
+        done += CF.check_trusted(led, api_fn or api, token, chat_id, _clean_src_name(e.get("source")), e["t"], ts, ref, nid=n["id"],
+                                 now=now.timestamp(), max_edits=5 - done)
+        if done >= 5:
+            break
     return done
 
 
@@ -892,8 +961,13 @@ def send_pending(token, chat_id, only_breaking=False):
                     from tools import confirm as CF
                     if ledger[0] is None:
                         ledger[0] = CF.Ledger("main")
+                    fts = None
+                    try:
+                        fts = datetime.fromisoformat(p["first"].replace("Z", "+00:00")).timestamp() if p.get("first") else None
+                    except ValueError:
+                        pass
                     ledger[0].add_post(r["result"]["message_id"], p["sig"], text if text is not None else p["text"], kind, p.get("off", False),
-                                       title=p.get("title") or "", kb=p.get("kb"), lp=lp, nid=p["id"], src=p.get("src"))
+                                       title=p.get("title") or "", kb=p.get("kb"), lp=lp, nid=p["id"], src=p.get("src"), src_ts=fts)
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"keep:{type(e).__name__}:{str(e)[:40]}")
 
@@ -1263,6 +1337,9 @@ def main():
         for n in sorted(news, key=lambda n: (-importance(n), n.get("collected_utc") or "")):
             if n["id"] in sent or not worthy(n, now):
                 continue  # كل خبر يُنشر مرة واحدة فقط (لا إعادة نشر حتى لو تكرر لدى جهات أكثر — طلب إيهاب 2026-11-01)
+            if weak_only(n):
+                status["weak_only"] = status.get("weak_only", 0) + 1
+                continue  # كل مصادره بطبقة «ضعيفة» (source_trust.json) ولا جهة رسمية أو مصدر آخر يعززه: ننتظر التعزيز
             sig = title_sig(n["title"])
             # عنقود آخر للخبر نفسه (صياغة مختلفة) نُشر قبل 15 دقيقة؟ = الخبر قديم حتى لو عنقوده جديد (تدقيق 2822، 2841)
             if not _SIGS:
