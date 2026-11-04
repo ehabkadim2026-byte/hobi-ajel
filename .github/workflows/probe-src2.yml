@@ -1,0 +1,14 @@
+name: probe-src2
+on: {workflow_dispatch: {}}
+permissions: {contents: write}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 .github/probe_src2.py
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh release view probe -R ${{ github.repository }} >/dev/null 2>&1 || gh release create probe -R ${{ github.repository }} --title probe --notes "فحوص مؤقتة" --prerelease
+          gh release upload probe probe_tg.json probe_rss.json probe_health.json --clobber -R ${{ github.repository }}
