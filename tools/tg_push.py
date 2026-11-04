@@ -274,7 +274,7 @@ def dialect(t):
     return bool(DIALECT_STRONG.search(t)) or len(DIALECT_WEAK.findall(t)) >= 3
 
 
-EXCL_ENT = r"(?:فصيل\s+)?(?:كتائب حزب الله|الكتائب|حركة النجباء|النجباء|عصائب أهل الحق|العصائب|الخزعلي|حركة حقوق|حزب الله|المنار|حماس|تسنيم|وكالة فارس|صابرين|العمال الكردستاني|بي كي كي|PKK)"
+EXCL_ENT = r"(?:فصيل\s+)?(?:كتائب حزب الله|الكتائب|حركة النجباء|النجباء|عصائب أهل الحق|العصائب|الخزعلي|حركة حقوق|حزب الله|(?<![\u0600-\u06FF])ح(?:ـ+\.?|\.)\s?الله(?=\s|$)|حزب ال\s?له|المنار|حماس|تسنيم|وكالة فارس|صابرين|العمال الكردستاني|بي كي كي|PKK)"
 # تصريحات وبيانات الجهات المستبعدة (الجهة قائلةً لا موضوعاً): «المسؤول الأمني لكتائب حزب الله: …»، «الكتائب تهاجم…» (تدقيق 2923، 2927)
 EXCL_RX = re.compile(rf"^[^:]{{0,50}}{EXCL_ENT}[^:]{{0,30}}:|^\W*{EXCL_ENT}\s+(?:تهاجم|يهاجم|تتهم|يتهم|تعلن|يعلن|تؤكد|يؤكد|تحذر|يحذر|تهدد|يهدد|تطالب|يطالب|تدعو|يدعو|ترد|يرد|تصف|يصف)|"
                      rf"(?:بيان|المسؤول الأمني|المتحدث|الناطق|الأمين العام|أمين عام|قيادي|زعيم|عن|وفق|بحسب)\s+(?:باسم\s+|ل|لـ\s*|في\s+)?{EXCL_ENT}", re.I)
@@ -594,7 +594,8 @@ def verify_line(n):
     st = n.get("vstatus") or ""
     if st == "ثبت عدم صحته":
         return "❌ التحقق: ثبت عدم صحته"
-    if n.get("source_flag") or (n.get("status") or "").startswith("مؤكد") or st == "منسوب لمصدر رسمي":
+    # source_flag = جهة وسمت الخبر «عاجل»، لا تعني أنه رسمي (1News وحساب شخصي ظهرا «صادر عن جهة رسمية»: 2945، 2954)
+    if (n.get("status") or "").startswith("مؤكد") or st == "منسوب لمصدر رسمي":
         return "✅ التحقق: صادر عن جهة رسمية"
     ind = n.get("independent") or 0
     if st == "مؤيد بمصادر مستقلة" or ind >= 2:
@@ -876,6 +877,8 @@ def evening_digest(token, chat_id, msgs):
     hrs = 12 if slot == "_morning" else 15
     start = (now - timedelta(hours=hrs)).strftime("%Y-%m-%dT%H:%M:%S")
     pool = [n for n in news if n["id"] in msgs and (n.get("first_utc") or "") >= start and (n.get("about_iraq") or n.get("pmf"))]
+    from tools.editorial import clean_headline as _ch
+    pool = [n for n in pool if iraq_strict(n["title"]) and not low_value(_ch(n["title"], 110))]  # الموجز يعيد فحص المنشور قبل الإصلاحات (2950: الانتخابات الأمريكية وتصريح الكتائب)
     top = sorted(pool, key=lambda n: -importance(n))[:5]
     if len(top) < 3:
         return None
