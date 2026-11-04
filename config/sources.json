@@ -4529,7 +4529,7 @@
    "category": "الحشد الشعبي",
    "region": "العراق",
    "lang": "ar",
-   "official": false,
+   "official": true,
    "added_by": "قائمة Ehab 30/10"
   },
   {
@@ -7882,6 +7882,20 @@
    "lang": "ar",
    "official": false,
    "added_by": "توسعة الرسمي 2026-11-04"
+  },
+  {
+   "id": "telegram:t.me/geedarbaghdad",
+   "name": "جدار بغداد — telegram",
+   "url": "https://t.me/geedarbaghdad",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "شبكات أخبار عراقية",
+   "region": "بغداد",
+   "lang": "ar",
+   "official": false,
+   "added_by": "مقترح حمزة 2026-11-04"
   }
  ]
 }
