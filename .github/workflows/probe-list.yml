@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: probe
-        env: {USERS: "${{ github.event.inputs.users }}", GH_TOKEN: "${{ github.token }}"}
+        env: {NT: "5", USERS: "${{ github.event.inputs.users }}", GH_TOKEN: "${{ github.token }}"}
         run: |
           cat > p.py <<'PY'
           import os,re,html,urllib.request,json,time
@@ -46,7 +46,7 @@ jobs:
                       x=re.search(r'class="tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>',mm,re.S)
                       if x: texts.append((t.group(1) if t else '',clean(x.group(1))))
                   rec['n']=len(texts); rec['last']=max(times) if times else ''
-                  rec['texts']=[a[:120] for _,a in texts[-2:]]
+                  rec['texts']=[a[:120] for _,a in texts[-int(os.environ.get('NT','2')):]]
               out.append(rec); time.sleep(1.2)
           json.dump(out,open('probe_list.json','w'),ensure_ascii=False,indent=1)
           PY
