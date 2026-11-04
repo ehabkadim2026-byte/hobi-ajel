@@ -31,20 +31,23 @@ def regional_ok(ch, text, first, mine):
     """حدث إقليمي كبير (عربي/شرق أوسط) موسوم «عاجل» من العربية/الحدث/الجزيرة — طلب إيهاب 04/11، بسقف منفصل بالساعة."""
     if ch not in CFG.get("intl", []) or not FLAG.search(text[:40]) or FAR_RX.search(first) or not ME_RX.search(first):
         return False
-    if not (T.SEC_RX.search(first) or T.EVENT_RX.search(first)):
+    if not (T.SEC_RX.search(first) or T.EVENT_RX.search(first)) or MINOR_RX.search(first):
         return False
     return sum(1 for x in mine if x.get("ts", 0) >= time.time() - 3600 and x.get("reg")) < CFG.get("region_per_hour", 6)
 
 
+# حادث إقليمي محدود (شهيد واحد، استهداف دراجة نارية) ليس «حدثاً كبيراً» يستحق القناة العراقية (فحص 4، تدقيق 18:15 04/11: 3047 لبنان)
+MINOR_RX = re.compile(r"(?:شهيد|قتيل|مصاب|جريح)\s+(?:و(?:مصاب|جريح|مصابان)|واحد)|(?:شهيد|قتيل)ان?\s+في\s+غارة|استهدفت?\s+(?:دراجة|سيارة|مركبة)|(?:إصابة|اصابة)\s+(?:شخص|مواطن)\s")
 FLAG = re.compile(r"^\W{0,6}(عاجل|عــاجل|عاااجل|⚡|🔴|🚨)")
 ROUTINE = re.compile(r"(يهنئ|تهنئ|تبارك|يبارك|تهنئة|يعزي|تعزية|ينعى|نعى|بمناسبة|ذكرى|عيد|يستذكر|صباح الخير|جمعة مباركة|رحم الله|إنا لله|تابعونا|رابط القناة)")
 STATE = ROOT / "data" / "fastlane_state.json"
 
 
-def story_old(sig, stories, now, fresh_min=None):
+def story_old(sig, stories, now, fresh_min=None, title=None):
     """هل الخبر متداول لدى الجهات المرصودة (3+) منذ أكثر من FRESH_MIN دقيقة؟ رسالة القناة الجديدة لا تجعل الخبر جديداً."""
     lim = now.timestamp() - 60 * (fresh_min or T.FRESH_MIN)
-    return any(s.get("ts", 1e18) < lim and s.get("ts", 0) >= now.timestamp() - 3 * 3600 and T.same_story(sig, s) for s in stories or [])
+    old = [s for s in stories or [] if s.get("ts", 1e18) < lim and s.get("ts", 0) >= now.timestamp() - T.STORY_H * 3600]
+    return any(T.same_story(sig, s) for s in old) or bool(title and T.near_dup(title, old, now.timestamp(), hours=T.STORY_H))
 
 
 def gh_get(asset):
@@ -308,7 +311,7 @@ def main():
                 sig = T.title_sig(first)
                 if any(T.same_story(sig, x) for x in mine + main_sigs) or T.sec_dup(first, mine + main_sigs, time.time()):
                     skip("مكرر"); continue
-                if story_old(sig, stories, now):
+                if story_old(sig, stories, now, title=first):
                     skip("قديم", "story_old"); continue  # الخبر نفسه متداول لدى 3 جهات منذ أكثر من 15 دقيقة (2980، 2985، 2990)
                 lk = T.lead_key(first)
                 if ch not in CFG["loud"] and sum(1 for x in mine + main_sigs if x.get("ts", 0) >= time.time() - 3600 and T.lead_key(x.get("title") or "") == lk) >= 2:
@@ -369,7 +372,10 @@ def main():
                     except Exception:  # noqa: BLE001
                         pass
                 # «عاجل» (شارة حمراء + وميض) فقط لما وسمته المصادر عاجلاً أو حدث أمني عراقي — لا لكل منشورات الجهات الرسمية
+                # وسم «عاجل» من المصدر وحده لا يكفي: بعض القنوات (ABC العربية) تسم كل منشور عاجلاً — يلزم حدث عاجل بالمضمون
+                # (أمني/انفجار/كارثة/تعطيل دوام/استقالة) لا موعد مباراة ولا سعر أمبير ولا حالة جوية (فحص 4، تدقيق 18:15 04/11: 3025، 3038، 3044، 3049، 3060)
                 loud = (bool(FLAG.search(p["text"][:40])) or bool(T.SEC_RX.search(first) and T.iraq_strict(first))) and not T.NOT_URGENT_RX.search(head) \
+                    and bool(T.SEC_RX.search(head) or T.EVENT_RX.search(head) or T.URGENT_RX.search(head)) \
                     and not (T.STATEMENT_RX.search(head) and not (T.SEC_RX.search(head) or T.EVENT_RX.search(head))) and T.iraq_strict(head)  # سعر الدولار/السلف/التقديم بلا «عاجل» (تدقيق 2835)
                 card = tg_card.card_news4(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), source=re.sub(r" — .*$", "", cname), style="A")
                 tags = T.province_tags(first)

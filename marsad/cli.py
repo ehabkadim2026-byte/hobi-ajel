@@ -42,10 +42,21 @@ def clean_source_name(r):
     name = r.get("name") or ""
     base, _, suf = name.rpartition(" — ")
     base = base or name
-    if not re.search(r"[ەێۆڵڕڤ]", base) and len(base.split()) <= 6 and not re.search(r"[.!؟?:«»\"]|\b(تعدم|يعلن|تعلن|يستقيل|مقتل|قتلى)\b", base):
+    if base.strip().lower() not in ("t.me", "telegram.me") and not re.search(r"[ەێۆڵڕڤ]", base) and len(base.split()) <= 6 and not re.search(r"[.!؟?:«»\"]|\b(تعدم|يعلن|تعلن|يستقيل|مقتل|قتلى)\b", base):
         return name
+    hl = re.compile(r"[.!؟?:«»\"]|\b(تعدم|يعلن|تعلن|يستقيل|مقتل|قتلى)\b")
+    if not re.search(r"[ەێۆڵڕڤ]", base) and not hl.search(base) and base.strip().lower() not in ("t.me", "telegram.me"):
+        # اسم جهة رسمي طويل من السجل («رئيس مجلس الوزراء علي فالح الزيدي (القناة الرسمية)»): يُختصر لا يُستبدل بـ«t.me» (3003، فحص 2)
+        short = re.sub(r"\s{2,}", " ", re.sub(r"\([^)]*\)|[/|]", " ", base)).strip()
+        w = short.split()[:6]
+        while w and w[-1] in ("في", "من", "على", "و", "عن", "إلى", "الى", "-", "–"):
+            w.pop()
+        if len(w) >= 2:
+            return " ".join(w) + (f" — {suf}" if suf else "")
     from urllib.parse import urlsplit
     dom = urlsplit(r.get("url") or "").netloc.replace("www.", "") or r["id"].split("/")[-1]
+    if dom in ("t.me", "telegram.me"):  # قناة تلغرام: معرّفها لا «t.me» (3003 «📌 المصدر: t.me»، فحص 2)
+        dom = "@" + (r.get("url") or r["id"]).rstrip("/").split("/")[-1]
     return f"{dom} — {suf or 'RSS'}"
 
 

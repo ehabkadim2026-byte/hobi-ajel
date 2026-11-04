@@ -130,7 +130,7 @@ def _gn_outlet(outlet):
     o = re.sub(r"\s+", " ", outlet).strip()
     if re.search(r"[ەێۆڵڕڤیک]", o):  # كردي/فارسي: يبقى الاسم اللاتيني فقط (PUKmedia)
         o = " ".join(w for w in o.split() if re.fullmatch(r"[A-Za-z0-9.&'-]+", w)).strip(" -|،")
-    if not o or len(o.split()) > 6 or re.search(r"[.!؟?:«»\"]|(?<![\w])(تعدم|يعلن|تعلن|يستقيل|مقتل|قتلى|يتوعد|تكشف)(?![\w])", o):
+    if not o or len(o.split()) > 6 or re.search(r"(?i)^(?:breaking|latest) news\b|news and videos", o) or re.search(r"[.!؟?:«»\"]|(?<![\w])(تعدم|يعلن|تعلن|يستقيل|مقتل|قتلى|يتوعد|تكشف)(?![\w])", o):
         return "موقع إخباري"
     return o
 

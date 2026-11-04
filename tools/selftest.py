@@ -38,6 +38,19 @@ _now = _dt.now(_tz.utc)
 _st = [{"w": sorted(T.title_sig("تأجيل محاكمة 7 متهمين فرنسيين من داعش في بغداد")[0]), "d": ["7"], "ts": _now.timestamp() - 3600}]
 assert FL.story_old(T.title_sig("تأجيل محاكمة 7 متهمين فرنسيين من داعش في بغداد… تفاصيل"), _st, _now)
 assert not FL.story_old(T.title_sig("هجوم مسلح أمام مبنى مديرية بلديات أربيل"), _st, _now)
+# تدقيق 18:15 04/11: تكرار بصياغة أخرى، وليس خبراً، وعاجل بلا مضمون عاجل، واسم مصدر «t.me»
+_p = [{"title": "مصدر: النزاهة تدقق عقود وزارة النقل والمطارات وتكشف تلاعباً يُشتبه بارتباطه بتمويل جهات مسلحة خارجة عن القانون", "ts": _now.timestamp() - 600}]
+assert T.sec_dup("رصد تلاعب في عقود وزارة النقل والمطارات لصالح جهة مسلحة خارجة عن القانون", _p, _now.timestamp())
+assert not T.sec_dup("وزير النقل يؤكد مواصلة العمل على استيفاء متطلبات رفع الحظر الأوروبي", _p, _now.timestamp())
+assert T.low_value("توضيح إلى متابعين قناة واحد العراق: إدارة القناة توضح أنها لا تمتلك صفحة على تطبيق الـ Tiktok")
+assert T.low_value("يحتمل تعطيل الدوام ليوم غد الخميس في بابل بعد المناشدات")
+assert not T.low_value("وزير الداخلية يصادق على ترقية أكثر من 1100 موظف مدني ضمن جدول عام 2026")
+assert not (T.SEC_RX.search("العراق يواجه لبنان وإيران في بطولة البصرة الرباعية") or T.EVENT_RX.search("العراق يواجه لبنان وإيران في بطولة البصرة الرباعية")
+            or T.URGENT_RX.search("العراق يواجه لبنان وإيران في بطولة البصرة الرباعية"))
+assert FL.MINOR_RX.search("وزارة الصحة اللبنانية: شهيد ومصاب في غارة إسرائيلية استهدفت دراجة نارية")
+from marsad.cli import clean_source_name as _csn  # noqa: E402
+assert _csn({"name": "t.me — telegram", "url": "https://t.me/najafmc", "id": "telegram:t.me/najafmc"}) == "@najafmc — telegram"
+assert _csn({"name": "رئيس مجلس الوزراء علي فالح الزيدي (القناة الرسمية) — telegram", "url": "https://t.me/x", "id": "x"}) == "رئيس مجلس الوزراء علي فالح الزيدي — telegram"
 from tools import test_reliability  # noqa: E402
 test_reliability.run()  # موثوقية المصادر، «☑️ تطابق لدى مصدر موثوق»، بوابة «ضعيفة»، بوابة الإساءة
 print("selftest ok")
