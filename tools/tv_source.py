@@ -39,10 +39,17 @@ def is_source(chat):
     return bool(want) and (str(chat.get("username") or "").lower() == want or str(chat.get("id")) == want)
 
 
-def important(cap):
+NEWS_GATE_PROMPT = ("أنت محرر أخبار عراقي. هل هذا المنشور خبر مهم يستحق النشر فوراً في قناة أخبار عاجلة عراقية؟ "
+                    "مهم = حدث أمني، قرار أو إجراء حكومي أو قضائي أو برلماني، قرار يمس العراقيين مباشرة (سفر وتأشيرات، رواتب، أسعار، كهرباء ووقود، دوام وعطل)، "
+                    "تصريح لمسؤول بارز بمضمون جديد، كارثة أو حادث كبير. "
+                    "غير مهم = لقاء أو اتصال بروتوكولي، تهنئة أو تعزية، رأي أو تحليل، ترويج، منوعات، رياضة عادية، طقس عادي. أجب بكلمة واحدة: نعم أو لا.\n\nالمنشور: ")
+
+
+def important(cap, news=False):
+    """news=True لمنشورات القنوات النصية (المسار السريع): السؤال عن «منشور» لا «مقطع تلفزيوني» (تحليل السبق 2026-11-04)."""
     try:
         from tools.editorial import gemini
-        ans = gemini(GATE_PROMPT + cap[:600], max_tokens=5, temperature=0)
+        ans = gemini((NEWS_GATE_PROMPT if news else GATE_PROMPT) + cap[:600], max_tokens=5, temperature=0)
         if ans is not None:
             return "نعم" in ans, "Gemini"
     except Exception:  # noqa: BLE001

@@ -66,6 +66,25 @@ def latest_posts(ch):
 
 
 LAST_FULL = [0.0]
+LAST_RSS = [0.0]
+RSS = {r["key"]: r for r in CFG.get("rss", [])}
+
+
+def latest_rss(key):
+    """موقع المنافس مباشرة: السومرية تنشر على موقعها قبل قناتها بوسيط 19 دقيقة وشفق بـ28 (قاعدة الرصد 3–4/11)، والجولة الرئيسية
+    تجمع الخلاصة بتأخر وسيط 5 دقائق ثم تنتظر دورتها. المعرّف = وقت النشر بالثواني (متزايد) ليعمل خط الأساس كمنشورات تلغرام."""
+    from marsad.collect import http_get, parse_rss
+    from marsad.core import parse_time, fix_future
+    r = RSS[key]
+    now = datetime.now(timezone.utc)
+    out = []
+    for it in parse_rss(http_get(r["url"], timeout=12, retries=0), {"id": key, "name": r["name"]}):
+        pub, _ = parse_time(it.get("published_utc"))
+        if not pub or not (it.get("title") or "").strip():
+            continue
+        pub, _ = fix_future(pub, None, now)
+        out.append({"id": int(pub.timestamp()), "text": it["title"].strip() + "\n" + (it.get("text") or ""), "t": pub, "img": None, "url": it.get("url")})
+    return out, r["name"]
 
 
 GEM_CALLS = []
@@ -129,15 +148,18 @@ def main():
         chans = allc if full else ([] if woke else [x for x in allc if x[0] in hot])  # الأكثر سبقاً كل 8 ثوانٍ، الكل كل 25، ولا فحص إذا أيقظنا منشور لحظي
         if full:
             LAST_FULL[0] = time.time()
+        if RSS and time.time() - LAST_RSS[0] >= CFG.get("rss_every_sec", 45):
+            LAST_RSS[0] = time.time()
+            chans = chans + [(k, "rss") for k in RSS]
 
         def fetch(c):
             try:
-                return c, latest_posts(c[0])
+                return c, (latest_rss(c[0]) if c[1] == "rss" else latest_posts(c[0]))
             except Exception:  # noqa: BLE001
                 return c, None
         with ThreadPoolExecutor(10) as ex:
             results = list(ex.map(fetch, chans)) if chans else []
-        tiers = dict(allc)
+        tiers = dict(allc) | {k: "rss" for k in RSS}
         for (c, _t), r in results:
             if r:
                 NAMES[c] = r[1]
@@ -179,30 +201,32 @@ def main():
                     skip("نفس الجهة خلال ساعة"); continue
                 if T.low_value(first) or T.incomplete(first) or T.PRESS_RX.search(first):
                     skip("عنوان غير صالح"); continue
-                if ch in CFG.get("agency", []):
-                    # وكالة موثوقة: عاجلها (أو حدث مهم بكلمات صريحة) عن العراق يُنشر فوراً منسوباً لها، بلا انتظار مصدر ثانٍ
-                    if not T.iraq_strict(first):
+                # قناة عراقية (لا عربية/دولية): خبر جهة رسمية بصيغة محلية بلا اسم العراق يكفي إذا خلا من أي علامة أجنبية («التقاعد: …»، «شرطة …»)
+                iraqi = T.iraq_strict(first) or (ch not in CFG.get("intl", []) and T.iraq_domestic(first))
+                if ch in CFG.get("agency", []) or tier == "rss":
+                    # وكالة موثوقة (أو موقعها مباشرة عبر RSS): عاجلها (أو حدث مهم بكلمات صريحة) عن العراق يُنشر فوراً منسوباً لها، بلا انتظار مصدر ثانٍ
+                    if not iraqi:
                         skip("وكالة: ليس عراقياً"); continue
                     if FLAG.search(p["text"][:40]) or STRICT.search(first):
                         ok = True
                     else:  # خبر وكالة غير موسوم: يحكم النموذج على أهميته (واع سبقتنا 12 مرة بأخبار عادية مهمة كنا ننتظرها للجولة الرئيسية)
-                        ok, by = important(p["text"][:600]) if gem_ok() else (False, "سقف")
+                        ok, by = important(p["text"][:600], news=True) if gem_ok() else (False, "سقف")
                         ok = ok and by == "Gemini" and not T.ROUTINE_RX.search(first)
                 elif tier == "breaking":
                     # قنوات الأخبار السريعة: فقط ما وسمته «عاجل» ويذكر العراق صراحة
-                    if not T.iraq_strict(first):
+                    if not iraqi:
                         skip("ليس عراقياً"); continue
                     if FLAG.search(p["text"][:40]) or T.SEC_RX.search(first):
                         ok = True  # عاجل عراقي، أو خبر أمني عراقي حتى بلا وسم «عاجل» (الأمني لا ينتظر)
                     elif gem_ok():
                         # خبر عراقي غير موسوم من قناة سريعة (دجلة، السومرية، 964…): المسار السريع هو الناشر الأساسي الآن،
                         # والجولة الرئيسية تتأخر 5–10 دقائق بطبيعتها — يحكم النموذج على أهميته (تحليل السبق 2026-11-03)
-                        ok, by = important(p["text"][:600])
+                        ok, by = important(p["text"][:600], news=True)
                         ok = ok and by == "Gemini" and not T.ROUTINE_RX.search(first)
                     else:
                         skip("سقف النموذج بالساعة"); continue
                 else:
-                    ok, by = important(p["text"][:600])
+                    ok, by = important(p["text"][:600], news=True)
                     if by != "Gemini":
                         ok = bool(STRICT.search(p["text"][:400]))  # بلا نموذج لغوي: كلمات الحدث المهم فقط (لا «يلتقي/يستقبل»)
                 if not ok:
@@ -223,7 +247,7 @@ def main():
                 tags = T.province_tags(first)
                 cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}" + \
                       (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"
-                kb = json.dumps({"inline_keyboard": [[{"text": "📖 المصدر", "url": f"https://t.me/{ch}/{p['id']}"},
+                kb = json.dumps({"inline_keyboard": [[{"text": "📖 المصدر", "url": p.get("url") or f"https://t.me/{ch}/{p['id']}"},
                                                       {"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fhassawassal"}]]})
                 r = {"ok": False}
                 if loud:  # العاجل يومض: بطاقة متحركة (تُحفظ فيديو من تلغرام)، والصورة احتياط

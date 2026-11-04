@@ -90,6 +90,8 @@ def os_key():
 MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemma-4-31b-it", "gemma-4-26b-a4b-it",
           "gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.8-flash"]
 _EXHAUSTED = set()  # نموذج خلصت حصته اليومية بهذه الجولة: ننتقل للتالي (لكل نموذج حصة مجانية مستقلة)
+_EXH_AT = {}  # 429 (حد الدقيقة غالباً) يوقف النموذج 10 دقائق فقط: المسار السريع يعمل 5.5 ساعات، وكان 429 واحد يطفئ حكم الأهمية لبقية الجولة
+EXH_RETRY_SEC = 600
 
 
 def gemini(prompt, max_tokens=120, temperature=0.2):
@@ -97,6 +99,11 @@ def gemini(prompt, max_tokens=120, temperature=0.2):
     if not key:
         return None
     import urllib.error as _ue
+    import time as _t
+    for m, at in list(_EXH_AT.items()):
+        if _t.time() - at >= EXH_RETRY_SEC:
+            _EXH_AT.pop(m, None)
+            _EXHAUSTED.discard(m)
     last = None
     for model in ([_os.environ["GEMINI_MODEL"]] if _os.environ.get("GEMINI_MODEL") else MODELS):
         if model in _EXHAUSTED:
@@ -113,6 +120,8 @@ def gemini(prompt, max_tokens=120, temperature=0.2):
             last = e
             if e.code in (429, 404, 403):
                 _EXHAUSTED.add(model)
+                if e.code == 429:
+                    _EXH_AT[model] = _t.time()
             continue  # 500/503 (عطل مؤقت عند Google) أو حصة: نجرّب النموذج التالي بدل إيقاف الوكيل
         except (_ue.URLError, TimeoutError, KeyError, IndexError, ValueError) as e:
             last = e

@@ -32,6 +32,11 @@ def _dt(s):
         return None
 
 
+def is_iraqi(title):
+    """المقياس الصادق: علامة عراقية صريحة أو خبر جهة رسمية محلية بلا علامة أجنبية — لا يكفي غياب اسم دولة أجنبية."""
+    return T.iraq_strict(title) or T.iraq_domestic(title)
+
+
 def own_posts(hours=26):
     ch = T.CHANNEL.rstrip("/").split("/")[-1]
     now = datetime.now(timezone.utc)
@@ -106,6 +111,7 @@ def build(db_path=None):
             row.update({"comp": cname, "comp_t": ct.isoformat(), "delta_min": round(d, 1),
                         "status": "سبقنا" if d < -1 else "متقارب" if d <= 2 else "تأخرنا"})
             if d > 2:
+                row["foreign"] = not is_iraqi(p["title"])  # تأخر في خبر غير عراقي: لا يُقاس عليه سبق قناة أخبار العراق
                 dt_det = _dt(det)
                 row["why"] = ("تأخر النشر عندنا (رصدناه قبل المنافس)" if dt_det and dt_det <= ct
                               else "مصدر الخبر لم يُرصد مبكراً")
@@ -119,13 +125,14 @@ def build(db_path=None):
             continue
         if (n.get("first_utc") or "") < (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M"):
             continue
-        if not T.iraq_title(n.get("title") or ""):
-            continue
+        if not is_iraqi(n.get("title") or ""):
+            continue  # خبر أجنبي (الانتخابات الأمريكية…) ليس «فاتنا»: القناة لا تنشره أصلاً (تحليل السبق 2026-11-04)
         missed.append({"id": n["id"], "title": n["title"][:160], "n_sources": n.get("n_sources"), "first": n.get("first_utc")})
     missed.sort(key=lambda x: -(x["n_sources"] or 0))
     cmp = [r for r in rows if r.get("status") in ("سبقنا", "متقارب", "تأخرنا")]
     summ = {k: sum(1 for r in rows if r.get("status") == k) for k in ("سبقنا", "متقارب", "تأخرنا", "انفراد", "غير مطابق")}
     summ["فاتنا"] = len(missed)
+    summ["تأخرنا_غير_عراقي"] = sum(1 for r in rows if r.get("status") == "تأخرنا" and r.get("foreign"))
     deltas = sorted(r["delta_min"] for r in cmp)
     summ["median_delta_min"] = deltas[len(deltas) // 2] if deltas else None
     by = {}
@@ -138,7 +145,7 @@ def build(db_path=None):
         if r.get("why"):
             why[r["why"]] = why.get(r["why"], 0) + 1
     out = {"updated_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "summary": summ, "why": why, "beaten_by": by,
-           "rows": rows[-120:], "missed": missed[:15]}
+           "rows": rows[-250:], "missed": missed[:40]}  # كل صفوف اليوم: سقف 120 كان يُسقط أقدم 4 «تأخرنا» و8 «فاتنا» من التحليل
     (ROOT / "pwa" / "scoop.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     return out
 
