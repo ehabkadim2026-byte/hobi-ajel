@@ -3304,7 +3304,7 @@
   },
   {
    "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=site:kurdistan24.net%20OR%20site:alforatnews.iq%20OR%20site:almasalah.com%20when:1d",
-   "name": "مواقع عراقية — كوردستان 24، الفرات نيوز، المعلومة، المسلة (Google News)",
+   "name": "مواقع عراقية — كوردستان 24، الفرات نيوز، المسلة (Google News)",
    "url": "https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=site:kurdistan24.net%20OR%20site:alforatnews.iq%20OR%20site:almasalah.com%20when:1d",
    "platform": "web",
    "method": "rss",

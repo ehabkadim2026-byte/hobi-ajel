@@ -28,9 +28,9 @@ MAX_PER_RUN = 15
 DEBUG = []
 CHANNEL = "https://t.me/hassawassal"
 RANK = {"عاجل": 3, "مهم": 2, "متابعة": 1}
-MAX_PER_HOUR = 12
-REGION_MIN_SOURCES = 12
-REGION_PER_HOUR = 3
+MAX_PER_HOUR = 20  # طلب إيهاب 04/11: مواكبة بمعدل خبر مهم كل ~2 دقيقة (مع المسار السريع) بشرط الجودة، بلا حشو
+REGION_MIN_SOURCES = 6
+REGION_PER_HOUR = 8
 
 
 def api(token, method, files=None, **params):

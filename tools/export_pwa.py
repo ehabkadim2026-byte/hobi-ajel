@@ -56,7 +56,14 @@ IRAQ_AR = [norm_ar(w) for w in ["العراق", "عراقي", "عراقية", "�
            "مجلس النواب", "مجلس الوزراء", "الإطار التنسيقي", "مجلس القضاء الأعلى", "الدينار", "الزوراء", "القوة الجوية", "الطلبة", "الشرطة الاتحادية"]]
 FOREIGN_AR = [norm_ar(w) for w in ["إسرائيل", "الإسرائيلي", "فلسطين", "الفلسطيني", "غزة", "الضفة", "لبنان", "اللبناني", "حزب الله", "سوريا", "السوري", "دمشق",
               "إيران", "الإيراني", "طهران", "تركيا", "التركي", "أنقرة", "السعودية", "الرياض", "الإمارات", "قطر", "الكويت", "الأردن", "مصر", "اليمن", "الحوثي",
-              "واشنطن", "ترامب", "روسيا", "أوكرانيا", "الصين", "أوروبا", "فرنسا", "بريطانيا", "هرمز", "الخليج"]]
+              "واشنطن", "ترامب", "روسيا", "أوكرانيا", "الصين", "أوروبا", "فرنسا", "بريطانيا", "هرمز", "الخليج",
+              # دول وجنسيات بعيدة: خبرها مو «عن العراق» حتى لو نقلته قناة عراقية (وزير النقل الإسباني 04/11)
+              "إسبانيا", "الإسباني", "الإسبانية", "أمريكا", "الأمريكي", "الأميركي", "الأمريكية", "الولايات المتحدة", "الكونغرس", "البيت الأبيض",
+              "الديمقراطيون", "الجمهوريون", "ألمانيا", "الألماني", "الفرنسي", "البريطاني", "لندن", "باريس", "برلين",
+              "موسكو", "الروسي", "الأوكراني", "كييف", "بكين", "الصيني", "الهندي", "باكستان", "أفغانستان", "اليابان", "الياباني", "كوريا",
+              "إيطاليا", "الإيطالي", "هولندا", "السويد", "كندا", "أستراليا", "البرازيل", "المكسيك", "الأرجنتين", "تايوان", "فنزويلا", "كوبا",
+              "المغرب", "الجزائر", "تونس", "ليبيا", "السودان", "البحرين", "عُمان", "الدوحة", "أبوظبي", "القاهرة", "عمّان", "بيروت", "الجولاني", "طرطوس"]]
+IRAQ_FOREIGN_EN = re.compile(r"\b(Spain|Spanish|Trump|Democrats|Republicans|Congress|Ukraine|Russia|China|India|Pakistan)\b", re.I)
 IRAQ_EN = re.compile(r"\b(Iraq|Iraqi|Iraqis|Baghdad|Kurdistan|Erbil|Basra|Mosul|Kirkuk|Najaf|Karbala|Sulaymaniyah|Anbar|Sinjar|Duhok)\b", re.I)
 TOPICS = [
     ("أمن", "أمن أمني قصف انفجار اغتيال اعتقال القبض إرهاب داعش اشتباك الحشد الجيش الشرطة صاروخ مسيرة هجوم قتلى جرحى ضربة عملية عسكرية مسلحين عبوة",
@@ -279,7 +286,8 @@ def main(hours=24):
         ntext = norm_ar(alltext)
         iraq_kw = any(w in ntext for w in IRAQ_AR) or bool(IRAQ_EN.search(alltext)) or bool(IRAQ_MULTI.search(alltext))
         foreign_kw = any(w in ntext for w in FOREIGN_AR)
-        about_iraq = iraq_kw or (origin == "عراقي" and not foreign_kw)
+        # «عن العراق» = كلمة عراقية صريحة، أو مصدر عراقي بخبر محلي ما يذكر دولة أخرى
+        about_iraq = iraq_kw or (origin == "عراقي" and not foreign_kw and not IRAQ_FOREIGN_EN.search(alltext))
         if origin == "أجنبي" and not iraq_kw:
             continue  # الإعلام الأجنبي: ما يخص العراق فقط
         if not iraq_kw and IRAQ_ONLY and all(r[0] in IRAQ_ONLY for r in con.execute("SELECT DISTINCT source_id FROM items WHERE cluster_id=?", (c["id"],))):
@@ -308,6 +316,9 @@ def main(hours=24):
         if latest < iso(now - timedelta(days=1)) and not kind:
             continue
         collected = con.execute("SELECT MIN(collected_utc) FROM items WHERE cluster_id=?", (c["id"],)).fetchone()[0]
+        # لا وقت بالمستقبل أبداً: الخبر ما ينشر بعد ما رصدناه
+        first_t = min(x for x in (d["first"], collected) if x) if (d["first"] or collected) else None
+        latest = min(latest, iso(now))
         agency = origin == "أجنبي" and (any(r.startswith("أجنبي — وكالة") for r in regs) or any(AGENCY_RX.search(e["source"] or "") for e in ev))
         views = max([views_num(r[0]) for r in con.execute("SELECT views FROM items WHERE cluster_id=?", (c["id"],))] or [0])
         first_ev = next((e for e in ev if e["time"]), ev[0] if ev else None)
@@ -383,7 +394,7 @@ def main(hours=24):
                     "n_items": c["n_items"], "views": views or None,
                     "first_src": ({"name": first_ev["source"], "time": first_ev["time"]} if first_ev else None),
                     "topic": topic_of(ntext + " " + norm_ar(title_ar or ""), alltext),
-                    "collected_utc": collected, "first_utc": d["first"], "latest_utc": latest,
+                    "collected_utc": collected, "first_utc": first_t, "latest_utc": latest,
                     "date_confirmed": all(e["date_confirmed"] for e in ev), "n_sources": d["n_sources"],
                     "sources": [{"name": e["source"], "url": e["url"], "time": e["time"]} for e in ev][:6],
                     "why": d.get("why") or [], "source_flag": source_flag, "ctype": ctype, "pmf": pmf, "pmf_kind": pmf_kind,

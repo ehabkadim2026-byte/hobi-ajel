@@ -74,6 +74,16 @@ def load_json(name, default=None):
 
 
 # ---------------------------------------------------------------- السجل
+def fix_future(pub, prec, now):
+    """وقت نشر بعد الآن = خلاصة تكتب التوقيت المحلي (+3) كأنه UTC: نطرح 3 ساعات إذا صار منطقياً، وإلا نعتمد وقت الرصد."""
+    if not pub or pub <= now + timedelta(minutes=3):
+        return pub, prec
+    alt = pub - timedelta(hours=3)
+    if alt <= now + timedelta(minutes=3) and now - alt < timedelta(hours=12):
+        return alt, "approx"
+    return now, "approx"
+
+
 def import_sources(con, path):
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     n = 0
@@ -154,6 +164,10 @@ def ingest_batch(con, batch, now=None):
     bid = batch.get("batch_id") or now.strftime("b%Y%m%d%H%M%S")
     per_source = Counter()
     per_source_new = Counter()
+    # إصلاح دائم: أي مادة وقت نشرها بعد وقت رصدها (خلاصات تكتب توقيت بغداد كأنه UTC) يُصحح، حتى ما يظهر خبر بوقت «مستقبلي»
+    con.execute("UPDATE items SET published_utc=collected_utc, time_precision='approx', date_confirmed=0 "
+                "WHERE collected_utc >= ? AND julianday(published_utc) > julianday(collected_utc) + 3.0/1440",
+                (iso(now - timedelta(days=2)),))
     for raw in batch.get("items", []):
         url = raw.get("url")
         title = (raw.get("title") or raw.get("text") or "").strip()
@@ -163,6 +177,7 @@ def ingest_batch(con, batch, now=None):
         canon = canonical_url(url)
         iid = item_id(canon)
         pub, prec = parse_time(raw.get("published_utc") or raw.get("pubdate"))
+        pub, prec = fix_future(pub, prec, now)
         text = (raw.get("text") or title).strip()
         norm = norm_ar(title + " " + text)
         fp = fingerprint(title)
@@ -187,7 +202,7 @@ def ingest_batch(con, batch, now=None):
             "date_confirmed,collected_utc,updated_utc,title,text,norm,fp,views,kind,entities,watchlists,batch_id,stale)"
             " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (iid, raw.get("platform"), src, raw.get("source_name"), url, canon, iso(pub), prec,
-             1 if raw.get("date_confirmed", prec == "exact") else 0, iso(now), iso(now), title, text, norm,
+             1 if prec != "approx" and raw.get("date_confirmed", prec == "exact") else 0, iso(now), iso(now), title, text, norm,
              fp, raw.get("views"), classify_kind(norm_ar(title), is_off),
              json.dumps(extract_entities(norm), ensure_ascii=False),
              json.dumps(tag_watchlists(norm, watchlists), ensure_ascii=False), bid, stale))

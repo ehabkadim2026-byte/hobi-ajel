@@ -1,6 +1,7 @@
 """واجهة الأوامر: python3 -m marsad.cli <أمر>"""
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -31,6 +32,45 @@ def source_priorities():
     return pr
 
 
+# جهات مستبعدة بقرار ثابت من إيهاب: لا تُجمع أبداً حتى لو بقيت بقاعدة البيانات أو أضافها محرك الاكتشاف
+EXCLUDED_SRC = re.compile(r"(نجباء|النجباء|كتائب حزب الله|عصائب|العصائب|قناة العهد|alahad|حركة حقوق|المنار|almanar|تسنيم|tasnim|وكالة فارس|farsnews|"
+                          r"nujaba|kataib|asaib|pkk|بي كي كي|صابرين|sabren|sabereen|المعلومة|almaalomah|حماس|hamas|حزب الله)", re.I)
+
+
+def clean_source_name(r):
+    """اسم المصدر لازم يكون اسم جهة، مو عنوان خبر (بعض المواقع تضع آخر عنوان باسم الخلاصة)."""
+    name = r.get("name") or ""
+    base, _, suf = name.rpartition(" — ")
+    base = base or name
+    if not re.search(r"[ەێۆڵڕڤ]", base) and len(base.split()) <= 6 and not re.search(r"[.!؟?:«»\"]|\b(تعدم|يعلن|تعلن|يستقيل|مقتل|قتلى)\b", base):
+        return name
+    from urllib.parse import urlsplit
+    dom = urlsplit(r.get("url") or "").netloc.replace("www.", "") or r["id"].split("/")[-1]
+    return f"{dom} — {suf or 'RSS'}"
+
+
+def gate_sources(con, rows):
+    """فلتر صارم قبل الجمع: المصدر لازم يكون بالسجل (sources.json) أو أضافه محرك الاكتشاف، وغير مستبعد، واسمه سليم.
+    المحذوف من السجل ما يُجمع (حالة صابرين والمعلومة 04/11 بقت تُجمع من القاعدة بعد حذفها من السجل)."""
+    try:
+        cfg_ids = {s["id"] for s in json.loads((core.CONFIG / "sources.json").read_text(encoding="utf-8"))["sources"]}
+    except Exception:  # noqa: BLE001
+        return rows
+    keep = []
+    for r in rows:
+        where = f"{r.get('name') or ''} " + ("" if "news.google.com" in (r.get("url") or r["id"]) else f"{r['id']} {r.get('url') or ''}")
+        if EXCLUDED_SRC.search(where) or (r["id"] not in cfg_ids and r.get("added_by") != "محرك الاكتشاف"):
+            continue  # لا يُجمع (بدون تغيير حالته بالقاعدة، حتى يرجع تلقائياً إذا رجع للسجل)
+        fixed = clean_source_name(r)
+        if fixed != r.get("name"):
+            con.execute("UPDATE sources SET name=? WHERE id=?", (fixed, r["id"]))
+            con.execute("UPDATE items SET source_name=? WHERE source_id=?", (fixed, r["id"]))
+            r["name"] = fixed
+        keep.append(r)
+    con.commit()
+    return keep
+
+
 def collect_all(con, limit, priority_only, workers=10):
     """جمع خادمي مباشر (يحتاج شبكة مفتوحة). يحترم حدود الطلبات بتوقف بين المصادر، ويسجل كل فشل كنقطة عمى."""
     from datetime import datetime, timezone, timedelta
@@ -38,6 +78,7 @@ def collect_all(con, limit, priority_only, workers=10):
     import time as _t
     q = "SELECT * FROM sources WHERE method IN ('rss','telegram_preview') AND status NOT IN ('مستبعد')"
     rows = [dict(r) for r in con.execute(q)]
+    rows = gate_sources(con, rows)
     if priority_only:
         rows = [r for r in rows if r.get("frequency") == "ساعي"]
     # جدولة متفاوتة حسب الأولوية (من config/sources.json + config/overrides.json، بلا تعديل كود):

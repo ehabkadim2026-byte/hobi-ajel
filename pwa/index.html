@@ -280,12 +280,14 @@ const srcName=s=>String(s||"").replace(/ — (telegram|تلغرام|RSS)$/i,"").
 const score=n=>(LV[n.level]?.w||0)+Math.min(n.n_sources||1,6)*4+(ST[n.status]?.[1]||0)+(n.about_iraq?8:0)-mins(n.latest_utc)/10;
 const byNew=(a,b)=>ms(b.latest_utc)-ms(a.latest_utc);
 const fmtDelay=m=>m==null?"":m<1?"أقل من دقيقة":m<60?`${Math.round(m)} د`:`${Math.round(m/60)} س`;
-const isUrg=n=>n.source_flag||n.level==="عاجل";
-const t0=n=>n.first_utc||n.latest_utc; // وقت أول نشر للخبر لدى أي مصدر مرصود
+const URG_MIN=30; // العاجل عاجل فقط خلال 30 دقيقة من أول نشر؛ بعدها يصير «مهم» (طلب إيهاب 04/11: الخبر اللي مر عليه ساعات مو عاجل)
+const isUrg=n=>(n.source_flag||n.level==="عاجل")&&mins(t0(n))<=URG_MIN;
+const NEWSY=n=>["خبر","بيان رسمي"].includes(n.ctype||"خبر"); // لا تحليل ولا رأي ولا «مصادر تقول» ولا تقارير
+const t0=n=>{const a=n.first_utc||n.latest_utc,c=n.collected_utc;if(!a)return c;if(c&&ms(a)>ms(c))return c;return ms(a)>Date.now()?new Date().toISOString():a}; // وقت أول نشر، ولا يكون بعد وقت رصدنا أبداً
 const lateMin=n=>(n.first_utc&&n.collected_utc)?(ms(n.collected_utc)-ms(n.first_utc))/60000:0;
 
 function tagsOf(n){
-  return `${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${n.source_flag?'<span class="tag t-urgent">عاجل المصدر</span>':(LV[n.level]?LV[n.level].t:"")}${n.escalating?'<span class="tag t-esc">متصاعد</span>':""}<span class="tag t-type">${esc(n.ctype||"خبر")}</span><span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}${n.manual?'<span class="tag t-man">إدخال يدوي</span>':""}${n.pmf_class&&view==="pmf"?`<span class="tag t-follow">${esc(n.pmf_class)}</span>`:""}${view==="watch"&&sub.watch?provTag(((n.watch||[]).find(w=>w.id===sub.watch)||{}).prov):""}<span class="st ${VS[n.vstatus]||ST[n.status]?.[0]||"s-unv"}">${esc(n.vstatus||n.status||"غير متحقق")}</span>`;
+  return `${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${isUrg(n)?'<span class="tag t-urgent">عاجل</span>':(n.level==="عاجل"||n.source_flag)?LV["مهم"].t:(LV[n.level]?LV[n.level].t:"")}${n.escalating?'<span class="tag t-esc">متصاعد</span>':""}<span class="tag t-type">${esc(n.ctype||"خبر")}</span><span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}${n.manual?'<span class="tag t-man">إدخال يدوي</span>':""}${n.pmf_class&&view==="pmf"?`<span class="tag t-follow">${esc(n.pmf_class)}</span>`:""}${view==="watch"&&sub.watch?provTag(((n.watch||[]).find(w=>w.id===sub.watch)||{}).prov):""}<span class="st ${VS[n.vstatus]||ST[n.status]?.[0]||"s-unv"}">${esc(n.vstatus||n.status||"غير متحقق")}</span>`;
 }
 function card(n){
   const s=(n.sources||[])[0]||{};
@@ -331,14 +333,14 @@ const segBar=(k,opts)=>`<div class="seg" data-seg="${k}" style="margin-top:16px"
 function vHome(all){
   const h6=all.filter(n=>mins(n.latest_utc)<=360);
   const escal=all.filter(n=>n.escalating).sort((a,b)=>score(b)-score(a)).slice(0,10);
-  const five=all.filter(n=>n.about_iraq&&(n.level in LV||n.source_flag)&&mins(t0(n))<=5).sort((a,b)=>score(b)-score(a));
-  const sf=h6.filter(n=>n.source_flag).sort(byNew).slice(0,8);
-  const imp=h6.filter(n=>!n.source_flag&&(n.level==="عاجل"||n.level==="مهم")).sort((a,b)=>score(b)-score(a)).slice(0,8);
+  const five=all.filter(n=>mins(t0(n))<=15&&NEWSY(n)&&((n.about_iraq&&(n.level in LV||n.source_flag))||(!n.about_iraq&&n.origin!=="أجنبي"&&(n.level==="عاجل"||n.level==="مهم"||n.source_flag)&&(n.n_sources||1)>=3))).sort((a,b)=>ms(t0(b))-ms(t0(a))).slice(0,15);
+  const sf=all.filter(n=>n.source_flag&&NEWSY(n)&&mins(t0(n))<=60).sort((a,b)=>ms(t0(b))-ms(t0(a))).slice(0,8);
+  const imp=h6.filter(n=>!(n.source_flag&&mins(t0(n))<=60)&&NEWSY(n)&&(n.level==="عاجل"||n.level==="مهم"||n.source_flag)).sort((a,b)=>score(b)-score(a)).slice(0,8);
   const tr=h6.filter(n=>n.trending_unconfirmed&&!n.source_flag).sort((a,b)=>b.n_sources-a.n_sources).slice(0,8);
   let h="";
   if(escal.length) h+=`<div class="sec"><h2>أحداث متصاعدة</h2><span>تكاثرت تغطيتها بآخر ساعة</span></div><div class="esc">${escal.map(n=>`<button type="button" data-id="${esc(n.id)}"><small>${n.n_items} مادة · ${n.n_sources} جهات</small><b>${esc(n.title)}</b></button>`).join("")}</div>`;
-  h+=`<div class="sec"><h2>آخر 5 دقائق · المهم عن العراق</h2><span>${five.length} خبر</span></div>`+(five.length?`<div class="tbl"><div class="tr th"><span>الوقت</span><span>الخبر</span><span>المصدر</span></div>${five.map(n=>{const s=(n.sources||[])[0]||{};return`<button type="button" class="tr" data-id="${esc(n.id)}"><span class="tt"><b>${esc(hm(t0(n)))}</b><small>${esc(ago(t0(n)))}</small></span><span class="th2">${n.source_flag?'<span class="tag t-urgent">عاجل</span> ':LV[n.level]?LV[n.level].t+" ":""}${esc(n.title)}</span><span class="ts">${esc(srcName(s.name))}<small>${n.n_sources>1?n.n_sources+" جهات":"جهة واحدة"}</small></span></button>`}).join("")}</div>`:'<div class="note-box">ما نشرت المصادر المرصودة خبراً مهماً عن العراق بآخر 5 دقائق.</div>');
-  h+=`<div class="tri"><div>${block("عاجل نشره المصدر","آخر 6 ساعات",sf)}</div><div>${block("مهم صنّفه النظام","آخر 6 ساعات",imp)}</div><div>${block("متداول لم يتأكد بعد","3 جهات أو أكثر",tr)}</div></div>`;
+  h+=`<div class="sec"><h2>المهم الآن · العراق والمنطقة</h2><span>${five.length} خبر</span></div>`+(five.length?`<div class="tbl"><div class="tr th"><span>الوقت</span><span>الخبر</span><span>المصدر</span></div>${five.map(n=>{const s=(n.sources||[])[0]||{};return`<button type="button" class="tr" data-id="${esc(n.id)}"><span class="tt"><b>${esc(hm(t0(n)))}</b><small>${esc(ago(t0(n)))}</small></span><span class="th2">${isUrg(n)?'<span class="tag t-urgent">عاجل</span> ':(n.level==="عاجل"||n.source_flag)?LV["مهم"].t+" ":LV[n.level]?LV[n.level].t+" ":""}${esc(n.title)}</span><span class="ts">${esc(srcName(s.name))}<small>${n.n_sources>1?n.n_sources+" جهات":"جهة واحدة"}</small></span></button>`}).join("")}</div>`:'<div class="note-box">ما نزل خبر مهم بآخر 15 دقيقة.</div>');
+  h+=`<div class="tri"><div>${block("عاجل نشره المصدر","آخر ساعة",sf)}</div><div>${block("مهم صنّفه النظام","آخر 6 ساعات",imp)}</div><div>${block("متداول لم يتأكد بعد","3 جهات أو أكثر",tr)}</div></div>`;
   const cI=all.filter(n=>n.about_iraq&&!n.pmf).sort(byNew).slice(0,12), cP=all.filter(n=>n.pmf).sort(byNew).slice(0,12), cW=all.filter(n=>!n.about_iraq||n.origin!=="عراقي").sort(byNew).slice(0,12);
   h+=`<div class="cols" style="margin-top:10px"><div class="col">${block("العراق","الكل",cI,"iraq")}</div><div class="col">${block("الحشد الشعبي","الكل",cP,"pmf")}</div><div class="col">${block("المنطقة والعالم","الكل",cW,"world")}</div></div>`;
   return h;
@@ -693,7 +695,7 @@ function render(keepScroll){
     $("#sLive").textContent=m>6?`آخر تحديث ${ago(meta.updated_utc)}، الرصد متأخر`:`مباشر · آخر رصد ${hm(meta.updated_utc)}`;
     $("#sSrc").innerHTML=`<b>${meta.sources_ok}</b> مصدر يعمل من ${meta.sources_total||"—"} · <b>${all.length}</b> خبر/24س`;
     const d=meta.detect_delay, tg=d&&d.by_type&&d.by_type["تلغرام"]; $("#sDelay").innerHTML=d?`تأخر الاكتشاف الوسيط: ${tg?`تلغرام <b>${fmtDelay(tg.median_min)}</b> · `:""}الكل <b>${fmtDelay(d.median_min)}</b>`:""; }
-  const tk=all.filter(n=>isUrg(n)&&n.about_iraq&&mins(n.latest_utc)<=180).sort(byNew).slice(0,14);
+  const tk=all.filter(n=>isUrg(n)&&n.about_iraq).sort(byNew).slice(0,14);
   $("#ticker").hidden=!tk.length;
   if(tk.length){ const html=tk.map(n=>`<button type="button" data-id="${esc(n.id)}">${esc(n.title)}<small>${esc(hm(n.latest_utc))}</small></button>`).join(""); $("#tickerT").innerHTML=html+html; $("#tickerT").style.setProperty("--dur",Math.max(30,tk.length*9)+"s"); }
   [["iraq",all.filter(n=>n.about_iraq&&mins(n.latest_utc)<=3)],["pmf",all.filter(n=>n.pmf&&mins(n.latest_utc)<=30)],["watch",all.filter(n=>(n.watch||[]).some(w=>w.prov==="رصد مباشر"||w.prov==="إدخال يدوي")&&mins(n.latest_utc)<=30)]].forEach(([k,a])=>{const b=$(`.nav [data-v=${k}] .badge`); b.hidden=!a.length; b.textContent=a.length>99?"99+":a.length;});
