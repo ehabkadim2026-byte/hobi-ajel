@@ -4,10 +4,10 @@ permissions: {contents: write}
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - run: python3 .github/probe_src2.py disc
+      - run: python3 .github/probe_src2.py deep
       - env: {GH_TOKEN: "${{ github.token }}"}
         run: |
           gh release view probe -R ${{ github.repository }} >/dev/null 2>&1 || gh release create probe -R ${{ github.repository }} --title probe --notes "فحوص مؤقتة" --prerelease

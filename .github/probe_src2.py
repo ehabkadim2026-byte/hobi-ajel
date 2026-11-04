@@ -68,6 +68,56 @@ def disc(existing, ex):
             if x.lower() not in existing and x.lower() not in ("share", "joinchat", "addlist", "iv", "proxy", "s", "socialmedia") and not x.lower().endswith("bot"):
                 found[x].add(url)
     return found, log
+def deep(u, pages=8):
+    refs = []; before = None
+    for _ in range(pages):
+        try: p = get(f"https://t.me/s/{u}" + (f"?before={before}" if before else ""))
+        except Exception: break
+        refs += re.findall(r'tgme_widget_message_forwarded_from_name"\s+href="https://t\.me/([A-Za-z0-9_]{5,})', p)
+        refs += re.findall(r'href="https://t\.me/([A-Za-z][A-Za-z0-9_]{4,})/\d+"', p)
+        refs += re.findall(r'(?<![A-Za-z0-9_.])@([A-Za-z][A-Za-z0-9_]{4,31})', re.sub(r'<[^>]+>', ' ', p))
+        ids = [int(x) for x in re.findall(r'data-post="[^/]+/(\d+)"', p)]
+        if not ids: break
+        before = min(ids)
+        time.sleep(0.5)
+    return u, refs
+def search_links(qs):
+    out = defaultdict(set)
+    for q in qs:
+        for url in (f"https://lite.duckduckgo.com/lite/?q={urllib.parse.quote(q)}", f"https://www.mojeek.com/search?q={urllib.parse.quote(q)}", f"https://search.yahoo.com/search?p={urllib.parse.quote(q)}&n=40"):
+            try: p = get(url)
+            except Exception: continue
+            p = urllib.parse.unquote(p)
+            for x in re.findall(r't\.me/(?:s/)?([A-Za-z][A-Za-z0-9_]{4,31})', p): out[x].add(q)
+            time.sleep(4)
+    return out
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "deep":
+    import urllib.parse
+    src = json.load(open("config/sources.json", encoding="utf-8"))["sources"]
+    fl = json.load(open("config/fastlane.json", encoding="utf-8"))
+    existing = {s["id"].split("t.me/")[-1].lower() for s in src if s["id"].startswith("telegram:")}
+    existing |= {x.lower() for k in ("hot", "channels", "breaking", "agency", "intl", "loud") for x in fl.get(k, [])}
+    seeds = [x.strip() for x in open(".github/probe_seeds.txt", encoding="utf-8") if x.strip() and not x.startswith("#")]
+    ex = ThreadPoolExecutor(8)
+    cited = defaultdict(set)
+    for u, refs in ex.map(deep, seeds):
+        for x in set(refs):
+            if x.lower() not in existing and not x.lower().endswith("bot") and x.lower() not in ("share", "joinchat", "addlist", "proxy", "gmail", "yahoo", "hotmail", "outlook"):
+                cited[x].add(u)
+    qs = [x.strip() for x in open(".github/probe_q.txt", encoding="utf-8") if x.strip() and not x.startswith("#")]
+    sl = search_links(qs)
+    for x, v in sl.items():
+        if x.lower() not in existing and not x.lower().endswith("bot") and x.lower() not in ("share", "joinchat", "addlist", "s", "proxy"):
+            cited[x] |= {"q:" + q for q in v}
+    top = sorted(cited, key=lambda k: -len(cited[k]))[:350]
+    res = list(ex.map(tg, top))
+    for r in res:
+        r["cited_by"] = sorted(cited[r["u"]])[:8]; r["n_cited"] = len(cited[r["u"]]); r.pop("refs", None)
+    json.dump(res, open("probe_tg.json", "w", encoding="utf-8"), ensure_ascii=False, indent=0, default=str)
+    json.dump({"n_cited": len(cited), "search_hits": len(sl)}, open("probe_health.json", "w"))
+    json.dump([], open("probe_rss.json", "w"))
+    print(len(res), "probed", sum(r["ok"] for r in res), "ok")
+    sys.exit(0)
 if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "disc":
     src = json.load(open("config/sources.json", encoding="utf-8"))["sources"]
     fl = json.load(open("config/fastlane.json", encoding="utf-8"))
