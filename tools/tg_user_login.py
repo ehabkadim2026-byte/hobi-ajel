@@ -25,8 +25,15 @@ from tools.tg_push import api  # noqa: E402
 
 TOKEN = os.environ["MARSAD_TG_BOT_TOKEN"].strip()
 CHAT = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or "@hassawassal"
-API_ID = int(os.environ["TG_API_ID"].strip())
-API_HASH = os.environ["TG_API_HASH"].strip()
+import re  # noqa: E402
+
+_RAW = os.environ.get("TG_API_ID", "") + " " + os.environ.get("TG_API_HASH", "")
+_h = re.search(r"\b[0-9a-fA-F]{32}\b", _RAW)
+_i = re.search(r"\b\d{5,12}\b", re.sub(r"\b[0-9a-fA-F]{32}\b", " ", _RAW))
+if not (_h and _i):
+    print("::error::لم يُعثر على api_id (رقم) و api_hash (32 حرفاً) في الأسرار — راجع القيم")
+    sys.exit(3)
+API_ID, API_HASH = int(_i.group(0)), _h.group(0)  # يتحمل تبديل الخانتين أو لصق نص زائد مع القيمة
 
 
 def key():
