@@ -1,0 +1,22 @@
+name: tg-login
+on: workflow_dispatch
+permissions:
+  contents: write
+concurrency: {group: tg-login, cancel-in-progress: true}
+jobs:
+  login:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.11"}
+      - run: pip install -q telethon cryptography "qrcode[pil]" arabic-reshaper python-bidi
+      - env:
+          MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
+          MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python tools/tg_user_login.py
