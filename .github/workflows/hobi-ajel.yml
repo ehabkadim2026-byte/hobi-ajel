@@ -155,6 +155,7 @@ jobs:
         run: python3 -m tools.scoop
         env:
           MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
+          GH_TOKEN: ${{ github.token }}  # بصمات المسارين (fast_sigs/main_sigs) لسطر «📊 أداء اليوم»
       - uses: actions/cache/save@v4
         with:
           path: |

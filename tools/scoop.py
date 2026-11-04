@@ -4,7 +4,7 @@
 - وقت المنافس = أقدم وقت نشر للحدث لدى مصادر config/competitors.json (تلغرام ومواقع مباشرة فقط).
 - سبب التأخر: إذا رصدنا الخبر قبل المنافس ونشرنا بعده = «تأخر النشر عندنا»؛ وإذا لم نرصده إلا بعده = «مصدر الخبر لم يُرصد مبكراً».
 - «فاتنا»: أحداث عراقية كبيرة (15 جهة فأكثر، عاجل/مهم) لم ننشرها.
-الناتج pwa/scoop.json + تقرير يومي للمحررين بالخاص (11 مساءً بغداد). يقرأ فقط، لا ينشر في القناة.
+الناتج pwa/scoop.json + تقرير يومي للمحررين بالخاص (11 مساءً بغداد) يبدأ بسطر «📊 أداء اليوم» (kpi). يقرأ فقط، لا ينشر في القناة.
 """
 import html as H
 import json
@@ -150,6 +150,49 @@ def build(db_path=None):
     return out
 
 
+def _median(xs):
+    xs = sorted(xs)
+    return xs[len(xs) // 2] if xs else None
+
+
+def kpi(o, posts=None, fast=None, main=None, con=None, now=None):
+    """سطر الأداء اليومي للمالك (أعلى تقرير 11 مساءً): من بيانات السبق نفسها + بصمات المسارين على إصدار fastlane.
+    نسبة السبق = «سبقنا» من الأخبار المشتركة مع المنافسين اليوم (سبقنا+متقارب+تأخرنا، بلا التأخر في خبر غير عراقي كما في لوحة السبق).
+    وقت النشر بعد المصدر: المسار السريع من lag_min المسجل لحظة النشر، والجولة = وقت النشر − أقدم نشر لعنقود الخبر (نافذة 3 ساعات)."""
+    now = now or datetime.now(timezone.utc)
+    bgd = now + timedelta(hours=3)
+    day0 = datetime(bgd.year, bgd.month, bgd.day, tzinfo=timezone.utc) - timedelta(hours=3)
+    rows = [r for r in o.get("rows", []) if (_dt(r.get("our")) or now) >= day0]
+    shared = [r for r in rows if r.get("status") in ("سبقنا", "متقارب") or (r.get("status") == "تأخرنا" and not r.get("foreign"))]
+    win = sum(1 for r in shared if r["status"] == "سبقنا")
+    pct = round(100 * win / len(shared)) if shared else None
+    t0 = day0.timestamp()
+    fl = [x["lag_min"] for x in (fast or []) if x.get("ts", 0) >= t0 and isinstance(x.get("lag_min"), (int, float)) and x["lag_min"] >= 0]
+    ml = []
+    if con is not None:
+        for x in main or []:
+            cid = str(x.get("id") or "")
+            if x.get("ts", 0) < t0 or not cid.startswith("c_"):
+                continue
+            ts = datetime.fromtimestamp(x["ts"], timezone.utc)
+            try:
+                f = con.execute("SELECT MIN(COALESCE(published_utc, collected_utc)) FROM items WHERE cluster_id=? AND COALESCE(published_utc, collected_utc) >= ?",
+                                (cid, (ts - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%SZ"))).fetchone()[0]
+            except Exception:  # noqa: BLE001
+                f = None
+            d = _dt(f)
+            if d and 0 <= (ts - d).total_seconds() <= 3 * 3600:
+                ml.append((ts - d).total_seconds() / 60)
+    allm = _median(fl + ml)
+    fm, mm = _median(fl), _median(ml)
+    n_posts = sum(1 for p in (posts or []) if p["t"] >= day0) if posts else sum(1 for x in (fast or []) + (main or []) if x.get("ts", 0) >= t0)
+    na = "—"
+    return (f"📊 أداء اليوم: سبقنا {f'{pct}%' if pct is not None else na} من الأخبار المشتركة مع المنافسين ({win}/{len(shared)})"
+            f" | وسيط وقت النشر بعد المصدر {f'{round(allm, 1)} دقيقة' if allm is not None else na}"
+            f" (المسار السريع {f'{round(fm * 60)}ث' if fm is not None else na}، الجولة {f'{round(mm)}د' if mm is not None else na})"
+            f" | فاتنا {o.get('summary', {}).get('فاتنا', 0)} خبر عراقي مهم | منشورات اليوم {n_posts}")
+
+
 def report(o):
     s = o["summary"]
     L = [f"🏁 تقرير السبق — آخر 24 ساعة",
@@ -200,9 +243,17 @@ def main():
         sent["_learn_week"] = wk
     T.SENT.write_text(json.dumps(sent, ensure_ascii=False), encoding="utf-8")
     if token and bgd.hour == 23 and sent.get("_scoop_day") != bgd.strftime("%Y-%m-%d"):
+        try:  # سطر الأداء اليومي أعلى التقرير نفسه (رسالة واحدة، حارس _scoop_day نفسه)؛ فشله لا يمنع التقرير
+            from marsad import core
+            head = kpi(o, LAST_POSTS, T.fastlane_sigs(), T.fastlane_sigs("main_sigs.json"), core.connect())
+            print(f"::notice title=kpi::{head}")
+        except Exception as e:  # noqa: BLE001
+            head = ""
+            print("::warning title=kpi::", type(e).__name__, str(e)[:150])
+        text = (head + "\n\n" + report(o)) if head else report(o)
         for c in (sent.get("_editor_chats") or {}).values():
             try:
-                T.api(token, "sendMessage", chat_id=c, text=report(o)[:4000], disable_web_page_preview="true")
+                T.api(token, "sendMessage", chat_id=c, text=text[:4000], disable_web_page_preview="true")
             except Exception:  # noqa: BLE001
                 pass
         sent["_scoop_day"] = bgd.strftime("%Y-%m-%d")
