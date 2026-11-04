@@ -14,7 +14,7 @@ def site(u):
     return u,[x for x in TME.findall(p) if x.lower() not in BAD], len(p)
 def page(u,before=None):
     return get(f"https://t.me/s/{u}"+(f"?before={before}" if before else ""))
-def crawl(u,pages=3):
+def crawl(u,pages=4):
     refs=[]; before=None
     for i in range(pages):
         p=page(u,before)
