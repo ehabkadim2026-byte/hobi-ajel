@@ -609,7 +609,7 @@ function runAlerts(initial){
 }
 
 function openDrawer(id){
-  const n=news.find(x=>x.id===id); if(!n) return;
+  const n=news.find(x=>x.id===id)||LIVEN.find(x=>x.id===id); if(!n) return;
   const hmap={}; health.forEach(h=>{hmap[srcName(h.name)]=h});
   const s0=(n.sources||[])[0]||{}, h0=hmap[srcName(s0.name)];
   const why=[...(n.why||[])]; if(n.source_flag) why.unshift("المصدر نفسه وسم الخبر «عاجل»"); if(n.trending_unconfirmed) why.push("متداول لدى جهات كثيرة بدون تأكيد مستقل"); if(n.about_iraq) why.push("يخص العراق");
@@ -690,7 +690,7 @@ function vSpread(){
 
 function render(keepScroll){
   $("#today").textContent=(()=>{const d=new Date(Date.now()+3*3600e3);return`${DAYS[d.getUTCDay()]}، ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`})();
-  const all=news.filter(n=>mins(n.latest_utc)<=1440);
+  const all=mergeLive(news).filter(n=>mins(n.latest_utc)<=1440);
   if(meta){ const m=mins(meta.updated_utc); $("#status").classList.toggle("stale",m>6);
     $("#sLive").textContent=m>6?`آخر تحديث ${ago(meta.updated_utc)}، الرصد متأخر`:`مباشر · آخر رصد ${hm(meta.updated_utc)}`;
     $("#sSrc").innerHTML=`<b>${meta.sources_ok}</b> مصدر يعمل من ${meta.sources_total||"—"} · <b>${all.length}</b> خبر/24س`;
@@ -753,7 +753,7 @@ document.addEventListener("click",e=>{
   const pt=t.closest("[data-pt]"); if(pt){ const v=pt.dataset.pt; prefs.topics=prefs.topics.includes(v)?prefs.topics.filter(x=>x!==v):[...prefs.topics,v]; store.set("hobi_alerts",prefs); pt.setAttribute("aria-pressed",String(prefs.topics.includes(v))); return; }
   const ci=t.closest("[data-copyid]"); if(ci){ copy(ci.dataset.copyid); return; }
   const sh=t.closest("[data-share]"), cp=t.closest("[data-copy]");
-  if(sh||cp){ const n=news.find(x=>x.id===(sh||cp).dataset[sh?"share":"copy"]); if(n) sh?shareText(textOf(n),"هوبي عاجل"):copy(textOf(n)); return; }
+  if(sh||cp){ const n=news.find(x=>x.id===(sh||cp).dataset[sh?"share":"copy"])||LIVEN.find(x=>x.id===(sh||cp).dataset[sh?"share":"copy"]); if(n) sh?shareText(textOf(n),"هوبي عاجل"):copy(textOf(n)); return; }
   const tr=t.closest("[data-trace]"); if(tr){ const n=news.find(x=>x.id===tr.dataset.trace); closeDrawer(); traceQ=n?(n.title_orig||n.title):""; traceRes=""; openTool("tracer"); setTimeout(runTrace,30); return; }
   if(t.closest("[data-close]")||t.id==="scrim"){ closeDrawer(); return; }
   if(t.closest("#trGo")){ runTrace(); return; }
@@ -782,6 +782,33 @@ $("#bAlerts").addEventListener("click",()=>openTool("alerts"));
 $("#bRefresh").addEventListener("click",()=>load(true));
 $("#bShare").addEventListener("click",()=>shareText("هوبي عاجل — منصة رصد أخبار العراق والحشد الشعبي والمنطقة، تتحدث كل 90 ثانية:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&meta&&mins(meta.updated_utc)>1.5) load(); });
+// ===== التغذية اللحظية: أخبار المسار السريع توصل خلال ثوانٍ (ntfy + توقيع ECDSA يتحقق منه التطبيق؛ أي رسالة غير موقّعة تُرمى)
+let LIVEN=[]; const LIVE=new Map();
+const nkey=s=>(s||"").replace(/[^\u0621-\u064A0-9]/g,"").slice(0,28);
+function mergeLive(arr){
+  const have=new Set(arr.map(n=>nkey(n.title)));
+  LIVEN=[...LIVE.values()].filter(x=>mins(x.t)<=30&&!have.has(nkey(x.title))).map(x=>({id:"live_"+x.id,title:x.title,first_utc:x.t,collected_utc:x.t,latest_utc:x.t,
+    level:x.urgent?"عاجل":"مهم",source_flag:!!x.urgent,ctype:"خبر",about_iraq:true,n_sources:1,live:true,status:"نُشر بالقناة الآن",
+    sources:[{name:x.src||"هسه وصل",url:x.msg?`https://t.me/hassawassal/${x.msg}`:(x.url||"")}]}));
+  return LIVEN.length?LIVEN.concat(arr):arr;
+}
+async function liveInit(){
+  try{
+    if(!(window.crypto&&crypto.subtle&&window.EventSource)) return;
+    const cfg=await fetch("live.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json());
+    const b64=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
+    const key=await crypto.subtle.importKey("raw",b64(cfg.pub),{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
+    let tm=null; const later=()=>{clearTimeout(tm);tm=setTimeout(()=>render(true),400)};
+    const handle=async m=>{ try{ const o=JSON.parse(m); if(!o||typeof o.p!=="string"||typeof o.s!=="string") return;
+      if(!await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},key,b64(o.s),new TextEncoder().encode(o.p))) return;
+      const it=JSON.parse(o.p); if(!it.id||!it.title||!it.t||mins(it.t)>(cfg.max_age_min||30)||ms(it.t)>Date.now()+120e3) return;
+      if(!LIVE.has(it.id)){ LIVE.set(it.id,it); later(); } }catch(e){} };
+    const base=`https://ntfy.sh/${encodeURIComponent(cfg.topic)}`;
+    fetch(`${base}/json?poll=1&since=30m`).then(r=>r.text()).then(t=>t.split("\n").forEach(l=>{ try{ const e=JSON.parse(l); if(e.event==="message") handle(e.message); }catch(e){} })).catch(()=>{});
+    const es=new EventSource(`${base}/sse`); es.onmessage=e=>{ try{ const d=JSON.parse(e.data); if(d.event==="message") handle(d.message); }catch(x){} };
+  }catch(e){}
+}
+liveInit();
 load(); loadExtra(); setInterval(()=>loadExtra(),300000); setInterval(()=>{ if(!document.hidden||prefs.on) load(); },90000); setInterval(()=>render(true),60000);
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>

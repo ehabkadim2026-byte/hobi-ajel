@@ -384,6 +384,13 @@ def main():
                                  "lag_min": round(age, 1)})
                     gh_put("fast_sigs.json", mine)
                     decide(ch, p["id"], head, "post", "loud" if loud else tier)
+                    try:  # تغذية لحظية للتطبيق (موقّعة) — يظهر بالتطبيق خلال ثوانٍ بدل انتظار الجولة
+                        from tools import live_feed
+                        live_feed.publish(token, {"id": f"{ch}/{p['id']}", "title": head, "t": p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                                  "urgent": bool(loud), "src": re.sub(r" — .*$", "", cname),
+                                                  "url": p.get("url") or f"https://t.me/{ch}/{p['id']}", "msg": r["result"]["message_id"]})
+                    except Exception:  # noqa: BLE001
+                        pass
                     if ledger is not None:
                         try:  # سجل «أكدته الجهة الرسمية»: منشور من جهة غير رسمية قد تؤكده جهة رسمية لاحقاً
                             ledger.add_post(r["result"]["message_id"], sig, cap[:1024], kind, bool(official_ch(ch, tier)), title=first,

@@ -139,6 +139,7 @@ jobs:
           "
       - name: telegram push (قناة الفريق؛ يعمل فقط بعد إضافة السر)
         run: |
+          python3 -m tools.live_feed || true
           python3 -m tools.tg_push
           echo "::notice title=tg_status::$(cat pwa/tg_status.json)"
         continue-on-error: true

@@ -88,6 +88,12 @@ def publish(token, chat_id, m, editor_name="محرر"):
         return False, "تعذر النشر: " + str(r.get("description"))[:100]
     entry = {"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time(), "id": f"manual:{m.get('message_id')}", "title": head[:200], "by": editor_name}
     T.publish_main_sigs([x for x in T.fastlane_sigs("tv_sigs.json")] + [entry], "tv_sigs.json")  # بصمة مشتركة: لا يكرره أي مسار
+    try:  # تغذية لحظية للتطبيق
+        from tools import live_feed
+        live_feed.publish(token, {"id": f"manual/{m.get('message_id')}", "title": head, "t": when, "urgent": hot, "src": src or "هسه وصل",
+                                  "url": f"https://t.me/hassawassal/{r['result']['message_id']}", "msg": r["result"]["message_id"]})
+    except Exception:  # noqa: BLE001
+        pass
     return True, f"✅ نُشر بالقناة ({'عاجل يومض' if hot else 'خبر'}): {head}"
 
 
