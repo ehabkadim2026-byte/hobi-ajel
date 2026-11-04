@@ -14,4 +14,7 @@ jobs:
           for f in tg_status.json scoop.json health.json meta.json learn.json; do curl -sSL -m 30 "$B/$f" -o "audit_$f" || true; done
           for f in fast_status.json fast_decisions.json posted_fast.json posted_main.json; do gh release download fastlane -p "$f" -D . --clobber || true; done
           # fast_decisions.json = آخر ~400 قرار للمسار السريع بسببها (dup/fresh/gem_no/gem_unavailable/…)؛ posted_*.json = سجل «✅ أكدته»
-          gh release upload probe $(ls audit_posts.json audit_tg_status.json audit_scoop.json audit_health.json audit_meta.json audit_learn.json fast_status.json fast_decisions.json posted_fast.json posted_main.json 2>/dev/null) --clobber
+          # ملف ملف مع 3 محاولات: خطأ 502 عابر من GitHub كان يُفشل الرفع كله فلا يصل audit_posts.json (تدقيق 14:11 04/11)
+          for f in $(ls audit_posts.json audit_tg_status.json audit_scoop.json audit_health.json audit_meta.json audit_learn.json fast_status.json fast_decisions.json posted_fast.json posted_main.json 2>/dev/null); do
+            for i in 1 2 3; do gh release upload probe "$f" --clobber && break; sleep 5; done
+          done

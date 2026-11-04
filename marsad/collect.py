@@ -124,16 +124,33 @@ IRAQ_RX = re.compile(r"\b(Iraq|Iraqi|Iraqis|Baghdad|Kurdistan|Erbil|Irbil|Basra|
                      r"|Irak\w*|Bağdat|Kerkük|Musul|Süleymaniye|Haşdi)\b|عراق|بغداد|اربیل|اربيل|کرکوک|كركوك|موصل|بصره|سلیمانیه|حشد الشعبی|حشدالشعبی", re.I)
 
 
+def _gn_outlet(outlet):
+    """اسم الناشر كما يكتبه Google News قد يكون كردياً («PUKmedia یەکێتیی…»، «درەو») أو عنوان خبر قديم صار اسم الموقع
+    («عصابات الجولاني تعدم…»): نُبقي الجزء اللاتيني/العربي السليم، وإلا اسماً عاماً لا يُنسب خبراً لجهة وهمية (فحص 2، تدقيق 14:11 04/11)."""
+    o = re.sub(r"\s+", " ", outlet).strip()
+    if re.search(r"[ەێۆڵڕڤیک]", o):  # كردي/فارسي: يبقى الاسم اللاتيني فقط (PUKmedia)
+        o = " ".join(w for w in o.split() if re.fullmatch(r"[A-Za-z0-9.&'-]+", w)).strip(" -|،")
+    if not o or len(o.split()) > 6 or re.search(r"[.!؟?:«»\"]|(?<![\w])(تعدم|يعلن|تعلن|يستقيل|مقتل|قتلى|يتوعد|تكشف)(?![\w])", o):
+        return "موقع إخباري"
+    return o
+
+
 def _google_news(items):
-    """عناوين Google News بصيغة «العنوان - الناشر»: نفصل اسم الناشر ونضعه مصدراً للمادة."""
+    """عناوين Google News بصيغة «العنوان - الناشر»: نفصل اسم الناشر ونضعه مصدراً للمادة.
+    ناشر من الجهات المستبعدة («المعلومة» عبر بحث «بغداد») يُحذف: فلتر المصادر يفحص الخلاصة لا ناشر كل مادة (فحص 3)."""
+    from .cli import EXCLUDED_SRC
+    out = []
     for it in items:
         t = it["title"] or ""
         if " - " in t:
             head, outlet = t.rsplit(" - ", 1)
             if 1 < len(outlet) <= 60:
-                it["title"], it["source_name"] = head.strip(), outlet.strip() + " (عبر Google News)"
+                if EXCLUDED_SRC.search(outlet):
+                    continue
+                it["title"], it["source_name"] = head.strip(), _gn_outlet(outlet) + " (عبر Google News)"
         it["text"] = ""
-    return items
+        out.append(it)
+    return out
 
 
 IRAQI_OUTLETS = re.compile(r"(السومرية|شفق|بغداد اليوم|المدى|الصباح|واع|الأنباء العراقية|964|رووداو|روداو|كوردستان|كردستان ?24|الفرات|المعلومة|المسلة|العالم الجديد|"

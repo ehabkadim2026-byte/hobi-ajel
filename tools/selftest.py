@@ -23,4 +23,19 @@ from tools import tg_card as C  # noqa: E402
 assert len(C.card_a(None, "البنك المركزي العراقي: شحنة جديدة من الدولار", True, "2026-11-01T10:00:00Z")) > 10000
 from tools import test_confirm  # noqa: E402
 test_confirm.run()  # «✅ أكدته» وسجل قرارات المسار السريع بواجهة تلغرام وهمية
+# تدقيق 14:11 04/11: عنوان «منصب + فعل غير مدرج» ليس مبتوراً، وتحليل/رسالة مفتوحة ليست خبراً، والناشر المستبعد عبر Google News يُحذف، وخبر دولة بعيدة ليس «عن العراق»
+assert not T.incomplete("وزير التربية يرفض مقترحاً نيابياً لفتح التقديم بصفة محاضر مجاني") and T.incomplete("رئيس هيئة النزاهة الاتحادية")
+assert T.low_value("العراق لا يواجه تداعيات اقتصادية محتملة فحسب، بل يواجه مخاطر أمنية") and T.low_value("إلى السيد وهب: بما أنك الآن في الخطوط الجوية")
+assert not T.verify_line({"status": "مؤكد", "sources": [{"name": "1News - وان نيوز — telegram"}]}).startswith("✅")
+from marsad.collect import _google_news, _gn_outlet  # noqa: E402
+assert [i["source_name"] for i in _google_news([{"title": "خبر عن بغداد - المعلومة"}, {"title": "خبر آخر - شفق نيوز"}])] == ["شفق نيوز (عبر Google News)"]
+assert _gn_outlet("درەو") == "موقع إخباري" and _gn_outlet("PUKmedia یەکێتیی نیشتمانیی") == "PUKmedia"
+from tools.export_pwa import about_iraq_title  # noqa: E402
+assert not about_iraq_title("ترامب: تهانينا للديمقراطيين", True) and about_iraq_title("محافظ البصرة يفتتح مشروعاً", True)
+from tools import fastlane as FL  # noqa: E402
+from datetime import datetime as _dt, timezone as _tz  # noqa: E402
+_now = _dt.now(_tz.utc)
+_st = [{"w": sorted(T.title_sig("تأجيل محاكمة 7 متهمين فرنسيين من داعش في بغداد")[0]), "d": ["7"], "ts": _now.timestamp() - 3600}]
+assert FL.story_old(T.title_sig("تأجيل محاكمة 7 متهمين فرنسيين من داعش في بغداد… تفاصيل"), _st, _now)
+assert not FL.story_old(T.title_sig("هجوم مسلح أمام مبنى مديرية بلديات أربيل"), _st, _now)
 print("selftest ok")

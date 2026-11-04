@@ -67,6 +67,17 @@ def gate_sources(con, rows):
             con.execute("UPDATE items SET source_name=? WHERE source_id=?", (fixed, r["id"]))
             r["name"] = fixed
         keep.append(r)
+    try:  # مواد Google News المجموعة سابقاً: اسم ناشر كردي/عنوان يُصحَّح، وناشر مستبعد («المعلومة» عبر بحث عام) يُحذف (فحصا 2 و3)
+        from .collect import _gn_outlet
+        for (nm,) in con.execute("SELECT DISTINCT source_name FROM items WHERE source_name LIKE '%(عبر Google News)' "
+                                 "AND collected_utc >= strftime('%Y-%m-%dT%H:%M:%SZ','now','-2 days')").fetchall():
+            base = nm[: -len(" (عبر Google News)")]
+            if EXCLUDED_SRC.search(base):
+                con.execute("DELETE FROM items WHERE source_name=?", (nm,))
+            elif _gn_outlet(base) != base:
+                con.execute("UPDATE items SET source_name=? WHERE source_name=?", (_gn_outlet(base) + " (عبر Google News)", nm))
+    except Exception:  # noqa: BLE001
+        pass
     con.commit()
     return keep
 

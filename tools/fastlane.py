@@ -24,8 +24,14 @@ UA = {"User-Agent": "Mozilla/5.0 (Linux; Android 14) Chrome/126 Mobile"}
 STRICT = re.compile(r"(عاجل|مقتل|قتلى|استشهاد|انفجار|قصف|استهداف|اشتباك|اغتيال|القبض|اعتقال|حريق|غرق|زلزال|هزة|سيول|تعطيل|عطلة|الدوام|"
                     r"رواتب|الرواتب|قرار|يقرر|تقرر|إقالة|استقالة|تعيين|إعفاء|حظر|منع|إغلاق|فتح|الموازنة|سعر الصرف|الدولار|انتخابات|المفوضية|حكم|يقضي|الإعدام|السجن)")
 FLAG = re.compile(r"^\W{0,6}(عاجل|عــاجل|عاااجل|⚡|🔴|🚨)")
-ROUTINE = re.compile(r"(يهنئ|تهنئة|يعزي|تعزية|ينعى|نعى|بمناسبة|ذكرى|عيد|يستذكر|صباح الخير|جمعة مباركة|رحم الله|إنا لله|تابعونا|رابط القناة)")
+ROUTINE = re.compile(r"(يهنئ|تهنئ|تبارك|يبارك|تهنئة|يعزي|تعزية|ينعى|نعى|بمناسبة|ذكرى|عيد|يستذكر|صباح الخير|جمعة مباركة|رحم الله|إنا لله|تابعونا|رابط القناة)")
 STATE = ROOT / "data" / "fastlane_state.json"
+
+
+def story_old(sig, stories, now, fresh_min=None):
+    """هل الخبر متداول لدى الجهات المرصودة (3+) منذ أكثر من FRESH_MIN دقيقة؟ رسالة القناة الجديدة لا تجعل الخبر جديداً."""
+    lim = now.timestamp() - 60 * (fresh_min or T.FRESH_MIN)
+    return any(s.get("ts", 1e18) < lim and s.get("ts", 0) >= now.timestamp() - 3 * 3600 and T.same_story(sig, s) for s in stories or [])
 
 
 def gh_get(asset):
@@ -177,6 +183,7 @@ def main():
             print("::warning title=manual_pub::", type(e).__name__)
         stats["loops"] += 1
         main_sigs = (gh_get("main_sigs.json") + gh_get("tv_sigs.json")) if stats["loops"] % 4 == 1 else main_sigs if stats["loops"] > 1 else []
+        stories = gh_get("story_first.json") if stats["loops"] % 4 == 1 else stories if stats["loops"] > 1 else []
         if ledger is not None and stats["loops"] % 4 == 1:
             try:
                 ledger.refresh_other()  # منشورات الجولة الرئيسية المرشحة لـ«أكدته»
@@ -184,7 +191,7 @@ def main():
                 pass
         now = datetime.now(timezone.utc)
         mine = [x for x in mine if x.get("ts", 0) >= time.time() - T.DEDUP_H * 3600]
-        T.build_idf([x.get("title", "") for x in mine] + [x.get("title", "") for x in main_sigs][-400:]) if stats["loops"] % 20 == 1 else None
+        T.build_idf([x.get("title", "") for x in mine] + [x.get("title", "") for x in main_sigs][-400:] + [x.get("title", "") for x in stories][-400:]) if stats["loops"] % 20 == 1 else None
         from concurrent.futures import ThreadPoolExecutor
         allc = [(c, "official") for c in CFG["channels"]] + [(c, "breaking") for c in CFG.get("breaking", []) if c not in CFG["channels"]]
         hot = set(CFG.get("hot", []))
@@ -252,6 +259,8 @@ def main():
                 sig = T.title_sig(first)
                 if any(T.same_story(sig, x) for x in mine + main_sigs) or T.sec_dup(first, mine + main_sigs, time.time()):
                     skip("مكرر"); continue
+                if story_old(sig, stories, now):
+                    skip("قديم", "story_old"); continue  # الخبر نفسه متداول لدى 3 جهات منذ أكثر من 15 دقيقة (2980، 2985، 2990)
                 lk = T.lead_key(first)
                 if ch not in CFG["loud"] and sum(1 for x in mine + main_sigs if x.get("ts", 0) >= time.time() - 3600 and T.lead_key(x.get("title") or "") == lk) >= 2:
                     skip("نفس الجهة خلال ساعة"); continue
@@ -291,6 +300,8 @@ def main():
                     if by != "Gemini":
                         ok = bool(STRICT.search(p["text"][:400]))  # بلا نموذج لغوي: كلمات الحدث المهم فقط (لا «يلتقي/يستقبل»)
                         why_no = "gem_unavailable"  # والكلمات الصريحة لم تكفِ
+                    if ok and T.ROUTINE_RX.search(first) and not STRICT.search(first):
+                        ok, why_no = False, "routine"  # نشاط روتيني لجهة رسمية (حملة تشجير، يترأس جلسة، لقاءات أسبوعية: 2958، 2979، 2991) قبله النموذج
                 if not ok:
                     skip("غير مهم", why_no); continue
                 head = edit_headline(first, context=p["text"][:500])
