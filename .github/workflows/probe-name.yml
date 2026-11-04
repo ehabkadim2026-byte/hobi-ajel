@@ -9,9 +9,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - run: |
-          for u in raqeem raqim raqeem_iq raqim_iq alraqeem alraqim raqeemiq raqeem_news alsatr_alawal satr_awal alsatralawal mirsad mirsad_iq almirsad mirsadiq tawqeet_baghdad tawqit_baghdad btawqeet_baghdad; do
+          for u in alraqim alsatralawal raqeem raqeem_iq raqim_iq; do
             h=$(curl -sL "https://t.me/$u")
-            t=$(echo "$h" | grep -o '<div class="tgme_page_title"[^>]*><span[^>]*>[^<]*' | sed 's/.*>//')
+            t=$(echo "$h" | grep -o 'property="og:title" content="[^"]*'; echo "$h" | grep -o 'property="og:description" content="[^"]*' | head -c 200)
             x=$(echo "$h" | grep -o '<div class="tgme_page_extra">[^<]*' | sed 's/.*>//')
             echo "$u | ${t:-NONE} | ${x}" >> names.txt
           done
