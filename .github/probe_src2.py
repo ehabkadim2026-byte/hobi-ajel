@@ -54,6 +54,39 @@ def rss(url):
     return {"url": url, "ok": bool(rec), "n": len(out), "n2d": len(rec), "iq2d": sum(1 for t, _ in rec if IQ.search(t)),
             "newest": max((x[1] for x in out if x[1]), default=None).isoformat() if any(x[1] for x in out) else None,
             "sample": [t[:140] for t, _ in rec[:5]], "head": p[:120] if not out else ""}
+def links(url):
+    try: p = get(url, 2_000_000)
+    except Exception as e: return url, [], type(e).__name__
+    us = re.findall(r'(?:t\.me|telegram\.me)/(?:s/)?([A-Za-z][A-Za-z0-9_]{4,31})', p)
+    return url, us, None
+def disc(existing, ex):
+    sites = [x.strip() for x in open(".github/probe_sites.txt", encoding="utf-8") if x.strip() and not x.startswith("#")]
+    found = defaultdict(set); log = []
+    for url, us, err in ex.map(links, sites):
+        log.append({"url": url, "n": len(set(us)), "err": err})
+        for x in set(us):
+            if x.lower() not in existing and x.lower() not in ("share", "joinchat", "addlist", "iv", "proxy", "s", "socialmedia") and not x.lower().endswith("bot"):
+                found[x].add(url)
+    return found, log
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "disc":
+    src = json.load(open("config/sources.json", encoding="utf-8"))["sources"]
+    fl = json.load(open("config/fastlane.json", encoding="utf-8"))
+    existing = {s["id"].split("t.me/")[-1].lower() for s in src if s["id"].startswith("telegram:")}
+    existing |= {x.lower() for k in ("hot", "channels", "breaking", "agency", "intl", "loud") for x in fl.get(k, [])}
+    ex = ThreadPoolExecutor(10)
+    found, log = disc(existing, ex)
+    extra = [x.strip() for x in open(".github/probe_tg.txt", encoding="utf-8") if x.strip() and not x.startswith("#")]
+    todo = list(dict.fromkeys(list(found) + extra))
+    res = list(ex.map(tg, todo))
+    for r in res:
+        r["from"] = sorted(found.get(r["u"], []))[:4]; r.pop("refs", None)
+    json.dump(res, open("probe_tg.json", "w", encoding="utf-8"), ensure_ascii=False, indent=0, default=str)
+    json.dump(log, open("probe_health.json", "w", encoding="utf-8"), ensure_ascii=False, indent=0)
+    feeds = [x.strip() for x in open(".github/probe_rss.txt", encoding="utf-8") if x.strip() and not x.startswith("#")]
+    rr = list(ex.map(rss, list(dict.fromkeys(feeds))))
+    json.dump(rr, open("probe_rss.json", "w", encoding="utf-8"), ensure_ascii=False, indent=0, default=str)
+    print(len(res), "tg;", sum(r["ok"] for r in res), "ok")
+    sys.exit(0)
 if __name__ == "__main__":
     src = json.load(open("config/sources.json", encoding="utf-8"))["sources"]
     fl = json.load(open("config/fastlane.json", encoding="utf-8"))
