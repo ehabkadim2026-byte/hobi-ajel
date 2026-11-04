@@ -203,7 +203,7 @@ def main():
         stats["loops"] += 1
         main_sigs = (gh_get("main_sigs.json") + gh_get("tv_sigs.json")) if stats["loops"] % 4 == 1 else main_sigs if stats["loops"] > 1 else []
         stories = gh_get("story_first.json") if stats["loops"] % 4 == 1 else stories if stats["loops"] > 1 else []
-        if stats["loops"] % 2000 == 0:
+        if stats["loops"] % 300 == 0:  # ~كل 30–40 دقيقة: نسخة اليوم من source_trust.json
             try:
                 load_trust()
             except Exception:  # noqa: BLE001
