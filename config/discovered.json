@@ -126,6 +126,21 @@
    "added_by": "محرك الاكتشاف",
    "evidence": "درجة 50 · صلة 0.4 · أصالة 0.1 · 10/24س · https://ashourland.net · كانت تصلنا عبر Google News (29/24س)",
    "priority": 1
+  },
+  {
+   "id": "telegram:t.me/s8swp",
+   "name": "واسط مدينتي — telegram",
+   "url": "https://t.me/s8swp",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "مكتشف تلقائياً",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false,
+   "added_by": "محرك الاكتشاف",
+   "evidence": "درجة 76 · صلة 0.82 · أصالة 0.69 · 17/24س"
   }
  ]
 }
