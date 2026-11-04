@@ -201,7 +201,8 @@ def main():
                     except Exception:  # noqa: BLE001
                         pass
                 # «عاجل» (شارة حمراء + وميض) فقط لما وسمته المصادر عاجلاً أو حدث أمني عراقي — لا لكل منشورات الجهات الرسمية
-                loud = (bool(FLAG.search(p["text"][:40])) or bool(T.SEC_RX.search(first) and T.iraq_strict(first))) and not T.NOT_URGENT_RX.search(head)  # سعر الدولار/السلف/التقديم بلا «عاجل» (تدقيق 2835)
+                loud = (bool(FLAG.search(p["text"][:40])) or bool(T.SEC_RX.search(first) and T.iraq_strict(first))) and not T.NOT_URGENT_RX.search(head) \
+                    and not (T.STATEMENT_RX.search(head) and not (T.SEC_RX.search(head) or T.EVENT_RX.search(head))) and T.iraq_strict(head)  # سعر الدولار/السلف/التقديم بلا «عاجل» (تدقيق 2835)
                 card = tg_card.card_news4(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), source=re.sub(r" — .*$", "", cname), style="A")
                 tags = T.province_tags(first)
                 cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}" + \
