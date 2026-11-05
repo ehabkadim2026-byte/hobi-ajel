@@ -240,7 +240,7 @@ def main():
     from tools import manual_pub as MP
     from tools import tg_user_listener as UL
     seen_manual = MP.done_ids()
-    _all0 = list(dict.fromkeys(CFG.get("hot", []) + CFG["channels"] + CFG.get("breaking", [])))  # الأسرع أولاً للاشتراك التدريجي
+    _all0 = list(dict.fromkeys(CFG.get("hot", []) + CFG["channels"] + CFG.get("breaking", []) + CFG.get("intl", []) + CFG.get("agency", [])))  # الأسرع أولاً للاشتراك التدريجي
     def _views_save(rows):  # يدمج مع المخزون (7 أيام) ويرفع channel_views.json — مادة تقرير «ماذا يشاهد جمهورنا»
         old = gh_get("channel_views.json") or {}
         cur = {str(r["id"]): r for r in (old.get("posts") or [])} if isinstance(old, dict) else {}
