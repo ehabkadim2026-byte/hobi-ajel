@@ -34,3 +34,9 @@
 - `fast_decisions.json`: آخر ~400 قرار للمسار السريع `{t, ch, id, head, decision, reason}`؛ السبب رمز محدد (`fresh` قديم، `dup` مكرر، `same_actor`، `routine`، `short`، `cap`، `not_iraq`، `dialect`، `excluded`، `incomplete`، `press`، `low_value`، `gem_no` رفضه النموذج، `gem_unavailable` النموذج غير متاح، `gem_cap` سقف النموذج، `no_strict`، `edited_*` بعد التحرير، `offensive` مسيء للعراق/العراقيين أو مكوّن عراقي، `weak_src` مصدر بطبقة «ضعيفة»، `send_failed`)، و`decision` = skip/post/confirm/fail. يُحدَّث كل ~5 دقائق.
 - `posted_fast.json` و`posted_main.json`: سجل المنشورات (48 ساعة) ومحاولات «✅ أكدته» و«☑️ تطابق» (`type` = off/trust).
 - `source_trust.json` (إصدار fastlane، يومياً): طبقات موثوقية المصادر وأرقامها — الطريقة في `docs/source_trust.md`.
+- `fastlane_auto.json` (إصدار fastlane، يومياً بعد موثوقية المصادر — `tools/auto_tune.py`): الضبط الذاتي للمسار السريع بلا نموذج لغوي.
+  `promote` قنوات تلغرام تُضاف لطبقة breaking و`demote` قنوات يتوقف فحصها السريع (تبقى بالجمع العادي)، و`why` سبب كل منهما؛ يدمجها fastlane.py
+  في الذاكرة عند البدء وكل ~300 دورة (`config/fastlane.json` لا يتغير). القواعد والسقوف في `rules` داخل الملف وأعلى `tools/auto_tune.py`.
+  **وكيل التطوير (أسبوعياً):** يتحقق من `candidates` (قنوات/مواقع غير مرصودة يستشهد بها المرصودون) بمعاينة عامة، ويضيف الصالح منها
+  للسجل بالطريقة المعتادة ويسجّل المرفوض في `docs/backlog.md` — لا تُضاف آلياً. ويراجع `promote`/`demote`: لتثبيت قناة تُضاف لطبقتها في
+  `config/fastlane.json`، ولمنع ترقيتها آلياً تُضاف لمفتاح `auto_never` فيه (قائمة معرّفات) — لا يُعدَّل الملف الآلي يدوياً.

@@ -97,6 +97,11 @@ jobs:
         timeout-minutes: 4
         env: {GH_TOKEN: "${{ github.token }}"}
         run: python3 -m tools.reliability
+      - name: "الضبط الذاتي للمسار السريع (يومياً: ترقية/تنزيل قنوات + مرشحو الاكتشاف → fastlane_auto.json)"
+        continue-on-error: true
+        timeout-minutes: 3
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: python3 -m tools.auto_tune
       - run: python3 -m tools.export_pwa
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

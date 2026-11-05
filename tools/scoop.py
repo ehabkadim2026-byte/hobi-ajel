@@ -250,6 +250,11 @@ def main():
         except Exception as e:  # noqa: BLE001
             head = ""
             print("::warning title=kpi::", type(e).__name__, str(e)[:150])
+        try:  # سطر الضبط الذاتي للمسار السريع (tools/auto_tune.py)
+            from tools import auto_tune as AT
+            head = "\n".join(x for x in (head, AT.summary_line(T.fastlane_sigs(AT.ASSET))) if x)
+        except Exception:  # noqa: BLE001
+            pass
         text = (head + "\n\n" + report(o)) if head else report(o)
         for c in (sent.get("_editor_chats") or {}).values():
             try:

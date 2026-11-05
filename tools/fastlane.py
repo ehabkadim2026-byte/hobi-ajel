@@ -171,6 +171,19 @@ def load_trust():
     return bool(isinstance(d, dict) and d.get("sources"))
 
 
+AUTO_BASE = {k: list(CFG.get(k) or []) for k in ("channels", "breaking", "hot", "agency", "intl", "loud")}
+
+
+def load_auto():
+    """الضبط الذاتي اليومي (tools/auto_tune.py → fastlane_auto.json): «promote» إلى breaking و«demote» تُرفع من الطبقات غير الرسمية، في الذاكرة فقط."""
+    from tools import auto_tune as AT
+    d = gh_get(AT.ASSET)
+    if isinstance(d, dict) and "promote" in d:  # فشل التنزيل لا يُلغي ضبطاً محمّلاً
+        CFG.update(AT.merge(AUTO_BASE, d))
+        return {"promote": len(d.get("promote") or []), "demote": len(d.get("demote") or []), "at": d.get("updated_utc")}
+    return None
+
+
 def iraq_strong(t):
     from marsad.textnorm import norm_ar
     iq, _ = T._markers()
@@ -190,7 +203,12 @@ def main():
         st = {}
     last = st.get("last", {})
     mine = gh_get("fast_sigs.json")
-    stats = {"loops": 0, "posted": 0, "skipped": {}, "errors": 0}
+    try:
+        stats_auto = load_auto()  # قبل قائمة حساب الرصد: القنوات المُرقّاة تُشترك أيضاً
+    except Exception as e:  # noqa: BLE001
+        stats_auto = None
+        print("::warning title=auto_tune::", type(e).__name__)
+    stats = {"loops": 0, "posted": 0, "skipped": {}, "errors": 0, "auto": stats_auto}
     from tools.editorial import edit_headline
     from tools import tg_card
     from tools import manual_pub as MP
@@ -225,6 +243,7 @@ def main():
         if stats["loops"] % 300 == 0:  # ~كل 30–40 دقيقة: نسخة اليوم من source_trust.json
             try:
                 load_trust()
+                stats["auto"] = load_auto() or stats.get("auto")
             except Exception:  # noqa: BLE001
                 pass
         if ledger is not None and stats["loops"] % 4 == 1:
