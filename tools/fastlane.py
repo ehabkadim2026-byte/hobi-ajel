@@ -108,6 +108,7 @@ def latest_posts(ch):
 LAST_FULL = [0.0]
 LAST_RSS = [0.0]
 RSS = {r["key"]: r for r in CFG.get("rss", [])}
+RSS_ROT = [0]
 
 
 def latest_rss(key):
@@ -321,7 +322,14 @@ def main():
             LAST_FULL[0] = time.time()
         if RSS and time.time() - LAST_RSS[0] >= CFG.get("rss_every_sec", 45):
             LAST_RSS[0] = time.time()
-            chans = chans + [(k, "rss") for k in RSS]
+            core = [k for k, r in RSS.items() if not r.get("rot")]
+            rot = [k for k, r in RSS.items() if r.get("rot")]
+            n = CFG.get("rss_rot_per_tick", 8)
+            if rot:  # المواقع الإضافية بالتناوب حتى لا تطول الدورة (لكل موقع مهلة 12 ث)
+                i0 = RSS_ROT[0] % len(rot)
+                core += (rot[i0:] + rot[:i0])[:n]
+                RSS_ROT[0] = i0 + n
+            chans = chans + [(k, "rss") for k in core]
 
         def fetch(c):
             try:
