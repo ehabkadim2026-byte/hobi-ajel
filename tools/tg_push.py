@@ -77,6 +77,7 @@ def rank(n):
 
 
 _SIGS = {}
+MINOR_FRESH_MIN = 8
 FRESH_MIN = 15  # خبر نشرته أي جهة مرصودة قبل أكثر من 15 دقيقة لا يُنشر (طلب إيهاب 2026-11-03)
 SEC_RX = re.compile(r"(خلية الإعلام الأمني|الإعلام الأمني|قيادة العمليات|عمليات بغداد|الاستخبارات|جهاز الأمن الوطني|مكافحة الإرهاب|داعش|إرهابي|ارهابي|"
                     r"عبوة|انفجار|تفجير|اشتباك|هجوم|استهداف|قصف|طائرة مسيرة|مسيّرة|اغتيال|اختطاف|مقتل|استشهاد|القبض على|اعتقال|تسلل|صاروخ|إطلاق نار|اطلاق نار)")
@@ -260,6 +261,11 @@ def worthy(n, now):
         return False
     first = n.get("first_utc")  # أول نشر للخبر لدى أي مصدر مرصود: إذا انتشر قبل أكثر من 25 دقيقة فهو ليس «جديداً» للقناة
     if first and datetime.fromisoformat(first.replace("Z", "+00:00")) < now - timedelta(minutes=FRESH_MIN):
+        return False
+    # خبر صغير (أقل من 8 جهات وغير عاجل) فاته المسار السريع: بعد 8 دقائق من أول نشر صار متأخراً على المنافسين فلا ننشره
+    # (لوحة السبق 04/11 بعد الإصلاحات: أغلب «تأخرنا» أخبار صغيرة رفضها السريع ثم نشرتها الجولة بعد 9–14 دقيقة)
+    if first and (n.get("n_sources") or 1) < 8 and not is_breaking(n) and \
+            datetime.fromisoformat(first.replace("Z", "+00:00")) < now - timedelta(minutes=MINOR_FRESH_MIN):
         return False
     t = n.get("title") or ""
     from tools.editorial import clean_headline
