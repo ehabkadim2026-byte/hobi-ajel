@@ -83,6 +83,12 @@ def run():
     assert WP.wants({"mode": "gov", "gov": "القادسية"}, I)  # مركز المحافظة يكفي
     assert WP.clean_prefs({"mode": "gov"}) == {"mode": "urgent"} and WP.clean_prefs({"mode": "gov", "gov": "بابل"}) == {"mode": "gov", "gov": "بابل"}
     assert WP.clean_prefs({"mode": "hack"}) == {"mode": "urgent"} and len(WP.GOVS) == 18
+    # قاموس المحافظات المشترك (tools/provinces.py): مدن وأقضية، سوابق، الأسبق موقعاً، والسياق الاتحادي والكلمات الملتبسة لا تُحسب
+    from tools import provinces as PV
+    assert PV.province_of("اشتباك في قضاء الزبير جنوب البصرة") == "البصرة" and PV.province_of("انفجار في تلعفر") == "نينوى"
+    assert PV.province_of("وفد بغداد وأربيل يزور الموصل") == "نينوى" and PV.province_of("رفع العلم العراقي في القائم بالأعمال") is None
+    assert PV.province_of("حريق في الكوت ثم بعقوبة") == "واسط" and PV.province_of("مساعدات للبصرة") == "البصرة"
+    assert WP.wants({"mode": "gov", "gov": "نينوى"}, {"title": "انفجار في سنجار"})
     # 6) رسائل موضوع الاشتراكات: إضافة، تكرار، تحديث، إلغاء، سقف
     subs = {}
     assert WP.apply_msg(subs, json.dumps({"sub": sub, "prefs": {"mode": "important"}}), 10)

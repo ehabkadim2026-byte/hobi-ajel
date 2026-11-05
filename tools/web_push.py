@@ -33,14 +33,8 @@ TTL = 3600
 SUBJECT = "https://ehabkadim2026-byte.github.io/hobi-ajel/"
 HOSTS = {"fcm.googleapis.com", "updates.push.services.mozilla.com", "web.push.apple.com"}
 MODES = ("urgent", "important", "gov")
-# المحافظات الـ18 وأسماء مراكزها الشائعة (مطابقة نص الخبر)
-GOVS = {
-    "بغداد": ["بغداد"], "البصرة": ["البصرة", "بصرة"], "نينوى": ["نينوى", "الموصل", "سنجار", "تلعفر"], "أربيل": ["أربيل", "اربيل"],
-    "السليمانية": ["السليمانية"], "دهوك": ["دهوك"], "كركوك": ["كركوك"], "الأنبار": ["الأنبار", "الانبار", "الرمادي", "الفلوجة"],
-    "صلاح الدين": ["صلاح الدين", "تكريت", "سامراء", "بيجي"], "ديالى": ["ديالى", "بعقوبة"], "بابل": ["بابل", "الحلة"],
-    "كربلاء": ["كربلاء"], "النجف": ["النجف"], "واسط": ["واسط", "الكوت"], "القادسية": ["القادسية", "الديوانية"],
-    "ذي قار": ["ذي قار", "الناصرية"], "ميسان": ["ميسان", "العمارة"], "المثنى": ["المثنى", "السماوة"],
-}
+# المحافظات الـ18 ومدنها وأقضيتها: قاموس واحد مشترك مع التطبيق (حقل province، «محافظتي»، الخريطة) — tools/provinces.py
+from tools.provinces import GOVS, mentions as _gov_mentions  # noqa: E402
 
 
 def b64u(b):
@@ -67,10 +61,6 @@ def _vapid_key(token):
 
 
 # ---------------------------------------------------------------- التحقق والتفضيلات
-def _norm(s):
-    return re.sub("[أإآ]", "ا", re.sub("ة", "ه", s or ""))
-
-
 def valid_sub(sub):
     """{endpoint, keys:{p256dh, auth}} صالح ومن خدمة دفع رسمية؟ يرجع النسخة النظيفة أو None."""
     try:
@@ -105,8 +95,7 @@ def wants(prefs, item):
     if mode == "important":
         return True
     if mode == "gov":
-        t = " " + _norm(item.get("title") or "") + " "
-        return any(_norm(w) in t for w in GOVS.get(prefs.get("gov"), []))
+        return _gov_mentions(item.get("title") or "", prefs.get("gov"))
     return False
 
 

@@ -216,6 +216,73 @@ select,.inp{width:100%;border:1px solid var(--line);background:var(--surface);bo
 .push .seg{margin-top:10px}
 .push select{margin-top:10px}
 .push .pst{font-size:.8rem;margin-top:10px;color:var(--ink-2)} .push .pst.err{color:var(--urgent)} .push .pst.ok{color:var(--green)}
+/* صفحة الحدث الحي */
+.t-live{background:transparent;color:var(--urgent);border:1px solid color-mix(in srgb,var(--urgent) 45%,transparent)}
+.ev-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.ev-st{display:inline-flex;align-items:center;gap:7px;font-family:var(--f-head);font-weight:800;font-size:.86rem;border-radius:999px;padding:3px 12px;background:var(--surface-2);color:var(--muted)}
+.ev-st i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.ev-st.on{background:var(--urgent-soft);color:var(--urgent)} .ev-st.on i{animation:blink 1.1s ease-in-out infinite}
+.ev-head small{color:var(--muted);font-size:.78rem}
+.evtl{list-style:none;margin:8px 0 0;padding:0}
+.evtl li{display:grid;grid-template-columns:48px 14px 1fr;gap:0 8px;position:relative;padding-bottom:14px}
+.evtl li::after{content:"";position:absolute;inset-inline-start:61px;top:16px;bottom:0;width:1px;background:var(--line)}
+.evtl li:last-child::after{display:none}
+.evtl .et{font-family:var(--f-head);font-weight:700;font-size:.84rem;direction:ltr;text-align:end;padding-top:1px;line-height:1.5}
+.evtl .et small{display:block;font-family:var(--f-body);font-weight:500;font-size:.64rem;color:var(--muted)}
+.evtl .ed{width:11px;height:11px;border-radius:50%;background:var(--surface);border:2px solid var(--ink-2);margin-top:6px;z-index:1}
+.evtl li.o .ed{border-color:var(--green);background:var(--green)} .evtl li.d .ed{border-color:var(--urgent);background:var(--urgent)} .evtl li.lv .ed{border-color:var(--urgent)}
+.evtl .eb{min-width:0}
+.evtl .eb a{color:var(--blue);font-weight:600;font-size:.8rem;text-decoration:none}
+.evtl .eb p{margin:1px 0 0;font-size:.9rem;line-height:1.6;overflow-wrap:anywhere}
+.mk{display:inline-block;font-weight:700;font-size:.66rem;border-radius:999px;padding:0 7px;line-height:1.7;margin-inline-start:4px;vertical-align:1px}
+.mk-o{background:var(--green-soft);color:var(--green)} .mk-d{background:var(--urgent-soft);color:var(--urgent)} .mk-f{background:var(--surface-2);color:var(--ink-2)} .mk-l{background:var(--urgent);color:#fff}
+.ev-more{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.ev-more>summary{cursor:pointer;font-weight:700;font-size:.86rem;color:var(--ink-2)}
+/* محافظتي */
+.mygov{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.mg-h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.88rem}
+.mg-h b{font-family:var(--f-head);font-weight:700}
+.mg-h span{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.mg-row{display:grid;grid-template-columns:42px 1fr;gap:8px;width:100%;text-align:start;border:0;border-top:1px solid var(--line);background:none;padding:8px 0 6px;cursor:pointer;color:var(--ink)}
+.mg-h+.mg-row{margin-top:6px}
+.mg-row b{font-family:var(--f-head);font-size:.82rem;direction:ltr;text-align:end;color:var(--ink-2)}
+.mg-u{display:block;font-style:normal;font-family:var(--f-body);font-size:.62rem;font-weight:700;color:#fff;background:var(--urgent);border-radius:5px;text-align:center;margin-top:3px;line-height:1.6}
+.mg-row span{font-size:.88rem;font-weight:600;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.govgrid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+/* خريطة الأحداث */
+.mapbox{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 8px 6px;margin-top:12px}
+.mapbox svg{display:block;width:100%;max-width:440px;height:auto;margin:0 auto}
+.hx{cursor:pointer;outline:none}
+.hx polygon.b{stroke:var(--bg);stroke-width:2}
+.hx.sel polygon.b{stroke:var(--ink);stroke-width:2.5}
+.hx:focus-visible polygon.b{stroke:var(--blue);stroke-width:3}
+.hx text{font-family:var(--f-body);text-anchor:middle;pointer-events:none}
+.hx .nm{font-size:10.5px;font-weight:600} .hx .ct{font-size:13px;font-weight:800;font-family:var(--f-head)}
+.hx polygon.u{fill:none;stroke:var(--urgent);stroke-width:2.5}
+.hx polygon.ring{fill:none;stroke:var(--urgent);stroke-width:3;transform-box:fill-box;transform-origin:center;animation:ring 1.6s ease-out infinite}
+@keyframes ring{0%{transform:scale(.92);opacity:.95}100%{transform:scale(1.22);opacity:0}}
+@media (prefers-reduced-motion:reduce){.hx polygon.ring{animation:none;opacity:0}}
+.legend{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:6px 0 2px}
+.legend i{width:16px;height:12px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
+.legend .lr{width:14px;height:14px;border-radius:50%;border:2.5px solid var(--urgent);margin-inline-start:10px}
+/* شاشة العاجل فقط */
+body.urgmode .ticker,body.urgmode .foot{display:none}
+.urg{max-width:980px;margin:0 auto}
+.urg-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding-bottom:10px;border-bottom:2px solid var(--urgent)}
+.urg-live{display:inline-flex;align-items:center;gap:8px;font-family:var(--f-head);font-weight:800;font-size:1.05rem}
+.urg-live i{width:11px;height:11px;border-radius:50%;background:var(--urgent);animation:blink 1.1s ease-in-out infinite}
+.urg-live small{font-family:var(--f-body);font-weight:600;color:var(--muted);font-size:.8rem;direction:ltr}
+.urg-ctl{display:flex;gap:6px;flex-wrap:wrap}
+.urg-ctl .btn{padding:7px 12px;font-size:.82rem}
+.urg-ctl .btn[aria-pressed="true"]{background:var(--urgent);border-color:var(--urgent);color:#fff}
+.u-item{display:block;width:100%;text-align:start;background:none;border:0;border-bottom:1px solid var(--line);padding:18px 2px 20px;cursor:pointer;color:var(--ink)}
+.u-meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;font-size:.92rem;color:var(--muted)}
+.u-meta b{font-family:var(--f-head);font-size:1.5rem;color:var(--urgent);direction:ltr}
+.u-title{font-family:var(--f-head);font-size:clamp(1.45rem,5.6vw,2.6rem);font-weight:800;line-height:1.5;margin:4px 0 0;overflow-wrap:anywhere}
+.u-item.new .u-title{animation:unew 2.5s ease-out 1}
+@keyframes unew{0%{color:var(--urgent)}100%{color:var(--ink)}}
+.u-empty{text-align:center;padding:60px 10px;font-family:var(--f-head);font-size:1.35rem;font-weight:700;color:var(--ink-2)}
+.u-empty small{display:block;font-family:var(--f-body);font-size:.85rem;font-weight:500;color:var(--muted);margin-top:8px}
 .toast{position:fixed;inset-inline:16px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 12px);max-width:440px;margin:auto;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;text-align:center;font-weight:600;font-size:.86rem;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:50}
 .toast.on{opacity:1;transform:none}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
@@ -244,7 +311,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   <footer class="foot narrow">
     <p class="note">يرصد التطبيق كل 90 ثانية تقريباً، على خوادم GitHub وبدون ما تحتاج تخلي الصفحة مفتوحة. يرصد قنوات تلغرام عامة وخلاصات RSS ومواقع عبر Google News. هذا مو كل الإنترنت، وفيسبوك وX ما يندخلون مجاناً. كل الأوقات بتوقيت بغداد.</p>
     <p class="note"><b>عاجل المصدر</b>: المصدر نفسه كتب «عاجل». <b>مهم بتصنيف النظام</b>: حسب الأهمية وصلة الخبر بالعراق وعدد الجهات والمصدر الرسمي. <b>متداول لم يتأكد</b>: نشرته جهات كثيرة، وكثرة النشر مو تأكيد. <b>مؤكد</b> يعني صادر عن الجهة نفسها، يثبت صدور الكلام لا صحته. <b>ترجمة آلية</b> معلّمة والأصل تحتها.</p>
-    <p class="note" style="opacity:.55">نسخة 05/11 · 11</p>
+    <p class="note" style="opacity:.55">نسخة 05/11 · 12</p>
   </footer>
 </div>
 
@@ -299,7 +366,7 @@ const t0=n=>{const a=n.first_utc||n.latest_utc,c=n.collected_utc;if(!a)return c;
 const lateMin=n=>(n.first_utc&&n.collected_utc)?(ms(n.collected_utc)-ms(n.first_utc))/60000:0;
 
 function tagsOf(n){
-  return `${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${isUrg(n)?'<span class="tag t-urgent">عاجل</span>':(n.level==="عاجل"||n.source_flag)?LV["مهم"].t:(LV[n.level]?LV[n.level].t:"")}${n.escalating?'<span class="tag t-esc">متصاعد</span>':""}<span class="tag t-type">${esc(n.ctype||"خبر")}</span><span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}${n.manual?'<span class="tag t-man">إدخال يدوي</span>':""}${n.pmf_class&&view==="pmf"?`<span class="tag t-follow">${esc(n.pmf_class)}</span>`:""}${view==="watch"&&sub.watch?provTag(((n.watch||[]).find(w=>w.id===sub.watch)||{}).prov):""}${TB[n.trust_badge]&&!["متنازع عليه","ثبت عدم صحته"].includes(n.vstatus)?"":`<span class="st ${VS[n.vstatus]||ST[n.status]?.[0]||"s-unv"}">${esc(n.vstatus||n.status||"غير متحقق")}</span>`}`;
+  return `${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${isUrg(n)?'<span class="tag t-urgent">عاجل</span>':(n.level==="عاجل"||n.source_flag)?LV["مهم"].t:(LV[n.level]?LV[n.level].t:"")}${n.escalating?'<span class="tag t-esc">متصاعد</span>':""}${isEvent(n)&&evRunning(n)?'<span class="tag t-live">حدث حي</span>':""}<span class="tag t-type">${esc(n.ctype||"خبر")}</span><span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}${n.manual?'<span class="tag t-man">إدخال يدوي</span>':""}${n.pmf_class&&view==="pmf"?`<span class="tag t-follow">${esc(n.pmf_class)}</span>`:""}${view==="watch"&&sub.watch?provTag(((n.watch||[]).find(w=>w.id===sub.watch)||{}).prov):""}${TB[n.trust_badge]&&!["متنازع عليه","ثبت عدم صحته"].includes(n.vstatus)?"":`<span class="st ${VS[n.vstatus]||ST[n.status]?.[0]||"s-unv"}">${esc(n.vstatus||n.status||"غير متحقق")}</span>`}`;
 }
 function card(n){
   const s=(n.sources||[])[0]||{};
@@ -349,7 +416,7 @@ function vHome(all){
   const sf=all.filter(n=>n.source_flag&&NEWSY(n)&&mins(t0(n))<=60).sort((a,b)=>ms(t0(b))-ms(t0(a))).slice(0,8);
   const imp=h6.filter(n=>!(n.source_flag&&mins(t0(n))<=60)&&NEWSY(n)&&(n.level==="عاجل"||n.level==="مهم"||n.source_flag)).sort((a,b)=>score(b)-score(a)).slice(0,8);
   const tr=h6.filter(n=>n.trending_unconfirmed&&!n.source_flag).sort((a,b)=>b.n_sources-a.n_sources).slice(0,8);
-  let h="";
+  let h=govStrip(all);
   if(escal.length) h+=`<div class="sec"><h2>أحداث متصاعدة</h2><span>تكاثرت تغطيتها بآخر ساعة</span></div><div class="esc">${escal.map(n=>`<button type="button" data-id="${esc(n.id)}"><small>${n.n_items} مادة · ${n.n_sources} جهات</small><b>${esc(n.title)}</b></button>`).join("")}</div>`;
   h+=`<div class="sec"><h2>المهم الآن · العراق والمنطقة</h2><span>${five.length} خبر</span></div>`+(five.length?`<div class="tbl"><div class="tr th"><span>الوقت</span><span>الخبر</span><span>المصدر</span></div>${five.map(n=>{const s=(n.sources||[])[0]||{};return`<button type="button" class="tr" data-id="${esc(n.id)}"><span class="tt"><b>${esc(hm(t0(n)))}</b><small>${esc(ago(t0(n)))}</small>${tbPill(n)}</span><span class="th2">${isUrg(n)?'<span class="tag t-urgent">عاجل</span> ':(n.level==="عاجل"||n.source_flag)?LV["مهم"].t+" ":LV[n.level]?LV[n.level].t+" ":""}${esc(n.title)}</span><span class="ts">${esc(srcName(s.name))}<small>${n.n_sources>1?n.n_sources+" جهات":"جهة واحدة"}</small></span></button>`}).join("")}</div>`:'<div class="note-box">ما نزل خبر مهم بآخر 15 دقيقة.</div>');
   h+=`<div class="tri"><div>${block("عاجل نشره المصدر","آخر ساعة",sf)}</div><div>${block("مهم صنّفه النظام","آخر 6 ساعات",imp)}</div><div>${block("متداول لم يتأكد بعد","3 جهات أو أكثر",tr)}</div></div>`;
@@ -410,7 +477,11 @@ function vTools(){
   if(k==="editors") return vEditors();
   if(k==="tv") return vTV();
   if(k==="ops") return vOps();
+  if(k==="gov") return vGov();
   return `<div class="narrow"><div class="sec"><h2>الأدوات</h2></div><div class="tgrid">
+    <button class="tcard" type="button" data-go="urgent"><b>🔴 شاشة العاجل فقط</b><small>العاجل وحده بخط كبير، يتحدث وحده ويه صوت اختياري. تنفع تخليها مفتوحة على شاشة ثانية.</small></button>
+    <button class="tcard" type="button" data-go="map"><b>🗺️ خريطة الأحداث</b><small>المحافظات الـ18 ملوّنة حسب عدد أخبار آخر ساعة أو 6 ساعات، والعاجل ينبض.</small></button>
+    <button class="tcard" type="button" data-tool="gov"><b>📍 محافظتي</b><small>${myGov?`محافظتك: ${esc(myGov)}. شريط أخبارها بأعلى الرئيسية.`:"اختار محافظتك حتى يطلع شريط أخبارها بأعلى الرئيسية."}</small></button>
     <button class="tcard" type="button" data-tool="tracer"><b>تتبّع أصل الخبر</b><small>الصق نص خبر أو عبارة أو رابط، ويطلعلك أقدم نشر بالمصادر المفحوصة ويه خط زمني.</small></button>
     <button class="tcard" type="button" data-tool="sources"><b>إدارة المصادر</b><small>${health.length} مصدر، تشوف حالة كل واحد وآخر نجاح وآخر محاولة والأخطاء، وتكدر تعطّل أو تغيّر الأولوية.</small></button>
     <button class="tcard" type="button" data-tool="alerts"><b>إعدادات التنبيه</b><small>حسب الموضوع والمصدر والأهمية، ويه صوت اختياري.</small></button>
@@ -684,12 +755,15 @@ function runAlerts(initial){
   if(prefs.notify&&"Notification" in window&&Notification.permission==="granted"){ try{ new Notification("هوبي عاجل",{body:top.title,icon:"icons/icon-192.png",tag:top.id}); }catch(e){} }
 }
 
-function openDrawer(id){
+let openId=null;
+function openDrawer(id,keep){
   const n=news.find(x=>x.id===id)||LIVEN.find(x=>x.id===id); if(!n) return;
+  const ev=isEvent(n), dr=$("#drawer"), st=dr.scrollTop, more=keep&&dr.querySelector(".ev-more")?.open;
+  openId=id;
   const hmap={}; health.forEach(h=>{hmap[srcName(h.name)]=h});
   const s0=(n.sources||[])[0]||{}, h0=hmap[srcName(s0.name)];
   const why=[...(n.why||[])]; if(n.source_flag) why.unshift("المصدر نفسه وسم الخبر «عاجل»"); if(n.trending_unconfirmed) why.push("متداول لدى جهات كثيرة بدون تأكيد مستقل"); if(n.about_iraq) why.push("يخص العراق");
-  $("#drawer").innerHTML=`<div class="grab"></div><div class="tags">${tagsOf(n)}</div><h2 class="d-title">${esc(n.title)}</h2>${tbPill(n)?`<p class="note" style="margin:0 0 4px">${tbPill(n)} <span style="font-size:.74rem">${esc(TB[n.trust_badge][1])}</span> <span style="font-size:.7rem;opacity:.75" title="${esc(TB_LEGEND)}">ⓘ</span></p>`:""}${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p><p class="note">العنوان العربي ترجمة آلية للعنوان الأصلي.</p>`:""}${n.title_src&&!n.title_orig?`<details style="margin:6px 0 2px"><summary class="note" style="cursor:pointer">العنوان كما نشره المصدر</summary><p class="orig">${esc(n.title_src)}</p></details>`:""}
+  dr.innerHTML=`<div class="grab"></div><div class="tags">${tagsOf(n)}</div><h2 class="d-title">${esc(n.title)}</h2>${ev?eventHTML(n)+`<details class="ev-more"${more?" open":""}><summary>تفاصيل التحقق والتصنيف</summary>`:""}${tbPill(n)?`<p class="note" style="margin:0 0 4px">${tbPill(n)} <span style="font-size:.74rem">${esc(TB[n.trust_badge][1])}</span> <span style="font-size:.7rem;opacity:.75" title="${esc(TB_LEGEND)}">ⓘ</span></p>`:""}${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p><p class="note">العنوان العربي ترجمة آلية للعنوان الأصلي.</p>`:""}${n.title_src&&!n.title_orig?`<details style="margin:6px 0 2px"><summary class="note" style="cursor:pointer">العنوان كما نشره المصدر</summary><p class="orig">${esc(n.title_src)}</p></details>`:""}
     ${why.length?`<div class="why"><b>سبب التصنيف:</b> ${esc(why.join(" · "))}</div>`:""}
     <div class="why"><b>حالة التحقق: <span class="st ${VS[n.vstatus]||"s-unv"}">${esc(n.vstatus||"غير متحقق")}</span></b> ${esc(n.vwhy||"")}${n.cited?` · يستند إلى: «${esc(n.cited)}»`:""}${n.independent?` · مصادر مستقلة: ${n.independent}`:""}</div>
     ${n.origin_rec?`<div class="sec minor"><h2>أقدم نشر رصدته المنظومة</h2><span>مو بالضرورة أول نشر بالإنترنت</span></div>
@@ -705,13 +779,14 @@ function openDrawer(id){
     <dt>آخر جلب ناجح للمصدر</dt><dd>${h0&&h0.last_success?esc(full(h0.last_success)):"—"}</dd>
     <dt>الجهات / المواد</dt><dd>${n.n_sources} جهة · ${n.n_items||n.n_sources} مادة${n.views?` · ${n.views.toLocaleString("ar-IQ")} مشاهدة`:""}</dd>
     <dt>التحقق</dt><dd>${esc(n.basis||n.status)}</dd></dl>
-    <div class="sec minor"><h2>خط التحديثات والمصادر</h2><span>${(n.timeline||[]).length} مادة</span></div>
-    <ol class="tl">${(n.timeline||[]).map(t=>`<li><div><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(srcName(t.source))} ↗</a><small>نُشر ${esc(full(t.pub))} · رُصد ${esc(hm(t.seen))}${t.cited?` · يستند إلى «${esc(t.cited)}»`:""}${t.manual?" · إدخال يدوي":""}</small></div></li>`).join("")}</ol>
-    <p class="note" style="margin-top:10px">رقم الحدث (لحكم المحرر عبر البوت: <code>/حكم الرقم كاذب|متنازع|مستقل|رسمي</code>)</p><div class="idbox">${esc(n.id)}</div>
-    <div class="btns">${s0.url?`<a class="btn primary" href="${esc(s0.url)}" target="_blank" rel="noopener">فتح الأصل ↗</a>`:""}<button class="btn" type="button" data-share="${esc(n.id)}">إرسال للفريق</button><button class="btn" type="button" data-copy="${esc(n.id)}">نسخ</button><button class="btn" type="button" data-trace="${esc(n.id)}">تتبّع أصل الخبر</button><button class="btn" type="button" data-copyid="/حكم ${esc(n.id)} ">نسخ أمر الحكم</button><button class="btn" type="button" data-close>إغلاق</button></div>`;
-  $("#drawer").classList.add("on"); $("#scrim").classList.add("on"); $("#drawer").scrollTop=0;
+    ${ev?"":`<div class="sec minor"><h2>خط التحديثات والمصادر</h2><span>${(n.timeline||[]).length} مادة</span></div>
+    <ol class="tl">${(n.timeline||[]).map(t=>`<li><div><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(srcName(t.source))} ↗</a><small>نُشر ${esc(full(t.pub))} · رُصد ${esc(hm(t.seen))}${t.cited?` · يستند إلى «${esc(t.cited)}»`:""}${t.manual?" · إدخال يدوي":""}</small></div></li>`).join("")}</ol>`}
+    <p class="note" style="margin-top:10px">رقم الحدث (لحكم المحرر عبر البوت: <code>/حكم الرقم كاذب|متنازع|مستقل|رسمي</code>)</p><div class="idbox">${esc(n.id)}</div>${ev?"</details>":""}
+    <div class="btns">${s0.url?`<a class="btn primary" href="${esc(s0.url)}" target="_blank" rel="noopener">فتح الأصل ↗</a>`:""}${ev?`<button class="btn" type="button" data-evlink="${esc(n.id)}">رابط صفحة الحدث</button>`:""}<button class="btn" type="button" data-share="${esc(n.id)}">إرسال للفريق</button><button class="btn" type="button" data-copy="${esc(n.id)}">نسخ</button><button class="btn" type="button" data-trace="${esc(n.id)}">تتبّع أصل الخبر</button><button class="btn" type="button" data-copyid="/حكم ${esc(n.id)} ">نسخ أمر الحكم</button><button class="btn" type="button" data-close>إغلاق</button></div>`;
+  dr.classList.add("on"); $("#scrim").classList.add("on"); dr.scrollTop=keep?st:0;
+  if(!keep) setHash(ev?"#e-"+id:viewHash());
 }
-function closeDrawer(){ $("#drawer").classList.remove("on"); $("#scrim").classList.remove("on"); }
+function closeDrawer(){ $("#drawer").classList.remove("on"); $("#scrim").classList.remove("on"); if(openId){ openId=null; setHash(viewHash()); } }
 
 let analysisD=null;
 const whenA=i=>i?(mins(i)>1200?`${dm(i)} ${hm(i)}`:hm(i)):"";
@@ -764,6 +839,123 @@ function vSpread(){
   return h;
 }
 
+// ===== المحافظات: نفس قاموس tools/provinces.py (يصل بـmeta.json) — الأخبار المصدّرة فيها province جاهز، وأخبار التغذية اللحظية تُطابق هنا
+const PN=s=>String(s||"").replace(/[ً-ْـ]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي");
+let PRX=null;
+function provRx(){
+  if(PRX||!meta||!meta.provinces||!meta.provinces.govs) return PRX;
+  const L="ء-يٱ-ۓچگ", e=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"), P=meta.provinces;
+  PRX={skip:(P.skip||[]).length?new RegExp(P.skip.map(s=>e(PN(s))).join("|"),"g"):null,
+    g:Object.entries(P.govs).map(([g,ts])=>{const v=[...new Set(ts.flatMap(t=>{t=PN(t);return t.startsWith("ال")&&t.length>3?[t,"لل"+t.slice(2)]:[t]}))].sort((a,b)=>b.length-a.length).map(e);
+      return [g,new RegExp(`(^|[^${L}])(?:[وبف]|وب|ول|فب)?(?:${v.join("|")})(?![${L}])`)]})};
+  return PRX;
+}
+function provOf(t){ const R=provRx(); if(!R) return null; let s=PN(t); if(R.skip) s=s.replace(R.skip,m=>" ".repeat(m.length));
+  let best=null,bi=1e9,bl=0; for(const [g,rx] of R.g){ const m=rx.exec(s); if(m){ const i=m.index+m[1].length,l=m[0].length-m[1].length; if(i<bi||(i===bi&&l>bl)){best=g;bi=i;bl=l} } } return best; }
+const provN=n=>n.live?provOf(n.title):(n.about_iraq?n.province:null);
+let myGov=(g=>GOVS.includes(g)?g:"")(store.get("hobi_gov",""));
+function govStrip(all){
+  if(!myGov) return "";
+  const rows=all.filter(n=>provN(n)===myGov&&mins(n.latest_utc)<=360).sort(byNew).slice(0,6);
+  return `<section class="mygov" aria-label="محافظتي"><div class="mg-h"><b>📍 محافظتي · ${esc(myGov)}</b><span><button class="more-l" type="button" data-go="map" data-gov="${esc(myGov)}">على الخريطة</button> · <button class="more-l" type="button" data-tool="gov">تغيير</button></span></div>
+   ${rows.length?rows.map(n=>`<button type="button" class="mg-row" data-id="${esc(n.id)}"><b>${esc(hm(t0(n)))}${isUrg(n)?'<i class="mg-u">عاجل</i>':""}</b><span>${esc(n.title)}</span></button>`).join(""):`<p class="note" style="margin:6px 0 2px">ما نزل خبر عن ${esc(myGov)} بآخر 6 ساعات.</p>`}</section>`;
+}
+function vGov(){
+  return `<div class="narrow">${back}<div class="sec"><h2>محافظتي</h2><span>${myGov?esc(myGov):"غير محددة"}</span></div>
+   <p class="note">اختار محافظتك حتى يطلع بأعلى الرئيسية شريط صغير بآخر أخبارها (آخر 6 ساعات). المحافظة تنعرف من اسمها أو أسماء مدنها وأقضيتها بعنوان الخبر (مثل الزبير والقرنة للبصرة، تلعفر وسنجار لنينوى). الاختيار ينحفظ على هذا الجهاز بس.</p>
+   <div class="govgrid">${["",...GOVS].map(g=>`<button type="button" class="chip" data-mygov="${esc(g)}" aria-pressed="${myGov===g}">${g?esc(g):"كل العراق (بلا شريط)"}</button>`).join("")}</div>
+   <p class="note" style="margin-top:12px">لتنبيه على الهاتف بأخبار محافظة وحدة: «إعدادات التنبيه» ← «محافظة».</p></div>`;
+}
+
+// ===== خريطة الأحداث: مخطط سداسي مبسّط للمحافظات (الحدود غير دقيقة عمداً)، اللون = عدد الأخبار، الحلقة النابضة = عاجل خلال 30 دقيقة
+const HEXES=[["نينوى",1,0],["دهوك",2,0],["أربيل",3,0],["الأنبار",.5,1],["صلاح الدين",1.5,1],["كركوك",2.5,1],["السليمانية",3.5,1],
+  ["كربلاء",1,2],["بغداد",2,2],["ديالى",3,2],["النجف",.5,3],["بابل",1.5,3],["واسط",2.5,3],["المثنى",1,4],["القادسية",2,4],["ميسان",3,4],["ذي قار",1.5,5],["البصرة",2.5,5]];
+let mapWin=store.get("hobi_mapwin",360)===60?60:360, mapSel=null;
+const HEXR=40, HEXW=Math.sqrt(3)*HEXR;
+const hexPts=(cx,cy,r)=>[0,1,2,3,4,5].map(i=>{const a=Math.PI/180*(60*i-90);return`${(cx+r*Math.cos(a)).toFixed(1)},${(cy+r*Math.sin(a)).toFixed(1)}`}).join(" ");
+const HEAT=[[0,0],[1,24],[3,42],[6,60],[11,82]];
+const heat=c=>{let p=0;for(const [m,v] of HEAT) if(c>=m) p=v; return p};
+function vMap(all){
+  const pool=all.filter(n=>n.about_iraq||n.live), inW=pool.filter(n=>mins(n.latest_utc)<=mapWin);
+  const by={}, urg={}; let none=0;
+  inW.forEach(n=>{const g=provN(n); if(!g){none++;return} (by[g]=by[g]||[]).push(n)});
+  pool.forEach(n=>{const g=provN(n); if(g&&isUrg(n)) urg[g]=1});
+  const W=Math.ceil(3*HEXW+HEXW+24), H=Math.ceil(12+HEXR+5*1.5*HEXR+HEXR+12);
+  const svg=`<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="خريطة محافظات العراق حسب عدد الأخبار">${HEXES.map(([g,c,r])=>{
+    const cx=12+(c-.5)*HEXW+HEXW/2, cy=12+HEXR+r*1.5*HEXR, k=(by[g]||[]).length, p=heat(k), dark=p>=60;
+    return `<g class="hx${mapSel===g?" sel":""}" data-prov="${esc(g)}" role="button" tabindex="0" aria-label="${esc(g)}: ${k} خبر${urg[g]?"، فيها عاجل":""}">
+      <polygon class="b" points="${hexPts(cx,cy,HEXR-1.5)}" style="fill:${p?`color-mix(in srgb,var(--blue) ${p}%,var(--surface-2))`:"var(--surface-2)"}"/>
+      ${urg[g]?`<polygon class="u" points="${hexPts(cx,cy,HEXR-4)}"/><polygon class="ring" points="${hexPts(cx,cy,HEXR-4)}"/>`:""}
+      <text class="nm" x="${cx.toFixed(1)}" y="${(cy-3).toFixed(1)}" style="fill:${dark?"var(--bg)":"var(--ink)"}">${esc(g)}</text>
+      <text class="ct" x="${cx.toFixed(1)}" y="${(cy+14).toFixed(1)}" style="fill:${dark?"var(--bg)":k?"var(--ink)":"var(--muted)"}">${k}</text></g>`}).join("")}</svg>`;
+  const legend=`<div class="legend">${HEAT.map(([m,p],i)=>`<i style="background:${p?`color-mix(in srgb,var(--blue) ${p}%,var(--surface-2))`:"var(--surface-2)"}"></i>${i===HEAT.length-1?m+"+":m===HEAT[i+1][0]-1?m:`${m}–${HEAT[i+1][0]-1}`}`).join(" ")}<i class="lr"></i>عاجل آخر 30 د</div>`;
+  const sel=mapSel?(by[mapSel]||[]).slice().sort(byNew):[];
+  const selAll=mapSel&&!sel.length?pool.filter(n=>provN(n)===mapSel).sort(byNew).slice(0,10):[];
+  return `<div class="narrow"><div class="sec"><h2>خريطة الأحداث</h2><span>${inW.length-none} خبر بمحافظة محددة</span></div>
+   <div class="seg" role="group" aria-label="الفترة">${[[60,"آخر ساعة"],[360,"آخر 6 ساعات"]].map(([v,l])=>`<button type="button" data-mapwin="${v}" aria-pressed="${mapWin===v}">${l}</button>`).join("")}</div>
+   <div class="mapbox">${svg}${legend}</div>
+   <p class="note" style="margin-top:8px">مخطط مبسّط مو خريطة حدود. المحافظة تنعرف من أول اسم محافظة أو مدينة أو قضاء بعنوان الخبر${none?`؛ ${none} خبر عراقي بهذي الفترة بلا محافظة محددة`:""}.</p>
+   ${mapSel?`<div class="sec"><h2>${esc(mapSel)}</h2><span>${sel.length?`${sel.length} خبر · ${mapWin===60?"آخر ساعة":"آخر 6 ساعات"}`:""}${mapSel!==myGov?` · <button class="more-l" type="button" data-mygov="${esc(mapSel)}" style="padding:0">اجعلها محافظتي</button>`:" · محافظتك"}</span></div>
+     ${sel.length?`<div class="list">${sel.slice(0,60).map(card).join("")}</div>`:selAll.length?`<div class="note-box">ما كو خبر عن ${esc(mapSel)} بهذي الفترة. آخر أخبارها خلال 24 ساعة:</div><div class="list" style="margin-top:10px">${selAll.map(card).join("")}</div>`:`<div class="empty">ما كو أخبار عن ${esc(mapSel)} خلال 24 ساعة.</div>`}`
+     :`<div class="note-box" style="margin-top:12px">اضغط على محافظة حتى تطلع أخبارها.</div>`}</div>`;
+}
+
+// ===== شاشة العاجل فقط (#urgent): خط كبير، الأحدث فوق، تحديث تلقائي، صوت اختياري بعد ضغطة، وإبقاء الشاشة مضاءة
+let urgSound=false, urgSeen=null, urgNew=new Set(), wakeLock=null, wakeNote="";
+function tone(){ try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==="suspended") actx.resume(); const t=actx.currentTime;
+  [0,.22].forEach(d=>{const o=actx.createOscillator(),g=actx.createGain(); o.type="sine"; o.frequency.value=d?1175:880; g.gain.setValueAtTime(.0001,t+d); g.gain.exponentialRampToValueAtTime(.3,t+d+.02); g.gain.exponentialRampToValueAtTime(.0001,t+d+.18); o.connect(g).connect(actx.destination); o.start(t+d); o.stop(t+d+.2);}); }catch(e){} }
+async function wake(on){
+  try{
+    if(on){ if(wakeLock||document.hidden) return; if(!("wakeLock" in navigator)){ wakeNote="متصفحك ما يدعم إبقاء الشاشة مضاءة؛ عدّل إطفاء الشاشة من إعدادات الجهاز."; return; }
+      wakeLock=await navigator.wakeLock.request("screen"); wakeNote="الشاشة تبقى مضاءة ما دامت هذي الصفحة مفتوحة.";
+      wakeLock.addEventListener("release",()=>{ wakeLock=null; }); }
+    else if(wakeLock){ const w=wakeLock; wakeLock=null; await w.release(); }
+  }catch(e){ wakeLock=null; wakeNote="المتصفح رفض إبقاء الشاشة مضاءة (وضع توفير الطاقة؟)؛ الشاشة تشتغل عادي."; }
+}
+function vUrgent(all){
+  const U=all.filter(isUrg).sort((a,b)=>ms(t0(b))-ms(t0(a)));
+  if(urgSeen){ const nw=U.filter(n=>!urgSeen.has(n.id)); nw.forEach(n=>urgNew.add(n.id)); if(nw.length&&urgSound) tone(); }
+  urgSeen=new Set([...(urgSeen||[]),...U.map(n=>n.id)]);
+  const now=new Date().toISOString();
+  const h=`<div class="urg"><div class="urg-bar"><span class="urg-live"><i></i>العاجل فقط <small>${esc(hm(now))} بغداد</small></span>
+    <span class="urg-ctl"><button class="btn" id="uSound" type="button" aria-pressed="${urgSound}">${urgSound?"🔊 الصوت مفعّل":"🔈 تفعيل الصوت"}</button><button class="btn" id="uFull" type="button">⛶ ملء الشاشة</button></span></div>
+    ${U.length?U.map(n=>{const s=(n.sources||[])[0]||{};return `<button type="button" class="u-item${urgNew.has(n.id)?" new":""}" data-id="${esc(n.id)}"><div class="u-meta"><b>${esc(hm(t0(n)))}</b><span>${esc(ago(t0(n)))}</span><span>${esc(srcName(s.name))}${n.n_sources>1?` · ${n.n_sources} جهات`:""}</span>${n.live?'<span class="mk mk-l">بالقناة الآن</span>':""}</div><h2 class="u-title">${esc(n.title)}</h2></button>`}).join("")
+      :`<div class="u-empty">ما كو عاجل بآخر ${URG_MIN} دقيقة<small>الشاشة تتحدث وحدها، وأي عاجل يطلع هنا فوراً.</small></div>`}
+    <p class="note" style="margin-top:14px">العاجل يبقى هنا ${URG_MIN} دقيقة من أول نشر. ${esc(wakeNote)}${urgSound?"":" الصوت ما يشتغل إلا بعد ما تضغط «تفعيل الصوت»."}</p></div>`;
+  urgNew=new Set(); return h;
+}
+
+// ===== صفحة الحدث الحي: للأحداث الكبيرة (8 جهات فأكثر أو عاجل)، رابطها #e-<رقم الحدث>
+const isEvent=n=>!!n&&!n.live&&(n.event||[]).length>0&&((n.n_sources||0)>=8||n.level==="عاجل");
+const evRunning=n=>{const E=n.event||[];return mins(E.length?E[E.length-1].t:n.latest_utc)<=60};
+function liveMatches(n){
+  const base=new Set(toks(n.title)); if(base.size<3) return [];
+  return [...LIVE.values()].filter(x=>{const t=new Set(toks(x.title)); let s=0; t.forEach(w=>{if(base.has(w))s++}); return s>=3&&s/Math.min(t.size,base.size)>=.5})
+    .map(x=>({t:x.t,s:x.src||"هسه وصل",h:x.title,u:x.msg?`https://t.me/hassawassal/${x.msg}`:(x.url||""),lv:1}));
+}
+function eventHTML(n){
+  const E=[...(n.event||[]),...liveMatches(n)].sort((a,b)=>ms(a.t)-ms(b.t));
+  const last=Math.max(...E.map(e=>ms(e.t))), on=(Date.now()-last)/60000<=60, f=E[0]||{}, lastI=new Date(last).toISOString();
+  const nO=E.filter(e=>e.o).length, nD=E.filter(e=>e.d).length, total=Math.max(n.event_n||0,E.length);
+  const link=u=>u&&/^https?:\/\//.test(u)?u:"";
+  return `<div class="ev-head"><span class="ev-st ${on?"on":""}"><i></i>${on?"جارٍ":"هدأ"}</span><small>${on?`آخر مصدر جديد ${esc(ago(lastI))}`:`ما نزل مصدر جديد من 60 دقيقة · آخر مصدر ${esc(hm(lastI))}`} · يتحدث تلقائياً</small></div>
+   <dl class="kv"><dt>أول ناشر</dt><dd>${link(f.u)?`<a href="${esc(f.u)}" target="_blank" rel="noopener" style="color:var(--blue)">${esc(srcName(f.s))} ↗</a>`:esc(srcName(f.s))} · ${esc(full(f.t))}</dd>
+   <dt>الانتشار</dt><dd>${n.n_sources} جهة · ${total} مادة${nO?` · ${nO} من جهات رسمية`:""}${nD?` · ${nD} فيها نفي`:""}</dd></dl>
+   <div class="sec minor"><h2>تسلسل الحدث</h2><span>${E.length<total?`أول ناشر و${E.length-1} من أبرز وآخر التحديثات`:`${E.length} مادة`} · الأحدث فوق</span></div>
+   <ol class="evtl">${E.slice().reverse().map((e,i,a)=>`<li class="${e.o?"o":""}${e.d?" d":""}${e.lv?" lv":""}"><span class="et">${esc(hm(e.t))}${mins(e.t)>720?`<small>${esc(dm(e.t))}</small>`:""}</span><span class="ed"></span>
+     <div class="eb">${link(e.u)?`<a href="${esc(e.u)}" target="_blank" rel="noopener">${esc(srcName(e.s))} ↗</a>`:`<b style="font-size:.8rem">${esc(srcName(e.s))}</b>`}${i===a.length-1?'<span class="mk mk-f">أول ناشر</span>':""}${e.o?'<span class="mk mk-o">✅ تأكيد رسمي</span>':""}${e.d?'<span class="mk mk-d">نفي</span>':""}${e.lv?'<span class="mk mk-l">بالقناة الآن</span>':""}<p>${esc(e.h)}</p></div></li>`).join("")}</ol>
+   <p class="note">«✅ تأكيد رسمي» = المادة من حساب أو موقع جهة رسمية. «نفي» = عنوانها فيه نفي أو تكذيب، اقرأ الأصل قبل الحكم. الأوقات بتوقيت بغداد.</p>`;
+}
+function setHash(h){ try{ if((location.hash||"")!==(h||"")) history.replaceState(null,"",h||(location.pathname+location.search)); }catch(e){} }
+const viewHash=()=>view==="map"||view==="urgent"?"#"+view:"";
+let pendingE=null;
+function route(){
+  let h=""; try{ h=decodeURIComponent(location.hash.slice(1)); }catch(e){}
+  if(h==="map"||h==="urgent"){ if(view!==h) go(h); }
+  else if(/^e-[A-Za-z0-9_\-]{3,80}$/.test(h)){ pendingE=h.slice(2); openPending(); }
+}
+function openPending(){ if(!pendingE||!news.length) return; const id=pendingE; pendingE=null; if(news.some(x=>x.id===id)) openDrawer(id); else { toast("هذا الحدث مو ضمن أخبار آخر 24 ساعة"); setHash(viewHash()); } }
+
 function render(keepScroll){
   $("#today").textContent=(()=>{const d=new Date(Date.now()+3*3600e3);return`${DAYS[d.getUTCDay()]}، ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`})();
   const all=mergeLive(news).filter(n=>mins(n.latest_utc)<=1440);
@@ -786,7 +978,11 @@ function render(keepScroll){
   else if(view==="analysis"){ view="home"; h=vHome(all); }  // تحليل الانتشار أُلغي (طلب إيهاب 2026-11-02)
   else if(view==="spread") h=vSpread();
   else if(view==="search") h=listView(`نتائج البحث`,all);
+  else if(view==="map") h=vMap(all);
+  else if(view==="urgent") h=vUrgent(all);
+  document.body.classList.toggle("urgmode",view==="urgent");
   const y=scrollY; $("#view").innerHTML=h; if(keepScroll) scrollTo(0,y);
+  if(openId&&$("#drawer").classList.contains("on")){ const n=news.find(x=>x.id===openId); if(isEvent(n)) openDrawer(openId,true); } // صفحة الحدث الحي تتحدث وهي مفتوحة
 }
 
 async function load(manual){
@@ -800,6 +996,7 @@ async function load(manual){
     n.forEach(x=>seen.add(x.id)); store.set("hobi_seen2",[...seen].slice(-6000));
     news=n; meta=m; health=hl||[]; if(view!=="spread") spreadD=null; else fetch("spread.json?t="+t,{cache:"no-store"}).then(r=>r.ok?r.json():spreadD).then(j=>{spreadD=j;render(true)}).catch(()=>{}); if(view!=="analysis") analysisD=null; else fetch("analysis.json?t="+t,{cache:"no-store"}).then(r=>r.ok?r.json():analysisD).then(j=>{analysisD=j;render(true)}).catch(()=>{});
     render(!first);
+    openPending();
     runAlerts(first);
     if(manual) toast(fresh.size?`${fresh.size} خبر جديد`:"ما كو جديد من آخر تحديث");
   }catch(e){ $("#sLive").textContent="ما كدرت أجيب الأخبار، تأكد من الإنترنت"; $("#status").classList.add("stale"); if(!news.length) $("#view").innerHTML='<div class="empty" style="margin-top:20px">ما كدرت أجيب الأخبار. تأكد من الإنترنت واضغط زر التحديث.</div>'; }
@@ -810,16 +1007,22 @@ let tt; function toast(t){ const el=$("#toast"); el.textContent=t; el.classList.
 function textOf(n){ const s=(n.sources||[])[0]||{}; return `${isUrg(n)?"🔴 عاجل | ":""}${n.title}${n.title_orig?`\n(${n.title_orig})`:""}\n${n.ctype||"خبر"} · ${n.status||"غير مؤكد"} — ${srcName(s.name)} — ${full(n.latest_utc)} بغداد\n${s.url||""}`; }
 async function shareText(text,title){ if(navigator.share){ try{ await navigator.share({title,text}); return; }catch(e){ if(e.name==="AbortError") return; } } copy(text); }
 async function copy(t){ try{ await navigator.clipboard.writeText(t); toast("انتسخ"); }catch(e){ const a=document.createElement("textarea"); a.value=t; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); toast("انتسخ"); } }
-function setNav(v){ $$(".nav button").forEach(x=>x.setAttribute("aria-selected",String(x.dataset.v===v))); }
-function go(v,s){ view=v; if(s) sub[v]=s; setNav(v); render(); scrollTo({top:0}); }
-function openTool(k){ view="tools"; sub.tools=k||null; setNav("tools"); render(); scrollTo({top:0}); }
+function setNav(v){ const nv=v==="map"||v==="urgent"?"tools":v; $$(".nav button").forEach(x=>x.setAttribute("aria-selected",String(x.dataset.v===nv))); }
+function go(v,s){ view=v; if(s) sub[v]=s; setNav(v); if(!openId) setHash(viewHash()); wake(v==="urgent"); if(v==="urgent") urgSeen=null; render(); scrollTo({top:0}); }
+function openTool(k){ view="tools"; sub.tools=k||null; setNav("tools"); if(!openId) setHash(""); wake(false); render(); scrollTo({top:0}); }
 
 document.addEventListener("click",e=>{
   const t=e.target;
   if(t.closest("[data-stop]")) return;
   const nb=t.closest(".nav button"); if(nb){ if(nb.dataset.v==="tools") sub.tools=null; if(nb.dataset.v==="watch") sub.watch=null; go(nb.dataset.v); return; }
   const idb=t.closest("[data-id]"); if(idb){ openDrawer(idb.dataset.id); return; }
-  const gob=t.closest("[data-go]"); if(gob){ closeDrawer(); go(gob.dataset.go,gob.dataset.sub); return; }
+  const gob=t.closest("[data-go]"); if(gob){ closeDrawer(); if(gob.dataset.gov) mapSel=gob.dataset.gov; go(gob.dataset.go,gob.dataset.sub); return; }
+  const hx=t.closest("[data-prov]"); if(hx){ mapSel=mapSel===hx.dataset.prov?null:hx.dataset.prov; render(true); return; }
+  const mw=t.closest("[data-mapwin]"); if(mw){ mapWin=+mw.dataset.mapwin; store.set("hobi_mapwin",mapWin); render(true); return; }
+  const mg=t.closest("[data-mygov]"); if(mg){ myGov=mg.dataset.mygov; store.set("hobi_gov",myGov); toast(myGov?`محافظتك: ${myGov} — شريطها بأعلى الرئيسية`:"انشال شريط المحافظة"); render(true); return; }
+  if(t.closest("#uSound")){ urgSound=!urgSound; if(urgSound) tone(); render(true); return; }
+  if(t.closest("#uFull")){ try{ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen(); }catch(e){} return; }
+  const el=t.closest("[data-evlink]"); if(el){ shareText(location.href.split(/[?#]/)[0].replace(/index\.html$/,"")+"#e-"+el.dataset.evlink,"هوبي عاجل — حدث حي"); return; }
   const tool=t.closest("[data-tool]"); if(tool){ openTool(tool.dataset.tool); return; }
   const ws=t.closest("[data-wsel]"); if(ws){ sub.watch=ws.dataset.wsel||null; render(); scrollTo({top:0}); return; }
   const sg=t.closest("[data-seg] button"); if(sg){ sub[sg.parentElement.dataset.seg]=sg.dataset.s; render(); return; }
@@ -837,7 +1040,9 @@ document.addEventListener("click",e=>{
   if(t.closest("#pushTest")){ navigator.serviceWorker.ready.then(r=>r.showNotification("مهم",{body:"هذا إشعار تجريبي من هوبي عاجل ✅",icon:"icons/icon-192.png",badge:"icons/icon-192.png",dir:"rtl",lang:"ar",data:{url:"./"}})).catch(()=>toast("تعذّر عرض الإشعار")); return; }
   if(t.closest("#pTest")){ toast("🔔 هذا تنبيه تجريبي"); beep(); return; }
 });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); if(e.key==="Enter"&&e.target.classList?.contains("card")) openDrawer(e.target.dataset.id); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); if(e.key==="Enter"&&e.target.classList?.contains("card")) openDrawer(e.target.dataset.id);
+  if((e.key==="Enter"||e.key===" ")&&e.target.closest?.("[data-prov]")){ e.preventDefault(); e.target.closest("[data-prov]").dispatchEvent(new MouseEvent("click",{bubbles:true})); } });
+addEventListener("hashchange",route);
 document.addEventListener("change",e=>{
   const t=e.target;
   if(t.id==="fType"){ ctype=t.value; render(true); }
@@ -860,7 +1065,7 @@ $("#bSearch").addEventListener("click",()=>{ view="search"; setNav("search"); re
 $("#bAlerts").addEventListener("click",()=>openTool("alerts"));
 $("#bRefresh").addEventListener("click",()=>load(true));
 $("#bShare").addEventListener("click",()=>shareText("هوبي عاجل — منصة رصد أخبار العراق والحشد الشعبي والمنطقة، تتحدث كل 90 ثانية:\n"+location.href.split(/[?#]/)[0].replace(/index\.html$/,""),"هوبي عاجل"));
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&meta&&mins(meta.updated_utc)>1.5) load(); });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&meta&&mins(meta.updated_utc)>1.5) load(); if(!document.hidden&&view==="urgent") wake(true); });
 // ===== التغذية اللحظية: أخبار المسار السريع توصل خلال ثوانٍ (ntfy + توقيع ECDSA يتحقق منه التطبيق؛ أي رسالة غير موقّعة تُرمى)
 let LIVEN=[]; const LIVE=new Map();
 const nkey=s=>(s||"").replace(/[^\u0621-\u064A0-9]/g,"").slice(0,28);
@@ -888,7 +1093,8 @@ async function liveInit(){
   }catch(e){}
 }
 liveInit();
-load(); loadExtra(); setInterval(()=>loadExtra(),300000); setInterval(()=>{ if(!document.hidden||prefs.on) load(); },90000); setInterval(()=>render(true),60000);
+route(); load(); loadExtra(); setInterval(()=>loadExtra(),300000); setInterval(()=>{ if(!document.hidden||prefs.on||view==="urgent") load(); },90000); setInterval(()=>render(true),60000);
+setInterval(()=>{ if(view==="urgent"&&!document.hidden) render(true); },15000);
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").then(()=>setTimeout(pushResync,5000)).catch(()=>{});
 </script>
 </body>

@@ -11,6 +11,7 @@ from marsad.report import cluster_dossier  # noqa: E402
 from marsad.textnorm import iso, now_utc  # noqa: E402
 from tools.export_app import status_of  # noqa: E402
 from tools import verify as V, watch as W, analysis as A  # noqa: E402
+from tools import provinces as P  # noqa: E402
 try:
     IRAQ_ONLY = {x["id"] for x in json.loads((ROOT / "config" / "sources.json").read_text(encoding="utf-8"))["sources"] if x.get("iraq_only")}
 except Exception:  # noqa: BLE001
@@ -80,6 +81,54 @@ def trust_badge(rows, headline, vstatus=None):
         return "غير مؤكد"
     return None
 
+
+
+EVENT_MIN_SOURCES = 8  # «صفحة الحدث الحي»: عنقود بـ8 جهات فأكثر أو مستواه عاجل
+EVENT_MAX = 30
+
+
+def event_timeline(irows, now):
+    """خط الحدث الحي: حتى 30 مادة مرتبة زمنياً {t, s, h, u, o (رسمي), d (نفي)}.
+    يبقى أول ناشر دائماً، ثم مواد الجهات الرسمية والنفي (حتى 10)، والباقي الأحدث."""
+    from tools import confirm as CF
+    rows = []
+    for r in irows:
+        t = r["published_utc"] or r["collected_utc"]
+        if not t:
+            continue
+        if r["collected_utc"] and t > r["collected_utc"]:
+            t = r["collected_utc"]  # لا وقت بعد وقت رصدنا
+        t = min(t, iso(now))
+        h = URL_RX.sub("", complete_line(r["title"] or r["text"] or "")).strip(" -–|:🔻🔴📌⭕️🚨•")[:140]
+        if not h:
+            continue
+        ref = re.sub(r"^telegram:", "", r["source_id"] or "")
+        off = bool(r["official"] or CF.official_name(_row_ref(dict(r))) or CF.official_name(ref))
+        e = {"t": t, "s": re.sub(r"\s*[—-]\s*(telegram|RSS|rss|تلغرام|يوتيوب)$", "", r["source_name"] or ""), "h": h, "u": r["url"] or ""}
+        if off:
+            e["o"] = 1
+        if CF.DENY_RX.search(h):
+            e["d"] = 1
+        rows.append(e)
+    rows.sort(key=lambda e: e["t"])
+    if len(rows) <= EVENT_MAX:
+        return rows
+    keep = {0} | {i for i, e in enumerate(rows) if e.get("o") or e.get("d")}
+    keep = set(sorted(keep, key=lambda i: (i != 0, -i))[:11])
+    for i in range(len(rows) - 1, 0, -1):
+        if len(keep) >= EVENT_MAX:
+            break
+        keep.add(i)
+    return [rows[i] for i in sorted(keep)]
+
+
+def _event_fields(irows, now):
+    try:
+        ev = event_timeline(irows, now)
+    except Exception as e:  # noqa: BLE001 — خط الحدث تحسين، لا يوقف التصدير
+        print("::warning title=event_timeline::", type(e).__name__, str(e)[:100])
+        return {}
+    return {"event": ev, "event_n": len(irows)} if ev else {}
 
 
 def clean_title(label, texts):
@@ -493,7 +542,8 @@ def main(hours=24):
                                   # عنوان المادة لمصادر «موثوقة» ولمصدر منشورنا فقط: سطر «☑️ تطابق» يقارن الأرقام ويكشف النسخ (tools/confirm.py)
                                   **({"t": (r["title"] or "")[:200]} if r["source_id"] in TRUSTED or (ev and r["url"] == ev[0]["url"]) else {})}
                                  for r in irows][:12],
-                    "_tb": [{"url": r["url"], "source_id": r["source_id"], "source_name": r["source_name"], "title": r["title"]} for r in irows][:40]})
+                    "_tb": [{"url": r["url"], "source_id": r["source_id"], "source_name": r["source_name"], "title": r["title"]} for r in irows][:40],
+                    **(_event_fields(irows, now) if (d["n_sources"] or 0) >= EVENT_MIN_SOURCES or level == "عاجل" else {})})
     V.cross_disputes(out)
     try:
         edit_titles(out)  # التحرير تحسين، لا يجوز أن يوقف نشر الأخبار أبداً
@@ -509,6 +559,7 @@ def main(hours=24):
             n["trust_badge"] = None
             print("::warning title=trust_badge::", type(e).__name__, str(e)[:100])
         n.pop("_tb", None)
+        n["province"] = P.province_of(n.get("title") or "") if n.get("about_iraq") else None  # «محافظتي» والخريطة: أول محافظة بالعنوان
     analysis.sort(key=lambda x: (x["last_time"] or ""), reverse=True)
     try:
         pass  # قراءات تحليل الانتشار أُلغيت (طلب إيهاب 2026-11-02): حصة Gemini كلها لـ«قراءة هسة وصل»
@@ -584,6 +635,7 @@ def main(hours=24):
                                                   "items": arch}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     (pwa / "meta.json").write_text(json.dumps({"updated_utc": iso(now), "stories": len(out), "sources_ok": len(ok), "sources_total": len(hrows),
                                                "detect_delay": delay_stats(con, now),
+                                               "provinces": P.for_client(),
                                                "sections": {"iraq": sum(1 for o in out if o["about_iraq"]),
                                                             "region": sum(1 for o in out if not o["about_iraq"] and o["origin"] != "أجنبي"),
                                                             "arab_on_iraq": sum(1 for o in out if o["about_iraq"] and o["origin"] == "عربي"),
