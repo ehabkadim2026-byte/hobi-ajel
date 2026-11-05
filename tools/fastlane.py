@@ -131,6 +131,17 @@ GEM_CALLS = []
 GEM_PER_HOUR = 90  # حماية حصة Gemini المجانية: حكم الأهمية لأخبار القنوات السريعة والوكالات غير الموسومة
 
 
+UPD_RX = re.compile(r"(ارتفاع|ارتفعت|ترتفع|حصيلة|الحصيلة|محدث|تحديث|جديد|إضافية|اضافية|آخر|اخر|نفي|ينفي|تنفي|تؤكد|يؤكد|رسمياً|رسميا|بيان)")
+_DIG = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
+
+
+def _new_numbers(new, old):
+    """أرقام بالخبر الجديد غير موجودة بما نشرناه (حصيلة 3 ← 5) — أو نفي/تأكيد رسمي بلا أرقام."""
+    nn = set(re.findall(r"\d+", new.translate(_DIG)))
+    oo = set(re.findall(r"\d+", old.translate(_DIG)))
+    return bool(nn - oo) or bool(re.search(r"(نفي|ينفي|تنفي|تؤكد|يؤكد)", new))
+
+
 def gem_ok():
     now = time.time()
     GEM_CALLS[:] = [t for t in GEM_CALLS if t >= now - 3600]
@@ -230,7 +241,15 @@ def main():
     from tools import tg_user_listener as UL
     seen_manual = MP.done_ids()
     _all0 = list(dict.fromkeys(CFG.get("hot", []) + CFG["channels"] + CFG.get("breaking", [])))  # الأسرع أولاً للاشتراك التدريجي
-    UL.start(token, _all0, run_until - 60)  # حساب الرصد: منشورات لحظية بدل انتظار الفحص الدوري
+    def _views_save(rows):  # يدمج مع المخزون (7 أيام) ويرفع channel_views.json — مادة تقرير «ماذا يشاهد جمهورنا»
+        old = gh_get("channel_views.json") or {}
+        cur = {str(r["id"]): r for r in (old.get("posts") or [])} if isinstance(old, dict) else {}
+        for r in rows:
+            cur[str(r["id"])] = r
+        cut = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 7 * 86400))
+        gh_put("channel_views.json", {"updated_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                      "posts": sorted((r for r in cur.values() if r["t"] >= cut), key=lambda r: r["id"])})
+    UL.start(token, _all0, run_until - 60, views_cb=_views_save)  # حساب الرصد: منشورات لحظية بدل انتظار الفحص الدوري
     try:  # تنبيهات الهاتف (Web Push): خيط خلفي يقرأ الاشتراكات ويرسل بعد كل منشور ناجح (live_feed.publish ← web_push.notify)
         from tools import web_push as WP
         WP.start(token, run_until - 30, load=lambda: gh_get(WP.ASSET), save=lambda d: gh_put(WP.ASSET, d))
@@ -387,6 +406,22 @@ def main():
                 regional = False
                 sig = T.title_sig(first)
                 if any(T.same_story(sig, x) for x in mine + main_sigs) or T.sec_dup(first, mine + main_sigs, time.time()):
+                    # تحديث على خبر نشرناه (حصيلة/رقم جديد/نفي/تأكيد رسمي): يُرسل ردّاً على منشورنا الأصلي بدل خبر مكرر (مقترح 4، 05/11)
+                    base = next((x for x in reversed(mine) if x.get("mid") and T.same_story(sig, x) and time.time() - x.get("ts", 0) <= 3 * 3600), None)
+                    if base and CFG.get("update_replies", True) and (oname or ttier != "ضعيفة") and base.get("upd", 0) < 3 \
+                            and UPD_RX.search(first) and _new_numbers(first, base.get("title", "")):
+                        try:
+                            uh = FB.fast_head(first)
+                            rr = T.api(token, "sendMessage", chat_id=chat_id, reply_to_message_id=base["mid"], disable_notification="true",
+                                       parse_mode="HTML", text=f"🔄 <b>تحديث:</b> {H.escape(uh)}\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}")
+                            if rr.get("ok"):
+                                base["upd"] = base.get("upd", 0) + 1
+                                base["title"] = (base.get("title", "") + " " + first)[:600]
+                                gh_put("fast_sigs.json", mine)
+                                decide(ch, p["id"], uh, "update", f"reply:{base['mid']}")
+                                continue
+                        except Exception as e:  # noqa: BLE001
+                            print("::warning title=update_reply::", type(e).__name__)
                     skip("مكرر"); continue
                 if story_old(sig, stories, now, title=first):
                     skip("قديم", "story_old"); continue  # الخبر نفسه متداول لدى 3 جهات منذ أكثر من 15 دقيقة (2980، 2985، 2990)
@@ -514,6 +549,7 @@ def main():
                     FB.LAT.add("fast" if crit else "normal", time.time() - t_det)
                     FB.STATUS["fast_sent"] += int(bool(crit))
                     mine.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time(), "title": first[:200], "id": f"fast:{ch}/{p['id']}",
+                                 "mid": (r.get("result") or {}).get("message_id"),
                                  "lag_min": round(age, 1), "reg": regional})
                     gh_put("fast_sigs.json", mine)
                     decide(ch, p["id"], head, "post", "loud" if loud else "quiet" if quiet else tier)

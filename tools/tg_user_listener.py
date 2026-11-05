@@ -21,7 +21,8 @@ from pathlib import Path
 PUSH = queue.Queue()
 WAKE = threading.Event()
 STATUS = {"state": "off", "joined": 0, "join_errors": 0, "pushed": 0, "err": None}
-JOIN_PER_RUN = 8
+VIEWS_CHANNEL = "akamedia_iq"
+JOIN_PER_RUN = 15  # 05/11: توسيع 60 قناة؛ بفاصل 3–6 دقائق (آمن من حظر تلغرام)
 
 
 def _key(token):
@@ -50,7 +51,7 @@ def _creds():
     return (int(i.group(0)), h.group(0)) if (h and i) else (None, None)
 
 
-async def _run(token, channels, stop_at):
+async def _run(token, channels, stop_at, views_cb=None):
     from telethon import TelegramClient, events
     from telethon.sessions import StringSession
     from telethon.tl.functions.channels import JoinChannelRequest
@@ -103,7 +104,21 @@ async def _run(token, channels, stop_at):
     # اشتراك تدريجي بالقنوات غير المشترك بها (الأهم أولاً حسب ترتيب القائمة)
     todo = [c for c in channels if c.lower() not in joined]
     n = 0
+    next_views = time.time() + 120
     while time.time() < stop_at and client.is_connected():
+        if views_cb and time.time() >= next_views:
+            # مشاهدات منشورات قناتنا (قراءة فقط، القناة عامة): نتعلم أي نوع خبر وأي ساعة تجيب تفاعلاً — طلب إيهاب 05/11 (مقترح 6)
+            next_views = time.time() + 1800
+            try:
+                rows = []
+                for m in await client.get_messages(VIEWS_CHANNEL, limit=150):
+                    if m.date and (m.message or m.photo):
+                        rows.append({"id": m.id, "t": m.date.strftime("%Y-%m-%dT%H:%M:%SZ"), "views": m.views or 0,
+                                     "fwd": m.forwards or 0, "text": (m.message or "")[:160]})
+                threading.Thread(target=views_cb, args=(rows,), daemon=True).start()  # الرفع بخيط منفصل: لا يوقف استقبال المنشورات
+                STATUS["views_at"] = time.strftime("%H:%M:%S", time.gmtime())
+            except Exception as e:  # noqa: BLE001
+                STATUS["views_err"] = type(e).__name__
         if todo and n < JOIN_PER_RUN:
             c = todo.pop(0)
             try:
@@ -123,11 +138,11 @@ async def _run(token, channels, stop_at):
     STATUS["state"] = "stopped"
 
 
-def start(token, channels, stop_at):
+def start(token, channels, stop_at, views_cb=None):
     """يشغّل المستمع بخيط خلفي. يرجع فوراً؛ إن فشل لأي سبب يبقى المسار السريع يعمل بالفحص العادي."""
     def target():
         try:
-            asyncio.run(_run(token, channels, stop_at))
+            asyncio.run(_run(token, channels, stop_at, views_cb))
         except Exception as e:  # noqa: BLE001
             STATUS.update(state="crashed", err=type(e).__name__)
     try:

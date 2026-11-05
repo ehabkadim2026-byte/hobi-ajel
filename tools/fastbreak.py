@@ -381,7 +381,7 @@ def watermarked(img, gem=None, gem_ok=None):
         return _WM_CACHE[k]
     now = time.time()
     WM_CALLS[:] = [t for t in WM_CALLS if t >= now - 3600]
-    if len(WM_CALLS) >= 40 or (gem_ok is not None and not gem_ok()):
+    if len(WM_CALLS) >= 25 or (gem_ok is not None and not gem_ok()):
         return None
     if gem is None:
         from tools.editorial import gemini as gem
