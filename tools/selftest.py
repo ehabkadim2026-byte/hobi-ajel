@@ -67,4 +67,6 @@ from tools import test_insider  # noqa: E402
 test_insider.run()  # بوابة المراسل (صوت/صورة/ملاحظات ← مسودة ← زر) ورادارات الزلازل/الإنترنت/الدولار
 from tools import test_fastbreak  # noqa: E402
 test_fastbreak.run()  # العاجل على مرحلتين (إرسال فوري ← إثراء المنشور نفسه)، قراءة صور الوثائق الرسمية، ذيل اسم الناشر، تصنيف الموضوع، أنواع تحديثات البوت
+import subprocess as _sp  # noqa: E402
+assert _sp.run([sys.executable, "-m", "tools.proof"], cwd=str(__import__("pathlib").Path(__file__).resolve().parent.parent)).returncode == 0, "المدقق اللغوي السريع"  # همزات/تشكيل/بادئات القنوات
 print("selftest ok")

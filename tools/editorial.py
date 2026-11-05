@@ -82,7 +82,8 @@ def formal_rules(t):
     t = QDUP.sub("؟", t)
     t = re.sub(r"\s*:\s*", ": ", t, count=1) if re.match(r"^[^:]{3,40}:", t) else t  # «الجهة: الخبر»
     t = re.sub(r"\s{2,}", " ", t).strip(" -–—|:،.…")
-    return t
+    from tools.proof import proof  # المدقق اللغوي السريع (همزات، تشكيل، بادئات القنوات، حروف مكررة)
+    return proof(t)
 
 
 PROMPT = ("أنت محرر أخبار في قناة إخبارية عراقية رصينة. أعد صياغة العنوان التالي بعربية فصحى إخبارية رصينة وموجزة "
