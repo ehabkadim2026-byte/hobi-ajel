@@ -984,6 +984,14 @@ def prepare_card(n, tag=None):
             photo = tg_card.fetch_jpeg(img)
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"imgfail:{type(e).__name__}")
+    if photo and not tg_card.looks_like_logo(photo):
+        try:  # صورة عليها شعار قناة/موقع آخر لا تُستخدم (طلب إيهاب 05/11) — تصميم النص بدلها
+            from tools import fastbreak as _FB
+            if _FB.watermarked(photo) is True:
+                DEBUG.append("wm_drop")
+                photo = None
+        except Exception:  # noqa: BLE001
+            pass
     maker = {"news2": tg_card.card_news2, "news": tg_card.card_news, "lux": tg_card.card_lux, "a": tg_card.card_a, "b": tg_card.card_b, "c": tg_card.card_c, "v3": tg_card.news_card3}.get(CARD_STYLE, tg_card.news_card2)
     if CARD_STYLE == "news4A":
         jpg = tg_card.card_news4(photo, headline(n), is_breaking(n), n.get("first_utc") or n.get("latest_utc"), tag=tag, source=src(n)[0], style="A")
