@@ -55,4 +55,6 @@ assert _csn({"name": "t.me — telegram", "url": "https://t.me/najafmc", "id": "
 assert _csn({"name": "رئيس مجلس الوزراء علي فالح الزيدي (القناة الرسمية) — telegram", "url": "https://t.me/x", "id": "x"}) == "رئيس مجلس الوزراء علي فالح الزيدي — telegram"
 from tools import test_reliability  # noqa: E402
 test_reliability.run()  # موثوقية المصادر، «☑️ تطابق لدى مصدر موثوق»، بوابة «ضعيفة»، بوابة الإساءة
+from tools import test_web_push  # noqa: E402
+test_web_push.run()  # تنبيهات الهاتف (VAPID، التشفير، الاشتراكات، التفضيلات) وشارة الموثوقية
 print("selftest ok")

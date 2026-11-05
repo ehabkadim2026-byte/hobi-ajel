@@ -216,6 +216,11 @@ def main():
     seen_manual = MP.done_ids()
     _all0 = list(dict.fromkeys(CFG.get("hot", []) + CFG["channels"] + CFG.get("breaking", [])))  # الأسرع أولاً للاشتراك التدريجي
     UL.start(token, _all0, run_until - 60)  # حساب الرصد: منشورات لحظية بدل انتظار الفحص الدوري
+    try:  # تنبيهات الهاتف (Web Push): خيط خلفي يقرأ الاشتراكات ويرسل بعد كل منشور ناجح (live_feed.publish ← web_push.notify)
+        from tools import web_push as WP
+        WP.start(token, run_until - 30, load=lambda: gh_get(WP.ASSET), save=lambda d: gh_put(WP.ASSET, d))
+    except Exception as e:  # noqa: BLE001
+        print("::warning title=web_push::", type(e).__name__)
     LOWER = {c.lower(): c for c in _all0}
     NAMES = {}
     from tools import confirm as CF
@@ -447,6 +452,11 @@ def main():
                     print(f"::notice title=fastlane posted::{ch}/{p['id']} بعد {age:.1f} د من نشر المصدر — {head[:80]}")
         if stats["loops"] % 10 == 0:
             from tools import confirm as _CF
+            try:
+                from tools import web_push as _WP
+                stats["push"] = _WP.status()
+            except Exception:  # noqa: BLE001
+                pass
             gh_put("fast_status.json", {**stats, "confirm_log": _CF.LOG[-10:], "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")})
         if time.time() - LAST_DEC[0] >= 300 and DECISIONS:  # سجل القرارات كل ~5 دقائق
             LAST_DEC[0] = time.time()

@@ -1,4 +1,4 @@
-"""التغذية اللحظية للتطبيق: كل خبر ينشره المسار السريع يوصل لتطبيق «هوبي عاجل» خلال ثوانٍ بدل انتظار الجولة (5–9 دقائق).
+"""التغذية اللحظية للتطبيق (وتنبيهات الهاتف عبر tools/web_push.py): كل خبر ينشره المسار السريع يوصل لتطبيق «هوبي عاجل» خلال ثوانٍ بدل انتظار الجولة (5–9 دقائق).
 
 - المسار السريع ينشر الخبر على موضوع ntfy.sh العام (مجاني بلا حساب)، والتطبيق يستمع له مباشرة (EventSource).
 - الموضوع العام قد يكتب عليه أي أحد، لذلك كل رسالة موقّعة بمفتاح ECDSA P-256 مشتق من سرّ البوت؛
@@ -47,7 +47,12 @@ def _add(p, q):
 
 def public_key_b64(token):
     """المفتاح العام بصيغة raw غير مضغوطة (04||X||Y) — حساب بايثون صرف بلا مكتبات."""
-    k, r, q = _scalar(token), None, _G
+    return point_b64(_scalar(token))
+
+
+def point_b64(k):
+    """k·G على P-256 بصيغة raw غير مضغوطة (base64)."""
+    r, q = None, _G
     while k:
         if k & 1:
             r = _add(r, q)
@@ -78,6 +83,11 @@ def publish(token, item):
         except Exception as e:  # noqa: BLE001
             print("::warning title=live_feed::", type(e).__name__)
     threading.Thread(target=run, daemon=True).start()
+    try:  # تنبيه الهاتف (Web Push) لمن اشترك — يعمل فقط داخل المسار السريع (web_push.start)، وإلا لا شيء
+        from tools import web_push
+        web_push.notify(item)
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def main():
@@ -85,7 +95,9 @@ def main():
     if not token:
         return
     out = ROOT / "pwa" / "live.json"
-    out.write_text(json.dumps({"topic": TOPIC, "pub": public_key_b64(token), "max_age_min": 30}), encoding="utf-8")
+    from tools import web_push
+    out.write_text(json.dumps({"topic": TOPIC, "pub": public_key_b64(token), "max_age_min": 30,
+                               "vapid": web_push.vapid_public(token), "subs_topic": web_push.SUBS_TOPIC}), encoding="utf-8")
     print("live.json ok")
 
 

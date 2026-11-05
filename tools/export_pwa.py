@@ -35,6 +35,52 @@ FLAG_SPAM = set()
 
 from tools.editorial import complete_line  # noqa: E402
 
+# شارة الموثوقية على كل خبر بالتطبيق: رسمي / مؤكد / متطابق / غير مؤكد (أو بلا شارة)
+_Q = r"(?:مطلع|أمني|امني|سياسي|خاص|مقرب|حكومي|برلماني|عسكري|كردي|إعلامي|اعلامي|محلي|دبلوماسي|مسؤول|موثوق|عراقي|إيراني|ايراني|أمريكي|امريكي|غربي|إسرائيلي|اسرائيلي|تكشف|تؤكد|تفيد|تقول|ترجح|لـ)"
+UNVERIFIED_RX = re.compile(r"(?<![؀-ۿ])(?:(?:[وب]?مصادر|[وب]?مصدر)\s*(?::|" + _Q + r")|(?:بحسب|وفق|حسب|نقلا عن|نقلاً عن)\s+مصادر?|[وب]?[أا]نباء|"
+                           r"مقرب(?:ون|ين|ة)|المقربين|يلمح|تلمح|ألمح|[أا]لمحت|تسريب|تسريبات|مسرب[ةه]?)")
+UNV_STRIP = re.compile(r"(?:وكال[ةه]|نشر[ةه])\s+(?:ال)?[أا]نباء\s*\S*|(?:ال)?[أا]نباء العراقي[ةه]")
+
+
+def _row_ref(r):
+    m = re.match(r"telegram:(t\.me/[A-Za-z0-9_]+)", r.get("source_id") or "")
+    return r.get("url") or (m.group(1) if m else "")
+
+
+def trust_badge(rows, headline, vstatus=None):
+    """rows = مواد العنقود مرتبة بوقت النشر [{url, source_id, source_name, title}].
+    رسمي: المصدر الأول جهة رسمية (تعريف confirm.py) · مؤكد: جهة رسمية نشرت الخبر نفسه بأرقام متسقة وبلا نفي ·
+    متطابق: مصدران «موثوقان» أو أكثر من شبكتين مختلفتين بلا تعارض أرقام · غير مؤكد: مصدر وحيد غير رسمي أو عنوان «مصادر/أنباء/مقربين/يلمح/تسريب»."""
+    from tools import confirm as CF, reliability as R
+    if not rows or vstatus == "ثبت عدم صحته":
+        return None
+    off = [bool(CF.official_name(_row_ref(r)) or CF.official_name(re.sub(r"^telegram:", "", r.get("source_id") or ""))) for r in rows]
+    if off[0]:
+        return "رسمي"
+    head = rows[0].get("title") or headline or ""
+    hs = R.sig(head)
+    for r, o in zip(rows[1:], off[1:]):
+        t = r.get("title") or ""
+        if o and t and not CF.DENY_RX.search(t) and R.consistent(hs, R.sig(t)):
+            return "مؤكد"
+    if any(UNVERIFIED_RX.search(UNV_STRIP.sub(" ", x or "")) for x in (headline, head)):
+        return "غير مؤكد"
+    nets, trusted = set(), []
+    for r in rows:
+        ref = r.get("source_id") or _row_ref(r)
+        if R.tier_of(ref, r.get("source_name")) == "موثوقة":
+            net = R.net_of(ref, r.get("source_name"))
+            if net not in nets:
+                nets.add(net)
+                trusted.append(r.get("title") or "")
+    if len(trusted) >= 2 and not any(R.numbers_conflict(a, b) for i, a in enumerate(trusted) for b in trusted[i + 1:]):
+        return "متطابق"
+    names = {re.sub(r"\s*[—-]\s*(telegram|RSS|rss|يوتيوب)$", "", r.get("source_name") or "") for r in rows}
+    if len(names) <= 1:
+        return "غير مؤكد"
+    return None
+
+
 
 def clean_title(label, texts):
     """عنوان مقروء: يتجاهل الروابط وتواقيع القنوات، ويأخذ أول سطر له معنى (مع ضم سطر المتحدث للكلام)."""
@@ -446,7 +492,8 @@ def main(hours=24):
                                   "cited": V.cited_source((r["title"] or "") + " " + (r["text"] or "")), "manual": r["platform"] == "manual",
                                   # عنوان المادة لمصادر «موثوقة» ولمصدر منشورنا فقط: سطر «☑️ تطابق» يقارن الأرقام ويكشف النسخ (tools/confirm.py)
                                   **({"t": (r["title"] or "")[:200]} if r["source_id"] in TRUSTED or (ev and r["url"] == ev[0]["url"]) else {})}
-                                 for r in irows][:12]})
+                                 for r in irows][:12],
+                    "_tb": [{"url": r["url"], "source_id": r["source_id"], "source_name": r["source_name"], "title": r["title"]} for r in irows][:40]})
     V.cross_disputes(out)
     try:
         edit_titles(out)  # التحرير تحسين، لا يجوز أن يوقف نشر الأخبار أبداً
@@ -455,6 +502,13 @@ def main(hours=24):
         for n in out:
             n.pop("alts", None)
             n.pop("lead", None)
+    for n in out:  # بعد التحرير: العنوان النهائي يُفحص أيضاً بحثاً عن «مصادر/أنباء»
+        try:
+            n["trust_badge"] = trust_badge(n.get("_tb") or [], n.get("title"), n.get("vstatus"))
+        except Exception as e:  # noqa: BLE001
+            n["trust_badge"] = None
+            print("::warning title=trust_badge::", type(e).__name__, str(e)[:100])
+        n.pop("_tb", None)
     analysis.sort(key=lambda x: (x["last_time"] or ""), reverse=True)
     try:
         pass  # قراءات تحليل الانتشار أُلغيت (طلب إيهاب 2026-11-02): حصة Gemini كلها لـ«قراءة هسة وصل»

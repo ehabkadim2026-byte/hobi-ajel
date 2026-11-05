@@ -207,6 +207,15 @@ select,.inp{width:100%;border:1px solid var(--line);background:var(--surface);bo
 .an ul{margin:0;padding-inline-start:18px;font-size:.84rem;line-height:1.7}
 .an a{color:var(--blue);text-decoration:none}
 .kchips{display:flex;flex-wrap:wrap;gap:6px}.kchips span{background:var(--surface-2);border-radius:8px;padding:2px 8px;font-size:.76rem}
+.tb{display:inline-block;font-weight:700;font-size:.68rem;border-radius:999px;padding:0 8px;line-height:1.7;white-space:nowrap;border:1px solid transparent;vertical-align:1px}
+.tb-off{background:var(--blue-soft);color:var(--blue);border-color:color-mix(in srgb,var(--blue) 30%,transparent)} .tb-ok{background:var(--green-soft);color:var(--green);border-color:color-mix(in srgb,var(--green) 30%,transparent)}
+.tb-pair{background:var(--violet-soft);color:var(--violet);border-color:color-mix(in srgb,var(--violet) 30%,transparent)} .tb-unv{background:var(--gold-soft);color:var(--gold);border-color:color-mix(in srgb,var(--gold) 30%,transparent)}
+.tt .tb{margin-top:3px;font-size:.62rem;padding:0 6px}
+.push{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:6px}
+.push h3{font-family:var(--f-head);font-size:1rem;margin:0 0 4px}
+.push .seg{margin-top:10px}
+.push select{margin-top:10px}
+.push .pst{font-size:.8rem;margin-top:10px;color:var(--ink-2)} .push .pst.err{color:var(--urgent)} .push .pst.ok{color:var(--green)}
 .toast{position:fixed;inset-inline:16px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 12px);max-width:440px;margin:auto;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 16px;text-align:center;font-weight:600;font-size:.86rem;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none;z-index:50}
 .toast.on{opacity:1;transform:none}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
@@ -235,7 +244,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   <footer class="foot narrow">
     <p class="note">يرصد التطبيق كل 90 ثانية تقريباً، على خوادم GitHub وبدون ما تحتاج تخلي الصفحة مفتوحة. يرصد قنوات تلغرام عامة وخلاصات RSS ومواقع عبر Google News. هذا مو كل الإنترنت، وفيسبوك وX ما يندخلون مجاناً. كل الأوقات بتوقيت بغداد.</p>
     <p class="note"><b>عاجل المصدر</b>: المصدر نفسه كتب «عاجل». <b>مهم بتصنيف النظام</b>: حسب الأهمية وصلة الخبر بالعراق وعدد الجهات والمصدر الرسمي. <b>متداول لم يتأكد</b>: نشرته جهات كثيرة، وكثرة النشر مو تأكيد. <b>مؤكد</b> يعني صادر عن الجهة نفسها، يثبت صدور الكلام لا صحته. <b>ترجمة آلية</b> معلّمة والأصل تحتها.</p>
-    <p class="note" style="opacity:.55">نسخة 30/10 · 10</p>
+    <p class="note" style="opacity:.55">نسخة 05/11 · 11</p>
   </footer>
 </div>
 
@@ -265,6 +274,9 @@ let alerted=store.get("hobi_alerted",{});
 const LV={"عاجل":{w:40,c:"l-urgent",t:'<span class="tag t-urgent">عاجل</span>'},"مهم":{w:25,c:"l-imp",t:'<span class="tag t-imp">مهم</span>'},"متابعة":{w:12,c:"l-follow",t:'<span class="tag t-follow">متابعة</span>'}};
 const ST={"مؤكد":["s-ok",5],"متطابق لدى جهتين":["s-pair",4]};
 const VS={"غير متحقق":"s-unv","منسوب لمصدر رسمي":"s-off","مؤيد بمصادر مستقلة":"s-ok","متنازع عليه":"s-disp","ثبت عدم صحته":"s-false"};
+const TB={"رسمي":["tb-off","صادر عن الجهة الرسمية نفسها"],"مؤكد":["tb-ok","أكدته جهة رسمية بنفس المضمون"],"متطابق":["tb-pair","نقله مصدران موثوقان مستقلان أو أكثر"],"غير مؤكد":["tb-unv","مصدر واحد غير رسمي، أو منسوب لمصادر غير مسمّاة"]};
+const tbPill=n=>(!n||n.live||!TB[n.trust_badge])?"":`<span class="tb ${TB[n.trust_badge][0]}" title="${esc(TB[n.trust_badge][1])}">${esc(n.trust_badge)}</span>`;
+const TB_LEGEND="رسمي: من الجهة نفسها · مؤكد: أكدته جهة رسمية · متطابق: مصدران موثوقان مستقلان · غير مؤكد: مصدر واحد غير رسمي أو مصادر مجهولة";
 const provTag=p=>p?`<span class="tag t-prov ${p==="رصد مباشر"?"direct":""}">${esc(p)}</span>`:"";
 const TOPICS=["الكل","سياسة","أمن","اقتصاد","خدمات","صحة","تعليم","ثقافة","مجتمع","رياضة","طقس","عام"];
 const CTYPES=["الكل","خبر","بيان رسمي","تصريح","تحليل/رأي","ادعاء منسوب"];
@@ -287,14 +299,14 @@ const t0=n=>{const a=n.first_utc||n.latest_utc,c=n.collected_utc;if(!a)return c;
 const lateMin=n=>(n.first_utc&&n.collected_utc)?(ms(n.collected_utc)-ms(n.first_utc))/60000:0;
 
 function tagsOf(n){
-  return `${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${isUrg(n)?'<span class="tag t-urgent">عاجل</span>':(n.level==="عاجل"||n.source_flag)?LV["مهم"].t:(LV[n.level]?LV[n.level].t:"")}${n.escalating?'<span class="tag t-esc">متصاعد</span>':""}<span class="tag t-type">${esc(n.ctype||"خبر")}</span><span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}${n.manual?'<span class="tag t-man">إدخال يدوي</span>':""}${n.pmf_class&&view==="pmf"?`<span class="tag t-follow">${esc(n.pmf_class)}</span>`:""}${view==="watch"&&sub.watch?provTag(((n.watch||[]).find(w=>w.id===sub.watch)||{}).prov):""}<span class="st ${VS[n.vstatus]||ST[n.status]?.[0]||"s-unv"}">${esc(n.vstatus||n.status||"غير متحقق")}</span>`;
+  return `${fresh.has(n.id)?'<span class="tag t-new">جديد</span>':""}${isUrg(n)?'<span class="tag t-urgent">عاجل</span>':(n.level==="عاجل"||n.source_flag)?LV["مهم"].t:(LV[n.level]?LV[n.level].t:"")}${n.escalating?'<span class="tag t-esc">متصاعد</span>':""}<span class="tag t-type">${esc(n.ctype||"خبر")}</span><span class="tag t-topic">${esc(n.topic||"عام")}</span>${n.title_orig?'<span class="tag t-mt">ترجمة آلية</span>':""}${n.manual?'<span class="tag t-man">إدخال يدوي</span>':""}${n.pmf_class&&view==="pmf"?`<span class="tag t-follow">${esc(n.pmf_class)}</span>`:""}${view==="watch"&&sub.watch?provTag(((n.watch||[]).find(w=>w.id===sub.watch)||{}).prov):""}${TB[n.trust_badge]&&!["متنازع عليه","ثبت عدم صحته"].includes(n.vstatus)?"":`<span class="st ${VS[n.vstatus]||ST[n.status]?.[0]||"s-unv"}">${esc(n.vstatus||n.status||"غير متحقق")}</span>`}`;
 }
 function card(n){
   const s=(n.sources||[])[0]||{};
   return `<div role="button" tabindex="0" class="card ${isUrg(n)?"l-urgent":LV[n.level]?LV[n.level].c:""}" data-id="${esc(n.id)}">
     <div class="when"><b>${esc(hm(t0(n)))}</b><small>${esc(day(t0(n)))}</small><small>${esc(dm(t0(n)))}</small></div>
     <div class="body"><div class="tags">${tagsOf(n)}</div><h3 class="title">${esc(n.title)}</h3>${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p>`:""}
-    <div class="meta"><span>${esc(srcName(s.name))}${n.n_sources>2?` و${n.n_sources-1} جهات`:n.n_sources===2?" وجهة أخرى":""}</span><span class="sep">رُصد ${esc(hm(n.collected_utc))}${lateMin(n)>15?` · <b style="color:var(--gold)">نُشر قبل رصدنا بـ${esc(fmtDelay(lateMin(n)))}</b>`:""}</span>${s.url?`<a class="sep" href="${esc(s.url)}" target="_blank" rel="noopener" data-stop>الأصل ↗</a>`:""}</div></div></div>`;
+    <div class="meta"><span>${esc(srcName(s.name))}${n.n_sources>2?` و${n.n_sources-1} جهات`:n.n_sources===2?" وجهة أخرى":""}</span><span class="sep">رُصد ${esc(hm(n.collected_utc))}${TB[n.trust_badge]&&!n.live?" "+tbPill(n):""}${lateMin(n)>15?` · <b style="color:var(--gold)">نُشر قبل رصدنا بـ${esc(fmtDelay(lateMin(n)))}</b>`:""}</span>${s.url?`<a class="sep" href="${esc(s.url)}" target="_blank" rel="noopener" data-stop>الأصل ↗</a>`:""}</div></div></div>`;
 }
 const block=(t,subt,rows,more)=>`<div class="sec"><h2>${esc(t)}</h2>${more?`<button class="more-l" type="button" data-go="${more}">${esc(subt)} ←</button>`:`<span>${esc(subt)}</span>`}</div>`+(rows.length?`<div class="list">${rows.map(card).join("")}</div>`:'<div class="empty">ما كو أخبار بهذا القسم لحد الآن.</div>');
 
@@ -339,7 +351,7 @@ function vHome(all){
   const tr=h6.filter(n=>n.trending_unconfirmed&&!n.source_flag).sort((a,b)=>b.n_sources-a.n_sources).slice(0,8);
   let h="";
   if(escal.length) h+=`<div class="sec"><h2>أحداث متصاعدة</h2><span>تكاثرت تغطيتها بآخر ساعة</span></div><div class="esc">${escal.map(n=>`<button type="button" data-id="${esc(n.id)}"><small>${n.n_items} مادة · ${n.n_sources} جهات</small><b>${esc(n.title)}</b></button>`).join("")}</div>`;
-  h+=`<div class="sec"><h2>المهم الآن · العراق والمنطقة</h2><span>${five.length} خبر</span></div>`+(five.length?`<div class="tbl"><div class="tr th"><span>الوقت</span><span>الخبر</span><span>المصدر</span></div>${five.map(n=>{const s=(n.sources||[])[0]||{};return`<button type="button" class="tr" data-id="${esc(n.id)}"><span class="tt"><b>${esc(hm(t0(n)))}</b><small>${esc(ago(t0(n)))}</small></span><span class="th2">${isUrg(n)?'<span class="tag t-urgent">عاجل</span> ':(n.level==="عاجل"||n.source_flag)?LV["مهم"].t+" ":LV[n.level]?LV[n.level].t+" ":""}${esc(n.title)}</span><span class="ts">${esc(srcName(s.name))}<small>${n.n_sources>1?n.n_sources+" جهات":"جهة واحدة"}</small></span></button>`}).join("")}</div>`:'<div class="note-box">ما نزل خبر مهم بآخر 15 دقيقة.</div>');
+  h+=`<div class="sec"><h2>المهم الآن · العراق والمنطقة</h2><span>${five.length} خبر</span></div>`+(five.length?`<div class="tbl"><div class="tr th"><span>الوقت</span><span>الخبر</span><span>المصدر</span></div>${five.map(n=>{const s=(n.sources||[])[0]||{};return`<button type="button" class="tr" data-id="${esc(n.id)}"><span class="tt"><b>${esc(hm(t0(n)))}</b><small>${esc(ago(t0(n)))}</small>${tbPill(n)}</span><span class="th2">${isUrg(n)?'<span class="tag t-urgent">عاجل</span> ':(n.level==="عاجل"||n.source_flag)?LV["مهم"].t+" ":LV[n.level]?LV[n.level].t+" ":""}${esc(n.title)}</span><span class="ts">${esc(srcName(s.name))}<small>${n.n_sources>1?n.n_sources+" جهات":"جهة واحدة"}</small></span></button>`}).join("")}</div>`:'<div class="note-box">ما نزل خبر مهم بآخر 15 دقيقة.</div>');
   h+=`<div class="tri"><div>${block("عاجل نشره المصدر","آخر ساعة",sf)}</div><div>${block("مهم صنّفه النظام","آخر 6 ساعات",imp)}</div><div>${block("متداول لم يتأكد بعد","3 جهات أو أكثر",tr)}</div></div>`;
   const cI=all.filter(n=>n.about_iraq&&!n.pmf).sort(byNew).slice(0,12), cP=all.filter(n=>n.pmf).sort(byNew).slice(0,12), cW=all.filter(n=>!n.about_iraq||n.origin!=="عراقي").sort(byNew).slice(0,12);
   h+=`<div class="cols" style="margin-top:10px"><div class="col">${block("العراق","الكل",cI,"iraq")}</div><div class="col">${block("الحشد الشعبي","الكل",cP,"pmf")}</div><div class="col">${block("المنطقة والعالم","الكل",cW,"world")}</div></div>`;
@@ -488,10 +500,74 @@ function vSources(){
      <small><a href="${esc(h.url)}" target="_blank" rel="noopener" style="color:var(--blue)">الرابط ↗</a> · <button class="more-l" type="button" data-copyid="${esc(h.url)}" style="padding:0">نسخ المعرّف</button></small></div>`).join("")||'<div class="empty">ما كو</div>'}</div></div>`;
 }
 
+// ===== تنبيهات الهاتف (Web Push): توصل والتطبيق مسكّر. الاشتراك يروح لموضوع ntfy مخصص، والمسار السريع يرسل بعد كل منشور بالقناة
+const GOVS=["بغداد","البصرة","نينوى","أربيل","السليمانية","دهوك","كركوك","الأنبار","صلاح الدين","ديالى","بابل","كربلاء","النجف","واسط","القادسية","ذي قار","ميسان","المثنى"];
+const PMODES=[["off","إيقاف"],["urgent","عاجل فقط"],["important","عاجل ومهم"],["gov","محافظة"]];
+let push=Object.assign({mode:"off",gov:"",ep:"",sent:0},store.get("hobi_push",{})), pushMsg="", pushErr=false, liveCfg=null, pushUI=null;
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const isStandalone=()=>{try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(e){return false}};
+const pushOK=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+const IOS_HINT="على الآيفون: افتح الموقع من سفاري، اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية»، وافتح التطبيق من أيقونته وفعّل التنبيهات من هنا. يحتاج iOS 16.4 أو أحدث.";
+async function getCfg(){ if(!liveCfg) liveCfg=await fetch("live.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()); return liveCfg; }
+const u8=b=>{b=String(b).replace(/-/g,"+").replace(/_/g,"/");b+="=".repeat((4-b.length%4)%4);return Uint8Array.from(atob(b),c=>c.charCodeAt(0))};
+async function postSubs(obj){ const c=await getCfg(); const r=await fetch(`https://ntfy.sh/${encodeURIComponent(c.subs_topic||c.topic+"-subs")}`,{method:"POST",body:JSON.stringify(obj)}); if(!r.ok) throw new Error("ntfy "+r.status); }
+async function pushSub(){
+  const c=await getCfg(); if(!c.vapid) throw new Error("novapid");
+  const reg=await navigator.serviceWorker.ready; let sub=await reg.pushManager.getSubscription();
+  try{ if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(c.vapid)}); }
+  catch(e){ if(sub) await sub.unsubscribe().catch(()=>{}); sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(c.vapid)}); }
+  return sub;
+}
+function pushSave(){ store.set("hobi_push",push); }
+const pushLabel=()=>push.mode==="gov"?`أخبار محافظة ${push.gov}`:push.mode==="important"?"العاجل والمهم":"العاجل فقط";
+async function setPush(mode,gov,perm){
+  pushErr=false;
+  try{
+    if(mode==="off"){
+      try{ const reg=await navigator.serviceWorker.ready; const sub=await reg.pushManager.getSubscription(); if(sub){ await postSubs({endpoint:sub.endpoint,off:true}).catch(()=>{}); await sub.unsubscribe(); } }catch(e){}
+      push={mode:"off",gov:push.gov,ep:"",sent:0}; pushSave(); pushUI=null; pushMsg="أُوقفت تنبيهات الهاتف."; pushRender(); return;
+    }
+    const p=await perm;
+    if(p!=="granted"){ pushErr=true; pushMsg=p==="denied"?"رفضت إذن الإشعارات. فعّله من إعدادات المتصفح للموقع وارجع جرّب.":"ما انعطى إذن الإشعارات."; pushRender(); return; }
+    pushMsg="جارِ التفعيل…"; pushRender();
+    const sub=await Promise.race([pushSub(),new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),25000))]), j=sub.toJSON();
+    const prefs2={mode,...(mode==="gov"?{gov}:{})};
+    await postSubs({v:1,sub:{endpoint:j.endpoint,keys:j.keys},prefs:prefs2});
+    push={mode,gov:gov||push.gov,ep:j.endpoint,sent:Date.now()}; pushSave(); pushUI=null;
+    pushMsg=`✅ مفعّلة: يوصلك إشعار بـ${pushLabel()} حتى والتطبيق مسكّر.`; pushRender();
+  }catch(e){ pushErr=true; pushMsg="تعذّر التفعيل هسه، تأكد من الإنترنت وجرّب مرة ثانية."; pushRender(); }
+}
+function pushClick(mode){
+  pushUI=mode;
+  if(mode==="off") return setPush("off");
+  if(!pushOK()){ pushErr=true; pushMsg=isIOS&&!isStandalone()?IOS_HINT:"متصفحك ما يدعم تنبيهات الهاتف. جرّب كروم أو فايرفوكس أو سفاري حديث."; pushRender(); return; }
+  const perm=Notification.requestPermission(); // من الضغطة نفسها (شرط سفاري)
+  const gov=mode==="gov"?(push.gov||GOVS[0]):"";
+  setPush(mode,gov,perm);
+}
+async function pushResync(){ // كل 3 أيام: نعيد إرسال الاشتراك (احتياط إذا ضاع من السجل)
+  try{ if(push.mode==="off"||!pushOK()||Notification.permission!=="granted"||Date.now()-(push.sent||0)<3*86400e3) return;
+    const sub=await pushSub(), j=sub.toJSON(); await postSubs({v:1,sub:{endpoint:j.endpoint,keys:j.keys},prefs:{mode:push.mode,...(push.mode==="gov"?{gov:push.gov}:{})}});
+    push.ep=j.endpoint; push.sent=Date.now(); pushSave(); }catch(e){}
+}
+function pushRender(){ const el=$("#pushBox"); if(el) el.outerHTML=pushBox(); }
+function pushBox(){
+  const on=push.mode!=="off";
+  const st=pushMsg||(on?`مفعّلة: ${pushLabel()}.`:"غير مفعّلة. اختار نوع الأخبار حتى يوصلك إشعار عالهاتف والتطبيق مسكّر.");
+  return `<div class="push" id="pushBox"><h3>🔔 تنبيهات العاجل</h3>
+   <p class="note">إشعار على الهاتف أول ما ينشر «هسه وصل» الخبر، حتى والتطبيق مسكّر. تضغط عليه يفتح المنشور.</p>
+   <div class="seg" role="group" aria-label="نوع التنبيه">${PMODES.map(([v,l])=>`<button type="button" data-push="${v}" aria-pressed="${(pushUI||push.mode)===v}">${l}</button>`).join("")}</div>
+   ${(pushUI||push.mode)==="gov"?`<select id="pushGov" aria-label="المحافظة">${GOVS.map(g=>`<option ${g===(push.gov||GOVS[0])?"selected":""}>${g}</option>`).join("")}</select>`:""}
+   <div class="pst ${pushErr?"err":on&&!pushMsg.startsWith("جارِ")?"ok":""}" role="status">${esc(st)}</div>
+   ${isIOS&&!isStandalone()&&!pushErr?`<p class="note" style="margin-top:8px">📱 ${esc(IOS_HINT)}</p>`:""}
+   ${on?`<div class="btns" style="margin-top:10px"><button class="btn" id="pushTest" type="button">جرّب إشعار على هذا الجهاز</button></div>`:""}</div>`;
+}
 function vAlerts(){
   const sw=(k,l,d)=>`<div class="set-row"><label for="p_${k}">${l}${d?`<small>${d}</small>`:""}</label><input class="sw" type="checkbox" id="p_${k}" data-p="${k}" ${prefs[k]?"checked":""}></div>`;
   return `<div class="narrow">${back}<div class="sec"><h2>إعدادات التنبيه</h2></div>
-   <div class="note-box">التنبيه يشتغل ويه التطبيق مفتوح أو مصغّر بالخلفية. التنبيه الفوري والتطبيق مسكّر يحتاج خادم إشعارات، وهذا غير متوفر بالنسخة المجانية. كل حدث ينبّه مرة وحدة، وترجع تنبيه بس إذا تطور: ارتفع مستواه، أو زادت جهاته اثنين أو أكثر.</div>
+   ${pushBox()}
+   <div class="sec minor"><h2>تنبيهات داخل التطبيق</h2><span>والتطبيق مفتوح</span></div>
+   <div class="note-box">هذي التنبيهات تشتغل ويه التطبيق مفتوح أو مصغّر بالخلفية (للتنبيه والتطبيق مسكّر استخدم «تنبيهات العاجل» فوق). كل حدث ينبّه مرة وحدة، وترجع تنبيه بس إذا تطور: ارتفع مستواه، أو زادت جهاته اثنين أو أكثر.</div>
    <div style="margin-top:8px">${sw("on","تفعيل التنبيهات")}${sw("sound","صوت التنبيه")}${sw("notify","إشعار المتصفح","يطلب إذن المتصفح")}${sw("src","عاجل نشره المصدر")}${sw("imp","مهم صنّفه النظام")}${sw("esc","الأحداث المتصاعدة")}${sw("iraqOnly","العراق فقط")}${sw("pmf","أخبار الحشد الشعبي دائماً")}</div>
    <div class="sec minor"><h2>المواضيع</h2><span>بدون اختيار = الكل</span></div>
    <div class="chips" style="flex-wrap:wrap">${TOPICS.slice(1).map(t=>`<button class="chip small" type="button" data-pt="${t}" aria-pressed="${prefs.topics.includes(t)}">${t}</button>`).join("")}</div>
@@ -613,7 +689,7 @@ function openDrawer(id){
   const hmap={}; health.forEach(h=>{hmap[srcName(h.name)]=h});
   const s0=(n.sources||[])[0]||{}, h0=hmap[srcName(s0.name)];
   const why=[...(n.why||[])]; if(n.source_flag) why.unshift("المصدر نفسه وسم الخبر «عاجل»"); if(n.trending_unconfirmed) why.push("متداول لدى جهات كثيرة بدون تأكيد مستقل"); if(n.about_iraq) why.push("يخص العراق");
-  $("#drawer").innerHTML=`<div class="grab"></div><div class="tags">${tagsOf(n)}</div><h2 class="d-title">${esc(n.title)}</h2>${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p><p class="note">العنوان العربي ترجمة آلية للعنوان الأصلي.</p>`:""}${n.title_src&&!n.title_orig?`<details style="margin:6px 0 2px"><summary class="note" style="cursor:pointer">العنوان كما نشره المصدر</summary><p class="orig">${esc(n.title_src)}</p></details>`:""}
+  $("#drawer").innerHTML=`<div class="grab"></div><div class="tags">${tagsOf(n)}</div><h2 class="d-title">${esc(n.title)}</h2>${tbPill(n)?`<p class="note" style="margin:0 0 4px">${tbPill(n)} <span style="font-size:.74rem">${esc(TB[n.trust_badge][1])}</span> <span style="font-size:.7rem;opacity:.75" title="${esc(TB_LEGEND)}">ⓘ</span></p>`:""}${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p><p class="note">العنوان العربي ترجمة آلية للعنوان الأصلي.</p>`:""}${n.title_src&&!n.title_orig?`<details style="margin:6px 0 2px"><summary class="note" style="cursor:pointer">العنوان كما نشره المصدر</summary><p class="orig">${esc(n.title_src)}</p></details>`:""}
     ${why.length?`<div class="why"><b>سبب التصنيف:</b> ${esc(why.join(" · "))}</div>`:""}
     <div class="why"><b>حالة التحقق: <span class="st ${VS[n.vstatus]||"s-unv"}">${esc(n.vstatus||"غير متحقق")}</span></b> ${esc(n.vwhy||"")}${n.cited?` · يستند إلى: «${esc(n.cited)}»`:""}${n.independent?` · مصادر مستقلة: ${n.independent}`:""}</div>
     ${n.origin_rec?`<div class="sec minor"><h2>أقدم نشر رصدته المنظومة</h2><span>مو بالضرورة أول نشر بالإنترنت</span></div>
@@ -757,6 +833,8 @@ document.addEventListener("click",e=>{
   const tr=t.closest("[data-trace]"); if(tr){ const n=news.find(x=>x.id===tr.dataset.trace); closeDrawer(); traceQ=n?(n.title_orig||n.title):""; traceRes=""; openTool("tracer"); setTimeout(runTrace,30); return; }
   if(t.closest("[data-close]")||t.id==="scrim"){ closeDrawer(); return; }
   if(t.closest("#trGo")){ runTrace(); return; }
+  const pb=t.closest("[data-push]"); if(pb){ pushClick(pb.dataset.push); return; }
+  if(t.closest("#pushTest")){ navigator.serviceWorker.ready.then(r=>r.showNotification("مهم",{body:"هذا إشعار تجريبي من هوبي عاجل ✅",icon:"icons/icon-192.png",badge:"icons/icon-192.png",dir:"rtl",lang:"ar",data:{url:"./"}})).catch(()=>toast("تعذّر عرض الإشعار")); return; }
   if(t.closest("#pTest")){ toast("🔔 هذا تنبيه تجريبي"); beep(); return; }
 });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); if(e.key==="Enter"&&e.target.classList?.contains("card")) openDrawer(e.target.dataset.id); });
@@ -764,6 +842,7 @@ document.addEventListener("change",e=>{
   const t=e.target;
   if(t.id==="fType"){ ctype=t.value; render(true); }
   if(t.id==="fSrc"){ srcF=t.value; render(true); }
+  if(t.id==="pushGov"){ push.gov=t.value; pushSave(); setPush("gov",t.value,Promise.resolve(Notification.permission)); }
   if(t.dataset.p){ prefs[t.dataset.p]=t.checked; store.set("hobi_alerts",prefs);
     if(t.dataset.p==="notify"&&t.checked&&"Notification" in window&&Notification.permission!=="granted") Notification.requestPermission();
     if(t.dataset.p==="sound"&&t.checked) beep(); }
@@ -810,7 +889,7 @@ async function liveInit(){
 }
 liveInit();
 load(); loadExtra(); setInterval(()=>loadExtra(),300000); setInterval(()=>{ if(!document.hidden||prefs.on) load(); },90000); setInterval(()=>render(true),60000);
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").then(()=>setTimeout(pushResync,5000)).catch(()=>{});
 </script>
 </body>
 </html>
