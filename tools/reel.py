@@ -23,7 +23,7 @@ W, H, FPS = 1080, 1920, 30
 XR, XL = W - 150, 70   # منطقة آمنة: عمود أزرار تيك توك/ريلز يميناً (150) وشريط الوصف أسفل (تحت 1520) لا يغطي النص
 SAFE_BOTTOM = 1520
 FD = ROOT / "assets" / "fonts"
-NAVY, INK, RED, GOLD, PAPER = (8, 20, 46), (5, 12, 30), (200, 16, 30), (232, 196, 120), (255, 255, 255)
+NAVY, INK, RED, GOLD, PAPER = (16, 10, 14), (8, 8, 12), (226, 24, 38), (226, 24, 38), (255, 255, 255)  # هوية أكا: حبر داكن + أحمر (05/11)
 KW = dict(direction="rtl", language="ar")
 
 
@@ -256,7 +256,7 @@ def scene_story(cv, t, i, n, s, ph):
     for k_, ln in enumerate(s["lines"]):
         rise_line(cv, t, ln, "black", s["size"], PAPER, XR, y, 0.3 + f2s(4) * k_, exit_at=s["dur"] - 0.35)
         y += lh
-    counter(cv, t, s["n_sources"], "جهة نشرت الخبر", XR, y + 40, 0.9)
+    counter(cv, t, s["n_sources"], "مصدراً تناول الخبر", XR, y + 40, 0.9)
     if s.get("src"):
         rise_line(cv, t, s["src"], "med", 38, (160, 176, 205), XR, y + 120, 1.2)
 
@@ -297,7 +297,10 @@ def pick(news, k=5):
         if any(T.same_story(sig, {"w": sorted(o["_sig"][0]), "d": sorted(o["_sig"][1])}) for o in out):
             continue
         title = clean_headline(pick_best([n["title"]] + list(n.get("alts") or [])))
-        if len(title.split()) < 6:
+        if "|" in title:  # «كوردستان 24 | كتلة …» اسم مصدر قبل الفاصل
+            title = max((p.strip() for p in title.split("|")), key=lambda p: len(p.split()))
+        # مراجعة 06/11 قبل النشر بالقناة: خبر رياضي أجنبي (رونالدو) وعنوان بلا واقعة دخلا «أهم أخبار العراق»
+        if len(title.split()) < 6 or not T.iraq_strict(title) or T.low_value(title) or T.incomplete(title.rstrip("…").strip()) or T.analyst(title):
             continue
         unver = n.get("vstatus") in (None, "غير متحقق") and not n.get("official")
         out.append({"_sig": sig, "n": n, "title": title[:150], "n_sources": n.get("n_sources") or 1,
@@ -314,7 +317,13 @@ def render(items, out_path, day_txt, music=None):
     for i, it in enumerate(items):
         ph = None
         try:
-            ph = photo_layer(T.news_photo(it["n"]))
+            jpg = T.news_photo(it["n"])
+            if jpg:
+                from tools import fastbreak as _FB
+                _g = Image.open(io.BytesIO(jpg)).convert("L").resize((64, 64))
+                if sum(_g.getdata()) / 4096 < 45 or _FB.watermarked(jpg) is True:  # صورة مظلمة أو عليها شعار قناة أخرى
+                    jpg = None
+            ph = photo_layer(jpg)
         except Exception:  # noqa: BLE001
             ph = None
         size = 72
@@ -324,8 +333,8 @@ def render(items, out_path, day_txt, music=None):
             lines = wrap(it["title"], "black", size, XR - XL)
         dur = max(4.6, min(6.6, 2.8 + 0.09 * len(it["title"].split()) * 1.0 + 0.6))  # وقت قراءة كافٍ حسب طول العنوان
         it.update({"lines": lines[:4], "size": size, "dur": dur,
-                   "tag_fill": (110, 112, 120, 255) if it["tag"] == "غير مؤكد" else (14, 60, 130, 255),
-                   "dot": (255, 196, 92) if it["tag"] == "غير مؤكد" else (90, 200, 255)})
+                   "tag_fill": (110, 112, 120, 255) if it["tag"] == "غير مؤكد" else (226, 24, 38, 255),
+                   "dot": (255, 196, 92) if it["tag"] == "غير مؤكد" else (255, 255, 255)})
         scenes.append(("story", dur, (i, it, ph)))
     scenes.append(("outro", 3.0, None))
     total = sum(s[1] for s in scenes)
@@ -397,6 +406,14 @@ def main():
     cap = (f"🎬 نشرة دقيقة — {day_txt}\n{len(items)} أخبار · {total:.0f} ثانية · 1080×1920\n\n"
            + "\n".join(f"{k + 1}. {it['title'][:90]}" for k, it in enumerate(items))
            + "\n\nجاهز للنشر على تيك توك وريلز. " + ("بدون موسيقى (أرسل مقطوعة لإضافتها)." if not music.exists() else "مع الموسيقى المعتمدة."))
+    if token and os.environ.get("REEL_TO_CHANNEL") == "1":  # نشر بالقناة بطلب صريح من إيهاب (06/11) — يدوي فقط عبر workflow_dispatch
+        ccap = (f"🎬 <b>أهم أخبار العراق اليوم بدقيقة</b> — {day_txt}\n\n"
+                + "\n".join(f"{k + 1}. {it['title'][:100]}" for k, it in enumerate(items))
+                + f"\n\nتابعونا لحظة بلحظة 👇\n{T.CHANNEL}")
+        chat = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or "-1004327422297"  # المعرّف الرقمي للقناة
+        r = T.api(token, "sendVideo", files={"video": (out.name, out.read_bytes(), "video/mp4")}, chat_id=chat, caption=ccap[:1024],
+                  parse_mode="HTML", width="1080", height="1920", supports_streaming="true")
+        print("::notice title=reel channel::", bool(r.get("ok")), (r.get("result") or {}).get("message_id"))
     if token:
         for c in (sent.get("_editor_chats") or {}).values():
             try:
