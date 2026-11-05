@@ -103,16 +103,14 @@ def _backdrop(kind_name, accent):
     d = ImageDraw.Draw(g)
     for y in range(H):
         d.line([(0, y), (W, y)], fill=_mix(top, bot, min(1, y / (H * 0.8))))
-    word = kind_name
-    lay = Image.new("L", (W, H), 0)
-    dl = ImageDraw.Draw(lay)
-    sz = 520
-    while sz > 160 and _tw(dl, word, _H(sz)) > W - 300:
-        sz -= 20
-    f = _H(sz)
-    tw = _tw(dl, word, f)
-    C._draw_rtl(dl, int(W / 2 + tw / 2), 230, word, f, 20)  # الكلمة كاملة مقروءة (المقصوصة بدت حروفاً مكسورة)
-    g.paste(Image.new("RGB", (W, H), _mix(accent, WHITE, 0.3)), (0, 0), lay)
+    try:  # شعار أكا كبير وخافت كملمس (أنيق ومن الهوية) بدل كلمة القسم العملاقة التي بدت فراغاً (ملاحظة إيهاب 05/11)
+        lg = Image.open(C.LOGO_RGBA).convert("RGBA")
+        k = 980 / lg.width
+        lg = lg.resize((int(lg.width * k), int(lg.height * k)))
+        a = lg.getchannel("A").point(lambda v: int(v * 0.07))
+        g.paste(Image.new("RGB", lg.size, WHITE), (int((W - lg.width) / 2) + 120, 140), a)
+    except Exception:  # noqa: BLE001
+        pass
     return g
 
 
@@ -146,11 +144,23 @@ def card(photo_jpg, title, breaking=False, when_utc=None, source=None, kind=None
     P = 72
     text_w = W - 2 * P - 24  # 24 = العمود الملوّن + فراغه
     # قياس كتلة النص من الأسفل للأعلى
-    max_lines = 3 if num else 4
-    f, sz, lines = C._fit_font(d, head, text_w, max_lines, [92, 86, 80, 74, 68, 62, 58], _H)
+    max_lines = 3 if num else (4 if has_photo else 5)
+    sizes = [92, 86, 80, 74, 68, 62, 58, 54, 50]
+    _pp = re.split(r"\s*(?:\.{2,}|…)\s*", head, maxsplit=1)
+    if len(head.split()) > 15 and len(_pp) == 2 and len(_pp[1].split()) >= 6 and len(_pp[0].split()) <= 6:
+        head = _pp[1]  # «خطوة حاسمة في ملف السلاح... الخبر» ← التمهيد التشويقي يُحذف من البطاقة (يبقى بالنص تحتها)
+    f, sz, lines = C._fit_font(d, head, text_w, max_lines, sizes, _H)
+    if lines and lines[-1].endswith("…"):  # عنوان مبتور (ملاحظة إيهاب 05/11): نحذف التمهيد التشويقي قبل «...» ونبقي الخبر نفسه
+        parts = re.split(r"\s*(?:\.{2,}|…)\s*", head, maxsplit=1)
+        if len(parts) == 2 and len(parts[1].split()) >= 5:
+            head = parts[1]
+            f, sz, lines = C._fit_font(d, head, text_w, max_lines + 1, sizes, _H)
     lh = int(sz * 1.46)  # Alexandria عالية الصواعد: أقل من 1.4 تتلامس السطور
     y_meta = H - 108
     y_text = y_meta - 46 - lh * len(lines)
+    if not has_photo:  # بلا صورة: الكتلة بمنتصف البطاقة بدل أسفلها وفوقها فراغ
+        block = lh * len(lines) + (196 if num else 0) + (76 if kick else 0) + 70
+        y_text = min(y_text, int(250 + (y_meta - 60 - 250 - block) / 2 + block - lh * len(lines)))
     y = y_text
     num_h = 0
     if num:
