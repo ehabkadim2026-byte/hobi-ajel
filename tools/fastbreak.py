@@ -131,7 +131,7 @@ def visible_len(s):
     return v(s)
 
 
-def build_caption(head, loud, src, details=(), also=(), verify=None, keep=(), tags=(), channel="https://t.me/hassawassal"):
+def build_caption(head, loud, src, details=(), also=(), verify=None, keep=(), tags=(), channel="https://t.me/akamedia_iq"):
     """تعليق بقالب القناة: العنوان، التفاصيل، المصدر ومن نقله، سطر التحقق وسطور التأكيد السابقة، الوسوم، دعوة القناة. يقص حتى 1024."""
     details, also = list(details), list(also)
     while True:

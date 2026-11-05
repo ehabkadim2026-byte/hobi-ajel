@@ -2,7 +2,7 @@
 
 1) صورة المنشور الأصلي: لمصادر تلغرام نقرأ صفحة التضمين العامة t.me/<قناة>/<رقم>?embed=1،
    ولمصادر الويب نقرأ og:image من صفحة الخبر (لا نقرأ روابط Google News).
-2) إن لم توجد صورة: بطاقة «هوبي عاجل» مولّدة بالعنوان (PIL)، بلا أي صورة مختلقة.
+2) إن لم توجد صورة: بطاقة «أكا ميديا» مولّدة بالعنوان (PIL)، بلا أي صورة مختلقة.
 """
 import html
 import io
@@ -76,11 +76,11 @@ def fetch_jpeg(img_url):
     return buf.getvalue()
 
 
-LOGO = ROOT / "assets" / "logo_hassawassal.png"
+LOGO = ROOT / "assets" / "brand" / "aka_logo_white.png"
 
 
 def brand(jpg_bytes):
-    """يضيف شعار «هسه وصل» على الصورة (شارة بيضاء أسفل اليسار)."""
+    """يضيف شعار «أكا ميديا» على الصورة (شارة بيضاء أسفل اليسار)."""
     from PIL import ImageDraw as _D
     im = Image.open(io.BytesIO(jpg_bytes)).convert("RGB")
     if LOGO.exists():
@@ -196,7 +196,7 @@ def card(title, head, meta, footer):
 
 if __name__ == "__main__":
     Path("card_test.jpg").write_bytes(card("عاجل: رئيس الوزراء يوجه بفتح تحقيق عاجل في حادثة انقطاع الكهرباء عن عدة محافظات جنوبية", "🔴 عاجل".replace("🔴 ", ""),
-                                           "السومرية نيوز · 14:32 بغداد · غير مؤكد", "t.me/hassawassal"))
+                                           "السومرية نيوز · 14:32 بغداد · غير مؤكد", "t.me/akamedia_iq"))
 
 
 def _cover(im, W, H):
@@ -206,8 +206,8 @@ def _cover(im, W, H):
     return im.crop((x, y, x + W, y + H))
 
 
-def news_card(photo_jpg, title, breaking=True, time_str="", handle="t.me/hassawassal"):
-    """قالب الخبر الموحّد 1280×720 (أسلوب غرف الأخبار العربية الكبرى، بهوية «هسة وصل»):
+def news_card(photo_jpg, title, breaking=True, time_str="", handle="t.me/akamedia_iq"):
+    """قالب الخبر الموحّد 1280×720 (أسلوب غرف الأخبار العربية الكبرى، بهوية «أكا ميديا»):
     صورة الخبر كاملة + تدرّج داكن سفلي + شريط أحمر جانبي + شارة «عاجل»/«خبر» + العنوان بخط عريض + تذييل الوقت والشعار."""
     from PIL import ImageDraw as _D, ImageFilter
     W, H, P = 1280, 720, 64
@@ -289,7 +289,7 @@ AR_DAYS = ["الاثنين", "الثلاثاء", "الأربعاء", "الخمي
 AR_MONTHS = ["كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران", "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"]
 
 
-def news_card2(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hassawassal"):
+def news_card2(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/akamedia_iq"):
     """القالب الفاخر 1280×720: صورة كاملة + لوح زجاجي ضبابي أسفل + خط أحمر-ذهبي + شارة عاجل/خبر + شريحة التاريخ والوقت + الشعار."""
     from datetime import datetime, timedelta
     from PIL import ImageDraw as _D, ImageFilter, ImageEnhance
@@ -365,7 +365,7 @@ def news_card2(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hass
     d.rectangle([0, H - bottom_bar, W, H], fill=(4, 8, 20))
     d.rectangle([0, H - bottom_bar, W, H - bottom_bar + 2], fill=red2)
     fs = _font(24)
-    _draw_rtl(d, W - P, H - bottom_bar + 13, "هسة وصل — أخبار العراق لحظة بلحظة", fs, (230, 232, 240))
+    _draw_rtl(d, W - P, H - bottom_bar + 13, "أكا ميديا — نرى أبعد... ونروي أعمق", fs, (230, 232, 240))
     d.text((P, H - bottom_bar + 15), handle, font=_font(22), fill=gold)
     # شريحة التاريخ والوقت (أعلى اليمين) + الشعار (أعلى اليسار)
     if when_utc:
@@ -396,7 +396,7 @@ def news_card2(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hass
     return buf.getvalue()
 
 
-# ───────────────────────── هوية «هسة وصل» v3 ─────────────────────────
+# ───────────────────────── هوية «أكا ميديا» v3 ─────────────────────────
 # مستخرجة من الشعار: أحمر الإشارة + كحلي، أشعة «وصل» الثلاث، خط Alexandria الهندسي المطابق لحروف الشعار.
 FONTS_DIR = ROOT / "assets" / "fonts"
 BRAND_RED, BRAND_NAVY, INK, PAPER, MUTED = (227, 6, 19), (13, 35, 71), (13, 27, 52), (255, 255, 255), (112, 122, 140)
@@ -427,7 +427,7 @@ def _rays(d, x, y, s, fill, width=None, dot=False):
             d.ellipse([cx - w / 2, cy - w / 2, cx + w / 2, cy + w / 2], fill=fill)
 
 
-def news_card3(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/hassawassal", source=None, dim=False):
+def news_card3(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/akamedia_iq", source=None, dim=False):
     """بطاقة الهوية v3 (1280×720): صورة الخبر أعلى، لوح أبيض تحريري أسفل بعنوان كحلي، شارة عاجل حمراء بأشعة الإشارة،
     وتذييل: الشعار الأصلي (خلفيته بيضاء فيندمج) + التاريخ والوقت بتوقيت بغداد + رابط القناة."""
     from datetime import datetime, timedelta
@@ -831,7 +831,7 @@ def card_lux(photo_jpg, title, breaking=True, when_utc=None):
         im.paste(cap, (W - P + 22 - cap.width, cy), cm)
         d = _D.Draw(im)
         d.line([(P, cy + cap.height // 2), (W - P + 22 - cap.width - 24, cy + cap.height // 2)], fill=(70, 84, 112), width=1)
-        d.text((P, cy + 20), "t.me/hassawassal", font=_ff("ReadexPro-Medium.ttf", 22), fill=(200, 208, 224))
+        d.text((P, cy + 20), "t.me/akamedia_iq", font=_ff("ReadexPro-Medium.ttf", 22), fill=(200, 208, 224))
     noise = Image.effect_noise((W, H), 40).convert("L").point(lambda v: 7 if v > 175 else 0)  # ملمس خفيف جداً لا يُرى كنقاط
     im.paste(Image.new("RGB", (W, H), (255, 255, 255)), (0, 0), noise)
     return _jpg(im)
@@ -947,7 +947,7 @@ def card_news(photo_jpg, title, breaking=True, when_utc=None):
         im.paste(cap, (W - P - cap.width + 20, fy + (foot - cap.height) // 2))
         d = _D.Draw(im)
         hx = W - P - cap.width - 4
-        _draw_rtl(d, hx, fy + 6, "t.me/hassawassal", _cairo(22, 600), (150, 166, 196))
+        _draw_rtl(d, hx, fy + 6, "t.me/akamedia_iq", _cairo(22, 600), (150, 166, 196))
     return _jpg(im)
 
 
@@ -1039,14 +1039,9 @@ def card_news2(photo_jpg, title, breaking=True, when_utc=None, tag=None, stats=N
         ds.line([(0, y), (W, y)], fill=int(170 * (y / 150) ** 2.2))
     im.paste(Image.new("RGB", (W, 150), (0, 5, 16)), (0, btop - 150), sh)
     d = _D.Draw(im)
-    # شعار القناة أعلى يمين الصورة (Bug) — مفرّغ أبيض بظل خفيف
-    lw = _logo_white(64)
-    if lw:
-        x0, y0 = W - P - lw.width + 18, 30
-        shadow = lw.split()[3].filter(ImageFilter.GaussianBlur(6)).point(lambda v: int(v * 0.6))
-        im.paste(Image.new("RGB", lw.size, (0, 0, 0)), (x0 + 2, y0 + 3), shadow)
-        im.paste(Image.new("RGB", lw.size, (255, 255, 255)), (x0, y0), lw.split()[3])
-        d = _D.Draw(im)
+    # شعار القناة أعلى يمين الصورة: قرص أبيض بالشعار الحقيقي (الشعار لا يوضع مباشرة على صورة أو خلفية داكنة)
+    _paste_badge(im, W - P - 110 + 18, 24, 110)
+    d = _D.Draw(im)
     # شريط الوسم الكامل
     d.rectangle([0, btop, W, top], fill=col)
     ft = _cairo(32, 900)
@@ -1055,7 +1050,7 @@ def card_news2(photo_jpg, title, breaking=True, when_utc=None, tag=None, stats=N
     tw = d.textlength(_shape(tag), font=ft, **kw)
     sx = W - P - tw - 24
     d.line([(sx, btop + 16), (sx, top - 16)], fill=(255, 255, 255) if not dim else (200, 120, 125), width=2)
-    sub = {"عاجل": "هسة وصل · أخبار العراق", "تحليل": "قراءة في أبرز حدث اليوم", "منوعات": "من العراق", "رأي": "قراءة هسة وصل"}.get(tag, "هسة وصل · أخبار العراق")
+    sub = {"عاجل": "أكا ميديا · أخبار العراق", "تحليل": "قراءة في أبرز حدث اليوم", "منوعات": "من العراق", "رأي": "قراءة أكا ميديا"}.get(tag, "أكا ميديا · أخبار العراق")
     _draw_rtl(d, sx - 20, btop + 12, sub, _cairo(24, 600), (255, 236, 238) if tag == "عاجل" else (230, 236, 248))
     w = _when(when_utc)
     if w:
@@ -1087,32 +1082,45 @@ def card_news2(photo_jpg, title, breaking=True, when_utc=None, tag=None, stats=N
 _BADGE = {}
 
 
+LOGO_RGBA = ROOT / "assets" / "brand" / "aka_logo.png"  # الشعار مفرّغ؛ «ميديا» رمادي داكن وداخله أبيض فيحتاج خلفية فاتحة دائماً
+
+
 def _logo_badge(h):
-    """شعار «هسة وصل» بألوانه الأصلية (أحمر وكحلي) على لوح أبيض مستدير بحافة حمراء رفيعة: علامة تُعرف من أول نظرة."""
+    """شعار «أكا ميديا» الحقيقي داخل قرص أبيض نظيف بقطر h (حافة رمادية رفيعة جداً)، ليُقرأ على أي صورة أو خلفية داكنة.
+    الظل يضيفه المستدعي عبر _paste_badge."""
     if h in _BADGE:
         return _BADGE[h]
-    if not LOGO.exists():
+    if not LOGO_RGBA.exists():
         return None
     from PIL import ImageDraw as _D
-    lg = Image.open(LOGO).convert("RGB")
-    a = lg.convert("L").point(lambda v: 0 if v > 238 else 255)
-    bbox = a.getbbox()
-    lg = lg.crop(bbox)
-    lh = h - 30
-    lg = lg.resize((int(lg.width * lh / lg.height), lh), Image.LANCZOS)
-    pad = 22
-    W2, H2 = lg.width + 2 * pad, h
-    b = Image.new("RGBA", (W2, H2), (0, 0, 0, 0))
+    S = 4  # رسم بدقة أعلى ثم تصغير لحواف ناعمة
+    D = h * S
+    b = Image.new("RGBA", (D, D), (0, 0, 0, 0))
     d = _D.Draw(b)
-    d.rounded_rectangle([0, 0, W2 - 1, H2 - 1], radius=24, fill=(255, 255, 255, 255))
-    d.rounded_rectangle([0, H2 - 9, W2 - 1, H2 - 1], radius=4, fill=(222, 18, 30, 255))
-    d.rounded_rectangle([0, 0, W2 - 1, H2 - 1], radius=24, outline=(255, 255, 255, 255), width=2)
-    b.paste(lg, (pad, 10))
-    m = Image.new("L", (W2, H2), 0)
-    _D.Draw(m).rounded_rectangle([0, 0, W2 - 1, H2 - 1], radius=24, fill=255)
-    b.putalpha(m)
+    d.ellipse([0, 0, D - 1, D - 1], fill=(255, 255, 255, 255))
+    d.ellipse([0, 0, D - 1, D - 1], outline=(214, 218, 224, 255), width=max(2, S))
+    lg = Image.open(LOGO_RGBA).convert("RGBA")
+    lh = int(D * 0.88)
+    lg = lg.resize((int(lg.width * lh / lg.height), lh), Image.LANCZOS)
+    b.alpha_composite(lg, ((D - lg.width) // 2 + int(D * 0.012), int(D * 0.052)))
+    b = b.resize((h, h), Image.LANCZOS)
     _BADGE[h] = b
     return b
+
+
+def _paste_badge(im, x, y, h, shadow=0.34):
+    """يلصق قرص الشعار على im عند (x, y) أعلى اليسار، بظل ناعم خفيف تحته."""
+    from PIL import ImageFilter
+    b = _logo_badge(h)
+    if not b:
+        return 0
+    m = max(12, h // 7)
+    sm = Image.new("L", (b.width + 2 * m, b.height + 2 * m), 0)
+    sm.paste(b.split()[3], (m, m))
+    sm = sm.filter(ImageFilter.GaussianBlur(m * 0.55)).point(lambda v: int(v * shadow))
+    im.paste(Image.new("RGB", sm.size, (0, 0, 0)), (x - m, y - m + max(3, h // 28)), sm)
+    im.paste(b, (x, y), b)
+    return b.width
 
 
 def card_news3(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=None):
@@ -1161,16 +1169,8 @@ def card_news3(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
         dt.line([(0, y), (W, y)], fill=int(120 * (1 - y / 170) ** 1.8))
     im.paste(Image.new("RGB", (W, 170), (0, 0, 0)), (0, 0), gt)
     d = _D.Draw(im)
-    badge = _logo_badge(104)
-    if badge:
-        bx, by = W - P - badge.width + 18, 36
-        m = 24
-        sm = Image.new("L", (badge.width + 2 * m, badge.height + 2 * m), 0)
-        sm.paste(badge.split()[3], (m, m))
-        sm = sm.filter(ImageFilter.GaussianBlur(12)).point(lambda v: int(v * 0.32))
-        im.paste(Image.new("RGB", sm.size, (0, 0, 0)), (bx - m, by - m + 6), sm)
-        im.paste(badge, (bx, by), badge)
-        d = _D.Draw(im)
+    _paste_badge(im, W - P - 140 + 18, 30, 140)
+    d = _D.Draw(im)
     # لسان الوسم المستدير على حد اللوح
     ft = _cairo(36, 900)
     label = tag
@@ -1183,7 +1183,7 @@ def card_news3(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
         cx, cy = px1 - 30, py0 + phh // 2
         d.ellipse([cx - 8, cy - 8, cx + 8, cy + 8], fill=(255, 255, 255))
     _draw_rtl(d, px1 - 28 - dot, py0 + 5, label, ft, fg_col)
-    sub = {"عاجل": "الآن", "رأي": "قراءة هسة وصل", "تحليل": "قراءة في حدث اليوم", "منوعات": "من العراق"}.get(tag)
+    sub = {"عاجل": "الآن", "رأي": "قراءة أكا ميديا", "تحليل": "قراءة في حدث اليوم", "منوعات": "من العراق"}.get(tag)
     if sub:
         _draw_rtl(d, px1 - pw - 22, py0 + 14, sub, _cairo(28, 700), (205, 214, 232))
     y = py0 + phh + 26
@@ -1199,10 +1199,10 @@ def card_news3(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
     fy = H - foot_h + 18
     d.line([(P, fy - 14), (W - P, fy - 14)], fill=(38, 54, 88), width=2)
     fs = _cairo(27, 700)
-    right = source if source and source != kick else "عاجل هسه وصل"
+    right = source if source and source != kick else "أكا ميديا"
     _draw_rtl(d, W - P, fy, right, fs, (196, 206, 226))
     ffl = _cairo(26, 600)
-    hd = "@hassawassal"
+    hd = "@akamedia_iq"
     d.text((P, fy + 1), hd, font=ffl, fill=(140, 156, 188), **({"direction": "ltr"} if RAQM else {}))
     w = _when(when_utc)
     if w:
@@ -1295,21 +1295,13 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
         lw = _logo_white(320)
         if lw:
             a = lw.split()[3].point(lambda v: int(v * 0.09))
-            g.paste(Image.new("RGB", lw.size, (255, 255, 255)), (W // 2 - lw.width // 2, h // 2 - 190), a)
+            g.paste(Image.new("RGB", lw.size, (255, 255, 255)), (W // 2 - lw.width // 2, max(40, h // 2 - 420)), a)
         return g
 
-    def badge(x_right, y, h=96):
-        b = _logo_badge(h)
-        if not b:
-            return
-        m = 22
-        sm = Image.new("L", (b.width + 2 * m, b.height + 2 * m), 0)
-        sm.paste(b.split()[3], (m, m))
-        sm = sm.filter(ImageFilter.GaussianBlur(12)).point(lambda v: int(v * 0.3))
-        im.paste(Image.new("RGB", sm.size, (0, 0, 0)), (x_right - b.width - m, y - m + 6), sm)
-        im.paste(b, (x_right - b.width, y), b)
+    def badge(x_right, y, h=164):
+        _paste_badge(im, x_right - h, y, h)
 
-    label = {"عاجل": "عاجل", "رأي": "قراءة هسة وصل", "تحليل": "تحليل", "منوعات": "منوعات"}.get(tag, "خبر")
+    label = {"عاجل": "عاجل", "رأي": "قراءة أكا ميديا", "تحليل": "تحليل", "منوعات": "منوعات"}.get(tag, "خبر")
     hot = tag == "عاجل"
 
     if style == "A":
@@ -1348,8 +1340,8 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
         d.rectangle([0, H - 12, W, H], fill=((96, 8, 16) if _DIM[0] else RED) if hot else (34, 92, 220))
         fy = H - 84
         d.line([(P, fy - 18), (W - P, fy - 18)], fill=(255, 255, 255, 60), width=1)
-        _draw_rtl(d, W - P, fy, src_name or "عاجل هسه وصل", _cairo(28, 700), (200, 208, 224))
-        d.text((P, fy + 1), "@hassawassal", font=_cairo(27, 600), fill=(160, 172, 196), **({"direction": "ltr"} if RAQM else {}))
+        _draw_rtl(d, W - P, fy, src_name or "أكا ميديا", _cairo(28, 700), (200, 208, 224))
+        d.text((P, fy + 1), "@akamedia_iq", font=_cairo(27, 600), fill=(160, 172, 196), **({"direction": "ltr"} if RAQM else {}))
 
     elif style == "B":
         P = 72
@@ -1382,8 +1374,8 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
             y += lh
         fy = H - 78
         d.line([(P, fy - 20), (W - P, fy - 20)], fill=(214, 208, 196), width=2)
-        _draw_rtl(d, W - P, fy, src_name or "عاجل هسه وصل", _cairo(27, 700), (90, 88, 84))
-        d.text((P, fy + 1), "@hassawassal", font=_cairo(26, 600), fill=(130, 126, 118), **({"direction": "ltr"} if RAQM else {}))
+        _draw_rtl(d, W - P, fy, src_name or "أكا ميديا", _cairo(27, 700), (90, 88, 84))
+        d.text((P, fy + 1), "@akamedia_iq", font=_cairo(26, 600), fill=(130, 126, 118), **({"direction": "ltr"} if RAQM else {}))
 
     else:  # C
         M, P = 44, 52
@@ -1418,9 +1410,9 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
             y += lh
         fy = H - M - 66
         d.line([(M + P, fy - 16), (W - M - P, fy - 16)], fill=(228, 231, 238), width=2)
-        right = (src_name or "عاجل هسه وصل") + (f"  ·  {w}" if w else "")
+        right = (src_name or "أكا ميديا") + (f"  ·  {w}" if w else "")
         _draw_rtl(d, W - M - P, fy, right, _cairo(26, 700), (98, 108, 128))
-        d.text((M + P, fy + 1), "@hassawassal", font=_cairo(25, 600), fill=(140, 148, 166), **({"direction": "ltr"} if RAQM else {}))
+        d.text((M + P, fy + 1), "@akamedia_iq", font=_cairo(25, 600), fill=(140, 148, 166), **({"direction": "ltr"} if RAQM else {}))
 
     buf = io.BytesIO()
     im.save(buf, "JPEG", quality=92, optimize=True, progressive=True)
@@ -1439,21 +1431,15 @@ def card_digest(title, sub, date, heads):
     for y in range(H):
         k = y / H
         d.line([(0, y), (W, y)], fill=(int(14 - 6 * k), int(34 - 14 * k), int(80 - 34 * k)))
-    lw = _logo_white(560)
-    if lw:
-        a = lw.split()[3].point(lambda v: int(v * 0.05))
-        im.paste(Image.new("RGB", lw.size, (255, 255, 255)), (W - lw.width + 120, H - lw.height + 60), a)
+    d = _D.Draw(im)  # بلا شعار باهت بالخلفية: كان يتداخل مع التذييل، والشعار الحقيقي في القرص الأبيض أعلاه
+    _paste_badge(im, W - P - 150 + 8, 44, 150)
     d = _D.Draw(im)
-    b = _logo_badge(92)
-    if b:
-        im.paste(b, (W - P - b.width + 10, 56), b)
-        d = _D.Draw(im)
-    _draw_rtl(d, W - P, 160, title, _cairo(104, 900), (255, 255, 255))
-    _draw_rtl(d, W - P, 350, sub, _cairo(40, 800), acc)
-    _draw_rtl(d, W - P, 408, date, _cairo(30, 600), (170, 184, 214))
-    d.rectangle([P, 428, P + 120, 434], fill=acc)
-    y = 492
-    avail = H - 120 - y
+    _draw_rtl(d, W - P, 200, title, _cairo(104, 900), (255, 255, 255))
+    _draw_rtl(d, W - P, 390, sub, _cairo(40, 800), acc)
+    _draw_rtl(d, W - P, 448, date, _cairo(30, 600), (170, 184, 214))
+    d.rectangle([P, 468, P + 120, 474], fill=acc)
+    y = 526
+    avail = H - 104 - y
     per = avail // max(1, len(heads))
     for i, h in enumerate(heads, 1):
         f, sz, lines = _fit_font(d, h, W - 2 * P - 92, 2, [42, 39, 36, 33], lambda s: _cairo(s, 800))
@@ -1474,8 +1460,48 @@ def card_digest(title, sub, date, heads):
             d.line([(P, y - 18), (W - P - 92, y - 18)], fill=(40, 58, 98), width=2)
     d.rectangle([0, H - 12, W, H], fill=acc)
     fy = H - 86
-    _draw_rtl(d, W - P, fy, "عاجل هسه وصل", _cairo(30, 800), (220, 226, 240))
-    d.text((P, fy + 2), "@hassawassal", font=_cairo(29, 700), fill=(170, 184, 214), **({"direction": "ltr"} if RAQM else {}))
+    _draw_rtl(d, W - P, fy, "أكا ميديا", _cairo(30, 800), (220, 226, 240))
+    d.text((P, fy + 2), "@akamedia_iq", font=_cairo(29, 700), fill=(170, 184, 214), **({"direction": "ltr"} if RAQM else {}))
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=92, optimize=True)
+    return buf.getvalue()
+
+
+def card_subscribe(link="t.me/akamedia_iq", bot=None):
+    """بطاقة «اشترك» (1080×1350) لهوية «أكا ميديا»: قرص الشعار الأبيض كبيراً، الشعار اللفظي، دعوة قصيرة ورابط القناة."""
+    from PIL import ImageDraw as _D
+    W, H, P = 1080, 1350, 80
+    RED, INK = (225, 6, 0), (31, 34, 39)
+    im = Image.new("RGB", (W, H), INK)
+    d = _D.Draw(im)
+    for y in range(H):
+        k = y / H
+        d.line([(0, y), (W, y)], fill=(int(40 - 22 * k), int(43 - 24 * k), int(50 - 28 * k)))
+    d.rectangle([0, 0, W, 14], fill=RED)
+    D = 430
+    _paste_badge(im, (W - D) // 2, 120, D, shadow=0.5)
+    d = _D.Draw(im)
+
+    def center(text, y, font, fill):
+        tw = d.textlength(_shape(text), font=font, **({"direction": "rtl", "language": "ar"} if RAQM else {}))
+        _draw_rtl(d, int((W + tw) / 2), y, text, font, fill)
+
+    center("نرى أبعد... ونروي أعمق", 600, _cairo(62, 900), (255, 255, 255))
+    center("أخبار العراق العاجلة لحظة بلحظة", 712, _cairo(40, 700), (200, 204, 212))
+    center("عاجل خلال ثوانٍ • بلا تكرار ولا إشاعات", 790, _cairo(34, 600), (150, 156, 168))
+    fl = _cairo(44, 800)
+    lw_ = d.textlength(link, font=fl)
+    bw, by = int(lw_ + 120), 900
+    d.rounded_rectangle([(W - bw) // 2, by, (W + bw) // 2, by + 96], radius=48, fill=RED)
+    d.text(((W - lw_) / 2, by + 14), link, font=fl, fill=(255, 255, 255), **({"direction": "ltr"} if RAQM else {}))
+    center("اشترك وفعّل التنبيه 🔔" if not RAQM else "اشترك وفعّل التنبيه", 1030, _cairo(36, 700), (230, 232, 236))
+    if bot:
+        center("أخبار محافظتك توصلك بالخاص عبر البوت", 1096, _cairo(30, 600), (150, 156, 168))
+        fb_ = _cairo(30, 700)
+        hb = "@" + bot.lstrip("@")
+        d.text(((W - d.textlength(hb, font=fb_)) / 2, 1146), hb, font=fb_, fill=(190, 196, 206), **({"direction": "ltr"} if RAQM else {}))
+    d.line([(P, H - 120), (W - P, H - 120)], fill=(70, 74, 82), width=2)
+    center("أكا ميديا | AKA MEDIA", H - 98, _cairo(32, 800), (200, 204, 212))
     buf = io.BytesIO()
     im.save(buf, "JPEG", quality=92, optimize=True)
     return buf.getvalue()

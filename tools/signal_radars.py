@@ -22,7 +22,7 @@ EMSC = "https://www.seismicportal.eu/fdsnws/event/1/query?format=json&limit=20&m
 IODA = "https://api.ioda.inetintel.cc.gatech.edu/v2/signals/raw/country/IQ?from={f}&until={u}"
 IODA_PAGE = "https://ioda.inetintel.cc.gatech.edu/country/IQ"
 ASSET = "radars_state.json"
-UA = {"User-Agent": "hobi-ajel-radars/1.0 (+https://t.me/hassawassal)"}
+UA = {"User-Agent": "hobi-ajel-radars/1.0 (+https://t.me/akamedia_iq)"}
 SRC_AR = {"usgs": "المركز الأمريكي للمسح الجيولوجي", "emsc": "المركز الأوروبي المتوسطي لرصد الزلازل"}
 
 Q_EVERY, IODA_EVERY, USD_EVERY = 60, 300, 90

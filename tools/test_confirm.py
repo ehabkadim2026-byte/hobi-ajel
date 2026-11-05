@@ -38,9 +38,9 @@ class Api:
 
 
 MAIN_CAP = ("<b>وزارة الخارجية تستدعي السفير التركي في بغداد احتجاجاً على القصف في دهوك</b>\n\n📌 المصدر: شفق نيوز\n"
-            "⏳ التحقق: غير مؤكد بعد — مصدر واحد\n#دهوك\n\nزورونا على الرابط للأخبار العاجلة 👇\nhttps://t.me/hassawassal")
+            "⏳ التحقق: غير مؤكد بعد — مصدر واحد\n#دهوك\n\nزورونا على الرابط للأخبار العاجلة 👇\nhttps://t.me/akamedia_iq")
 FAST_CAP = ("<b>وزارة الخارجية تستدعي السفير التركي في بغداد احتجاجاً على القصف في دهوك</b>\n\n📌 المصدر: السومرية\n#دهوك"
-            "\n\nزورونا على الرابط للأخبار العاجلة 👇\nhttps://t.me/hassawassal")
+            "\n\nزورونا على الرابط للأخبار العاجلة 👇\nhttps://t.me/akamedia_iq")
 TITLE = "وزارة الخارجية تستدعي السفير التركي في بغداد احتجاجاً على القصف في دهوك"
 OFF_TITLE = "الخارجية العراقية تستدعي السفير التركي في بغداد وتسلمه مذكرة احتجاج على القصف في دهوك"
 KB = json.dumps({"inline_keyboard": [[{"text": "📖 المصدر", "url": "https://t.me/x/1"}]]})
@@ -62,7 +62,7 @@ def run():
     st, led = fresh()
     led.add_post(101, T.title_sig(TITLE), MAIN_CAP, "photo", False, title=TITLE, kb=KB, nid="c_1", ts=now - 1800)
     api = Api()
-    assert CF.check(led, api, "TKN", "@hassawassal", "وزارة الخارجية العراقية", OFF_TITLE, now - 60, now=now) == 1
+    assert CF.check(led, api, "TKN", "@akamedia_iq", "وزارة الخارجية العراقية", OFF_TITLE, now - 60, now=now) == 1
     m, kw = api.calls[0]
     assert m == "editMessageCaption" and kw["message_id"] == "101" and kw["reply_markup"] == KB and kw["parse_mode"] == "HTML"
     lines = kw["caption"].split("\n")
@@ -70,9 +70,9 @@ def run():
     assert lines[i + 1].startswith("✅ أكدته: وزارة الخارجية العراقية — ") and lines[i + 1].endswith(" بغداد"), lines[i + 1]
     assert CF.html_ok(kw["caption"]) and kw["caption"].count("✅ أكدته") == 1
     # 2) مرة واحدة فقط: تكرار الجهة الرسمية لا يعدّل ثانية (حتى بعد إعادة التحميل من الإصدار)
-    assert CF.check(led, api, "TKN", "@hassawassal", "وزارة الخارجية العراقية", OFF_TITLE, now - 30, now=now) == 0
+    assert CF.check(led, api, "TKN", "@akamedia_iq", "وزارة الخارجية العراقية", OFF_TITLE, now - 30, now=now) == 0
     led2 = CF.Ledger("main", st.get, st.put)
-    assert CF.check(led2, api, "TKN", "@hassawassal", "وزارة الخارجية العراقية", OFF_TITLE, now, now=now) == 0 and len(api.calls) == 1
+    assert CF.check(led2, api, "TKN", "@akamedia_iq", "وزارة الخارجية العراقية", OFF_TITLE, now, now=now) == 0 and len(api.calls) == 1
     assert st.files["posted_main.json"]["posts"][0]["confirmed"] is True
 
     # 3) منشور المسار السريع بلا سطر تحقق: السطر بعد «📌 المصدر»، والمتحرك يُعدّل تعليقه

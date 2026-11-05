@@ -80,7 +80,7 @@ def snapshot(force=False):
     with open(raw, "rb") as f, gzip.open(gz, "wb", compresslevel=6) as g:
         shutil.copyfileobj(f, g)
     ensure_release("db-backup", "نسخة احتياطية لقاعدة الرصد",
-                   "لقطة متجددة لقاعدة «هوبي عاجل» تُستبدل كل ~30 دقيقة. تُستعاد تلقائياً إذا فُقد كاش Actions.")
+                   "لقطة متجددة لقاعدة «أكا ميديا» تُستبدل كل ~30 دقيقة. تُستعاد تلقائياً إذا فُقد كاش Actions.")
     gh("release", "upload", "db-backup", str(gz), "--clobber")
     st = load_state()
     st["last_snapshot_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

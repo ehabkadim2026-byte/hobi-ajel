@@ -41,7 +41,7 @@ FOREIGN_RX = re.compile(r"(إيران|ايران|طهران|خامنئي|لبن�
 FOREIGN_STATE = re.compile(r"(khamenei|presstv|irna|mehrnews|isna_|tasnim|farsna|sputnik|rtarabic)", re.I)  # حسابات دول/قادة أجانب ليست مصادر أخبار عراقية
 KURDISH = re.compile(r"[ەێۆڵڕڤ]")
 HANDLE = re.compile(r"[A-Za-z][A-Za-z0-9_]{3,31}")
-OWN = {"hassawassal"}
+OWN = {"hassawassal", "akamedia_iq"}
 SOCIAL = re.compile(r"(^|\.)(t\.me|telegram\.me|telegram\.org|youtube\.com|youtu\.be|facebook\.com|fb\.com|fb\.watch|instagram\.com|twitter\.com|x\.com|"
                     r"tiktok\.com|whatsapp\.com|wa\.me|threads\.net|snapchat\.com|linkedin\.com|google\.[a-z.]+|goo\.gl|bit\.ly|tinyurl\.com|linktr\.ee|"
                     r"apple\.com|play\.google\.com|wikipedia\.org|cutt\.ly|shorturl\.at|rb\.gy|t\.co|ow\.ly|is\.gd)$", re.I)

@@ -64,8 +64,8 @@ def run():
     k, sub = _ua()
     msg = WP.payload_of({"id": "x/1", "title": "انفجار في بغداد", "urgent": True, "msg": 3200})
     out = json.loads(_decrypt(k, sub, WP.encrypt(sub, msg)))
-    assert out["title"] == "🔴 عاجل" and out["url"] == "https://t.me/hassawassal/3200" and out["body"] == "انفجار في بغداد"
-    assert json.loads(WP.payload_of({"title": "خبر", "urgent": False}))["title"] == "مهم"
+    assert out["title"] == "🔴 عاجل | أكا ميديا" and out["url"] == "https://t.me/akamedia_iq/3200" and out["body"] == "انفجار في بغداد"
+    assert json.loads(WP.payload_of({"title": "خبر", "urgent": False}))["title"] == "مهم | أكا ميديا"
     # 4) التحقق من الاشتراك: مضيفو الدفع الرسميون فقط وصيغة المفاتيح
     assert WP.valid_sub(sub)
     for host in ("updates.push.services.mozilla.com", "web.push.apple.com", "wns2-db5p.notify.windows.com"):

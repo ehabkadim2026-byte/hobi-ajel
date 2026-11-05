@@ -21,6 +21,12 @@ assert T.iraq_title("البنك المركزي العراقي") and not T.iraq_t
 T.fmt({"title": "وزارة الداخلية تعلن القبض على عصابة", "level": "مهم", "sources": [{"name": "x", "url": "https://ina.iq/1"}]})
 from tools import tg_card as C  # noqa: E402
 assert len(C.card_a(None, "البنك المركزي العراقي: شحنة جديدة من الدولار", True, "2026-11-01T10:00:00Z")) > 10000
+# هوية «أكا ميديا» (05/11): رابط القناة الجديد، وشعار حقيقي على قرص أبيض (ليس شفافاً في المركز ولا الحافة الداخلية) في البطاقة والموجز
+assert T.CHANNEL == "https://t.me/akamedia_iq"
+_bd = C._logo_badge(150)
+assert _bd and _bd.size == (150, 150) and _bd.getpixel((75, 75))[3] == 255 and _bd.getpixel((6, 75))[3] == 255 and _bd.getpixel((0, 0))[3] == 0
+assert len(C.card_news4(None, "مجلس الوزراء يقرر تعطيل الدوام الرسمي", False, "2026-11-05T09:00:00Z", style="A")) > 10000
+assert len(C.card_digest("صباح العراق", "أبرز ما حدث خلال الليل", "5 تشرين الثاني 2026", ["خبر أول", "خبر ثانٍ", "خبر ثالث"])) > 10000
 from tools import test_confirm  # noqa: E402
 test_confirm.run()  # «✅ أكدته» وسجل قرارات المسار السريع بواجهة تلغرام وهمية
 from tools import test_auto_tune  # noqa: E402

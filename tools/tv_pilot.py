@@ -103,7 +103,7 @@ def auto_post(c, seg, data, st):
     first = next((ln.strip() for ln in cap.split("\n") if len(ln.strip()) >= 8), cap[:200])
     head = edit_headline(first)
     caption = (f"<b>{H.escape(head)}</b>\n\n🎥 المصدر: {H.escape(c['channel_name'])}\n\nزورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}")
-    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or "@hassawassal"
+    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or "-1004327422297"
     try:
         r = api(token, "sendVideo", files={"video": ("clip.mp4", data, "video/mp4")}, chat_id=chat_id, caption=caption[:1024],
                 parse_mode="HTML", supports_streaming="true")

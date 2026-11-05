@@ -24,7 +24,7 @@ from telethon.sessions import StringSession  # noqa: E402
 from tools.tg_push import api  # noqa: E402
 
 TOKEN = os.environ["MARSAD_TG_BOT_TOKEN"].strip()
-CHAT = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or "@hassawassal"
+CHAT = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or "-1004327422297"
 import re  # noqa: E402
 
 _RAW = os.environ.get("TG_API_ID", "") + " " + os.environ.get("TG_API_HASH", "")

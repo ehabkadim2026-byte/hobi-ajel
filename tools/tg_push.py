@@ -26,7 +26,7 @@ STATUS = PWA / "tg_status.json"
 APP_URL = "https://ehabkadim2026-byte.github.io/hobi-ajel/"
 MAX_PER_RUN = 15
 DEBUG = []
-CHANNEL = "https://t.me/hassawassal"
+CHANNEL = "https://t.me/akamedia_iq"
 RANK = {"عاجل": 3, "مهم": 2, "متابعة": 1}
 MAX_PER_HOUR = 20  # طلب إيهاب 04/11: مواكبة بمعدل خبر مهم كل ~2 دقيقة (مع المسار السريع) بشرط الجودة، بلا حشو
 REGION_MIN_SOURCES = 6
@@ -260,7 +260,7 @@ def variety_kind(n):
 
 
 def worthy(n, now):
-    """قناة «هسة وصل» = أخبار العراق: عاجل ومهم العراق والحشد فقط، بعنوان صالح، وليس رأياً."""
+    """قناة «أكا ميديا» = أخبار العراق: عاجل ومهم العراق والحشد فقط، بعنوان صالح، وليس رأياً."""
     seen = n.get("collected_utc")
     if not seen or datetime.fromisoformat(seen.replace("Z", "+00:00")) < now - timedelta(minutes=12):
         return False
@@ -850,7 +850,7 @@ def buttons(n):
     url = detail_url(n)
     if url and (is_important(n) or is_vague(n["title"])):
         row.append({"text": "📖 التفاصيل", "url": url})
-    share = "https://t.me/share/url?" + _u.urlencode({"url": CHANNEL, "text": "هسة وصل — أخبار العراق لحظة بلحظة"})
+    share = "https://t.me/share/url?" + _u.urlencode({"url": CHANNEL, "text": "أكا ميديا — نرى أبعد... ونروي أعمق"})
     row.append({"text": "↗️ شارك القناة", "url": share})
     rows = [row]
     if BOT_USER[0]:
@@ -1203,7 +1203,7 @@ def daily_stats(token, msgs):
         byh.setdefault(h, []).append(p["views"])
     best = sorted(((sum(v) / len(v), h) for h, v in byh.items() if len(v) >= 3), reverse=True)[:3]
     top = sorted(todayp, key=lambda p: -p["views"])[:5]
-    lines = [f"📊 أداء «هسة وصل» اليوم {today}", f"منشورات اليوم: {len(todayp)} · مجموع المشاهدات: {sum(p['views'] for p in todayp):,}",
+    lines = [f"📊 أداء «أكا ميديا» اليوم {today}", f"منشورات اليوم: {len(todayp)} · مجموع المشاهدات: {sum(p['views'] for p in todayp):,}",
              f"متوسط المشاهدة للمنشور: {int(sum(p['views'] for p in todayp) / max(1, len(todayp))):,}", "", "الأعلى مشاهدة:"]
     lines += [f"• {p['views']:,} — {p['text']}" for p in top]
     if best:
@@ -1226,7 +1226,7 @@ def digest(news, now):
     pmf = sorted([n for n in day if n.get("pmf")], key=lambda n: -(n.get("n_sources") or 1))[:4]
     frn = sorted([n for n in day if n.get("origin") == "أجنبي"], key=lambda n: n.get("latest_utc") or "", reverse=True)[:4]
     d = (now + timedelta(hours=3)).strftime("%Y/%m/%d")
-    out = [f"🗞 موجز هوبي عاجل — {d}", "", "أبرز أحداث العراق خلال 24 ساعة (حسب عدد الجهات الناشرة):"]
+    out = [f"🗞 موجز أكا ميديا — {d}", "", "أبرز أحداث العراق خلال 24 ساعة (حسب عدد الجهات الناشرة):"]
     for i, n in enumerate(top, 1):
         out.append(f"{i}. {n['title']} — {n.get('n_sources') or 1} جهات")
     if pmf:
@@ -1343,7 +1343,7 @@ def main():
         return
     try:
         chat = load(CHAT, {})
-        chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id") or "@hassawassal"  # القناة عامة: اسمها يكفي
+        chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id") or "-1004327422297"  # المعرّف الرقمي للقناة: ثابت مهما تغيّر اسمها
         if not chat_id:
             ups = api(token, "getUpdates", timeout=0, allowed_updates=ALLOWED_UPDATES).get("result", [])
             for u in reversed(ups):
@@ -1359,7 +1359,7 @@ def main():
             print(status)
             return
         status["enabled"] = True
-        status["chat_title"] = chat.get("title") or "عاجل هسه وصل"
+        status["chat_title"] = chat.get("title") or "أكا ميديا"
         news = load(PWA / "news.json", [])
         sent = load(SENT, {})
         if not sent.get("_bot_user"):
@@ -1487,11 +1487,11 @@ def main():
             if n.get("vstatus") == "ثبت عدم صحته" and n["id"] in msgs and n["id"] not in corrected:
                 pend.append({"id": n["id"] + "_fix", "reply_to": n["id"], "b": True, "textonly": True,
                              "text": f"⚠️ <b>تصحيح</b>\n\nتبيّن أن هذا الخبر غير صحيح وفق التحقق اللاحق" + (f": {H.escape(n.get('vwhy') or '')}" if n.get("vwhy") else ".") +
-                                     f"\n\nنعتذر لمتابعينا. «هسة وصل» تصحّح علناً.\n{CHANNEL}"})
+                                     f"\n\nنعتذر لمتابعينا. «أكا ميديا» تصحّح علناً.\n{CHANNEL}"})
                 corrected.add(n["id"])
                 status["corrections"] = status.get("corrections", 0) + 1
         sent["_corrected"] = sorted(corrected)[-300:]
-        # «قراءة هسة وصل»: رأي تحريري بأسلوب محلل الاستوديو، بزاوية إيجابية بنّاءة للعراق — مرتان يومياً (2–6 عصراً و8–12 ليلاً بغداد)
+        # «قراءة أكا ميديا»: رأي تحريري بأسلوب محلل الاستوديو، بزاوية إيجابية بنّاءة للعراق — مرتان يومياً (2–6 عصراً و8–12 ليلاً بغداد)
         # عن أكثر خبر عراقي تداولاً اليوم مناسب لقراءة بنّاءة (لا مآسي ولا حوادث). إن فشل النموذج لا يُنشر بديل، ويُعاد في الجولة التالية ضمن الفترة.
         ana = load(PWA / "analysis.json", {}).get("items", [])
         ap = sent.get("_ana_posted") or {}
@@ -1531,8 +1531,8 @@ def main():
                     photo = news_photo(n0) if n0 else None
                     try:
                         card = save_card(tg_card.card_news4(photo, otitle, False, now.strftime("%Y-%m-%dT%H:%M:%SZ"), tag="رأي", style="A"), "op_" + a["id"])
-                        text = (f"🎙 <b>قراءة هسة وصل</b>\n<b>{H.escape(otitle)}</b>\n\n{body}\n\n"
-                                f"<i>رأي تحريري لقناة «هسة وصل» مبني على ما نُشر عن الخبر، بصياغة آلية بحارس حقائق.</i>\n\n#قراءة_هسة_وصل\n{CHANNEL}")
+                        text = (f"🎙 <b>قراءة أكا ميديا</b>\n<b>{H.escape(otitle)}</b>\n\n{body}\n\n"
+                                f"<i>رأي تحريري لقناة «أكا ميديا» مبني على ما نُشر عن الخبر، بصياغة آلية بحارس حقائق.</i>\n\n#قراءة_أكا_ميديا\n{CHANNEL}")
                         pend.append({"id": "op_" + a["id"], "card": card, "text": text[:4000], "b": False, "kb": buttons(n0) if n0 else None})
                         ap[a["id"]] = {"d": day, "t": now.timestamp(), "slot": day + aslot, "title": a["title"]}
                         status["opinion_post"] = {"id": a["id"], "title": otitle}
@@ -1583,7 +1583,7 @@ def main():
                 except Exception as e:  # noqa: BLE001
                     DEBUG.append(f"variety:{type(e).__name__}:{str(e)[:40]}")
         sent["_variety"] = dict(list(vs.items())[-300:])
-        pp = sent.get("_pos") or {}  # التحليل الإيجابي القديم دُمج في «قراءة هسة وصل» (طلب إيهاب 2026-11-02)
+        pp = sent.get("_pos") or {}  # التحليل الإيجابي القديم دُمج في «قراءة أكا ميديا» (طلب إيهاب 2026-11-02)
         sent["_pos"] = pp
         from tools.editorial import LLM_STATS
         status["editor_llm"] = LLM_STATS
@@ -1630,7 +1630,7 @@ def send_main():
     if not token:
         return
     chat = load(CHAT, {})
-    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id") or "@hassawassal"
+    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id") or "-1004327422297"
     try:
         r = send_pending(token, chat_id)
     except Exception as e:  # noqa: BLE001

@@ -1,5 +1,5 @@
 """تنبيهات الهاتف للعاجل (Web Push القياسي، مجاني بلا خادم): كل خبر ينشره المسار السريع (أو أمر محرر /نشر) يصل إشعاراً
-لمن فعّل «🔔 تنبيهات العاجل» في تطبيق «هوبي عاجل» حتى والتطبيق مسكّر.
+لمن فعّل «🔔 تنبيهات العاجل» في تطبيق «أكا ميديا» حتى والتطبيق مسكّر.
 
 - مفتاح VAPID مشتق حتمياً من سرّ البوت: sha256("rasid-vapid:"+token) على P-256. العام في pwa/live.json (vapid)،
   والخاص لا يُكتب على القرص ولا يُطبع.
@@ -161,8 +161,8 @@ def vapid_header(token, endpoint, now=None):
 
 def payload_of(item):
     msg = item.get("msg")
-    url = f"https://t.me/hassawassal/{msg}" if msg else SUBJECT
-    return json.dumps({"title": "🔴 عاجل" if item.get("urgent") else "مهم", "body": (item.get("title") or "")[:240],
+    url = f"https://t.me/akamedia_iq/{msg}" if msg else SUBJECT
+    return json.dumps({"title": "🔴 عاجل | أكا ميديا" if item.get("urgent") else "مهم | أكا ميديا", "body": (item.get("title") or "")[:240],
                        "url": url, "tag": str(item.get("id") or "")[:64]}, ensure_ascii=False).encode()
 
 

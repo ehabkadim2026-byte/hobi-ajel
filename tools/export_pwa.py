@@ -1,4 +1,4 @@
-"""يكتب pwa/news.json و pwa/meta.json من الأرشيف (آخر 72 ساعة) لنسخة الهاتف المستقلة من «هوبي عاجل»."""
+"""يكتب pwa/news.json و pwa/meta.json من الأرشيف (آخر 72 ساعة) لنسخة الهاتف المستقلة من «أكا ميديا»."""
 import json
 import sys
 from datetime import datetime, timedelta
@@ -579,7 +579,7 @@ def main(hours=24):
         n["province"] = P.province_of(n.get("title") or "") if n.get("about_iraq") else None  # «محافظتي» والخريطة: أول محافظة بالعنوان
     analysis.sort(key=lambda x: (x["last_time"] or ""), reverse=True)
     try:
-        pass  # قراءات تحليل الانتشار أُلغيت (طلب إيهاب 2026-11-02): حصة Gemini كلها لـ«قراءة هسة وصل»
+        pass  # قراءات تحليل الانتشار أُلغيت (طلب إيهاب 2026-11-02): حصة Gemini كلها لـ«قراءة أكا ميديا»
     except Exception as e:  # noqa: BLE001
         print(f"::warning title=analysis agent::{type(e).__name__}: {str(e)[:120]}")
     (ROOT / "pwa" / "analysis.json").write_text(json.dumps({"updated_utc": iso(now), "min_sources": A.MIN_SOURCES, "items": analysis[:40]},

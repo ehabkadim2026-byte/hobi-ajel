@@ -1,4 +1,4 @@
-"""إعادة نشر فيديو من منشور تلغرام عام إلى قناة «هسة وصل» — يدوياً فقط، بعد أن يرسل المحرر الرابط للبوت.
+"""إعادة نشر فيديو من منشور تلغرام عام إلى قناة «أكا ميديا» — يدوياً فقط، بعد أن يرسل المحرر الرابط للبوت.
 
 المحرر يرسل للبوت بالخاص رابط منشور مثل https://t.me/<قناة>/<رقم> (ويقدر يكتب سطر عنوان فوقه إن أراد).
 نقرأ صفحة المعاينة العامة للمنشور (نفس ما يراه أي زائر بلا حساب)، نأخذ رابط الفيديو والنص، ونرفعه للقناة
@@ -54,7 +54,7 @@ def handle(token, chat_id, editor_cid, reply_to, text):
     if not m:
         return False
     channel, msg_id = m.group(1), m.group(2)
-    if channel.lower() in ("hassawassal",):
+    if channel.lower() in ("hassawassal", "akamedia_iq"):
         return False
 
     def tell(msg):
@@ -120,7 +120,7 @@ def handle_forward(token, chat_id, editor_cid, m):
     from tools.editorial import edit_headline
     first = next((ln.strip() for ln in POST.sub("", cap_in).split("\n") if len(ln.strip()) >= 8), "")
     head = edit_headline(first) if first else ""
-    src_line = f"🎥 المصدر: {H.escape(src_name)}\n\n" if src_name and src_user.lower() != "hassawassal" else ""
+    src_line = f"🎥 المصدر: {H.escape(src_name)}\n\n" if src_name and src_user.lower() not in ("hassawassal", "akamedia_iq") else ""
     cap = (f"<b>{H.escape(head)}</b>\n\n" if head else "") + src_line + f"زورونا على الرابط للأخبار العاجلة 👇\n{CHANNEL}"
     try:
         r = api(token, "copyMessage", chat_id=chat_id, from_chat_id=editor_cid, message_id=m["message_id"],

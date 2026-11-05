@@ -180,14 +180,11 @@ def bg_base():
     return im
 
 
-@functools.lru_cache(maxsize=2)
+@functools.lru_cache(maxsize=4)
 def logo_white(h):
-    lg = Image.open(ROOT / "assets" / "logo_hassawassal.png").convert("L")
-    lg = lg.resize((int(lg.width * h / lg.height), h), Image.LANCZOS)
-    a = lg.point(lambda v: 0 if v > 225 else min(255, int((235 - v) * 1.6)))
-    w = Image.new("RGBA", lg.size, (255, 255, 255, 0))
-    w.putalpha(a)
-    return w
+    """شعار «أكا ميديا» الحقيقي داخل قرص أبيض (قطره ≈ 1.6×h) — لا يوضع الشعار مباشرة على الخلفية الداكنة."""
+    from tools.tg_card import _logo_badge
+    return _logo_badge(int(h * 1.6)).copy()
 
 
 def photo_layer(jpg):
@@ -270,7 +267,7 @@ def scene_outro(cv, t):
     p = prog(t, 0.05, f2s(14))
     cv.alpha_composite(fade(lw, p), ((W - lw.width) // 2, int(560 + (1 - p) * 60)))
     rise_line(cv, t, "الخبر أول بأول", "black", 110, PAPER, W // 2 + 330, 1050, 0.35)
-    pill_tag(cv, t, "t.me/hassawassal", (255, 255, 255, 255), INK, RED, W // 2 + 260, 1180, 0.6)
+    pill_tag(cv, t, "t.me/akamedia_iq", (255, 255, 255, 255), INK, RED, W // 2 + 260, 1180, 0.6)
 
 
 def wipe(cv, p):

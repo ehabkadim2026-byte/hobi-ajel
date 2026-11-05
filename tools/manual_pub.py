@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 
 CMD = re.compile(r"^/(نشر|عاجل)(?:@\w+)?\s*", re.S)
 SRC_LINE = re.compile(r"^(?:المصدر|مصدر)\s*[:：]\s*(.+)$")
-SHARE_KB = json.dumps({"inline_keyboard": [[{"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fhassawassal"}]]})
+SHARE_KB = json.dumps({"inline_keyboard": [[{"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fakamedia_iq"}]]})
 
 
 def is_cmd(m):
@@ -128,8 +128,8 @@ def send_card(token, chat_id, head, hot, src=None, extra="", photo=None, ref="ma
     T.publish_main_sigs([x for x in T.fastlane_sigs("tv_sigs.json")] + [entry], "tv_sigs.json")  # بصمة مشتركة: لا يكرره أي مسار
     try:  # تغذية لحظية للتطبيق (+ تنبيه الهاتف عبر web_push)
         from tools import live_feed
-        live_feed.publish(token, {"id": ref.replace(":", "/", 1), "title": head, "t": when, "urgent": hot, "src": src or "هسه وصل",
-                                  "url": f"https://t.me/hassawassal/{mid}", "msg": mid})
+        live_feed.publish(token, {"id": ref.replace(":", "/", 1), "title": head, "t": when, "urgent": hot, "src": src or "أكا ميديا",
+                                  "url": f"https://t.me/akamedia_iq/{mid}", "msg": mid})
     except Exception:  # noqa: BLE001
         pass
     return True, f"✅ نُشر بالقناة ({'عاجل يومض' if hot else 'خبر'}): {head}", mid

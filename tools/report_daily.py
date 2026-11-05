@@ -82,7 +82,7 @@ def build(now):
     review = review[:15]
     names = {f["id"]: f["name"] for f in follow}
     bgd = now + timedelta(hours=3)
-    title = f"التقرير الصباحي — هوبي عاجل — {bgd.strftime('%Y/%m/%d')}"
+    title = f"التقرير الصباحي — أكا ميديا — {bgd.strftime('%Y/%m/%d')}"
 
     def li(n, extra=""):
         s = (n.get("sources") or [{}])[0]

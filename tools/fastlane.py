@@ -196,7 +196,7 @@ def main():
     token = os.environ.get("MARSAD_TG_BOT_TOKEN", "").strip()
     if not token:
         return
-    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or "@hassawassal"
+    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or "-1004327422297"
     run_until = time.time() + float(os.environ.get("FAST_MINUTES", "330")) * 60
     try:
         st = json.loads(STATE.read_text(encoding="utf-8"))
@@ -454,7 +454,7 @@ def main():
                 cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(src_name)}" + \
                       (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"
                 kb = json.dumps({"inline_keyboard": [[{"text": "📖 المصدر", "url": p.get("url") or f"https://t.me/{ch}/{p['id']}"},
-                                                      {"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fhassawassal"}]]})
+                                                      {"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fakamedia_iq"}]]})
                 r = {"ok": False}
                 kind = "photo"
                 if loud and not crit:  # العاجل يومض: بطاقة متحركة (تُحفظ فيديو من تلغرام)، والصورة احتياط — الحرج يتحول للمتحرك بالإثراء

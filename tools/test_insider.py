@@ -13,7 +13,7 @@ from tools import signal_radars as SR  # noqa: E402
 from tools import tg_push as T  # noqa: E402
 from tools import tg_card  # noqa: E402
 
-CH = "@hassawassal"
+CH = "@akamedia_iq"
 ED = "111"  # محرر (مشرف)
 STRANGER = "999"
 

@@ -3,7 +3,7 @@
 import html as H, json, re, urllib.request
 from datetime import datetime, timedelta, timezone
 UA = {"User-Agent": "Mozilla/5.0"}
-ch = "hassawassal"
+ch = "akamedia_iq"
 posts, before = [], ""
 for _ in range(12):
     page = urllib.request.urlopen(urllib.request.Request(f"https://t.me/s/{ch}{before}", headers=UA), timeout=20).read().decode("utf-8", "replace")

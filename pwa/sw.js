@@ -1,6 +1,6 @@
 // الواجهة تُخزَّن للعمل السريع؛ الأخبار تُجلب من الشبكة دائماً ويُعرض المخزن فقط عند انقطاع الإنترنت.
-const SHELL = "hobi-ajel-shell-v21";
-const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
+const SHELL = "hobi-ajel-shell-v22";
+const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/logo-mark.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(SHELL).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== SHELL && k !== "hobi-ajel-data").map(k => caches.delete(k))))); self.clients.claim(); });
 self.addEventListener("fetch", e => {
@@ -19,8 +19,8 @@ self.addEventListener("fetch", e => {
 self.addEventListener("push", e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = {body: e.data ? e.data.text() : ""}; }
-  const url = /^https:\/\/t\.me\/hassawassal\/\d+$/.test(d.url || "") ? d.url : self.registration.scope;
-  e.waitUntil(self.registration.showNotification(d.title === "🔴 عاجل" ? "🔴 عاجل" : (d.title || "مهم"), {
+  const url = /^https:\/\/t\.me\/(akamedia_iq|hassawassal)\/\d+$/.test(d.url || "") ? d.url : self.registration.scope;
+  e.waitUntil(self.registration.showNotification(String(d.title || "أكا ميديا").slice(0, 60), {
     body: String(d.body || "").slice(0, 240), icon: "icons/icon-192.png", badge: "icons/icon-192.png", dir: "rtl", lang: "ar",
     tag: d.tag || undefined, renotify: !!d.tag, data: {url}}));
 });

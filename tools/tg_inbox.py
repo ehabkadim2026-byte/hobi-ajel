@@ -20,7 +20,7 @@ from tools.tg_push import api, load, SENT, CHAT  # noqa: E402
 
 URL = re.compile(r"https?://\S+")
 VERDICTS = {"كاذب": "ثبت عدم صحته", "متنازع": "متنازع عليه", "مستقل": "مؤيد بمصادر مستقلة", "رسمي": "منسوب لمصدر رسمي"}
-HELP = ("أهلاً بك في صندوق محرري «هوبي عاجل».\n\n"
+HELP = ("أهلاً بك في صندوق محرري «أكا ميديا».\n\n"
         "• إدخال يدوي: أرسل رابط المنشور (فيسبوك أو غيره) مع نصه، أو صورة وتعليقها فيه الرابط والنص. يدخل قائمة الرصد موسوماً «إدخال يدوي».\n"
         "• حكم تحقق: /حكم <رقم الحدث> كاذب|متنازع|مستقل|رسمي|إلغاء [ملاحظة]\n"
         "  (رقم الحدث تجده أسفل تفاصيل الخبر في التطبيق)\n"
@@ -36,7 +36,7 @@ def main():
         return
     sent = load(SENT, {})
     chat = load(CHAT, {})
-    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id") or "@hassawassal"  # القناة عامة: اسمها يكفي
+    chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id") or "-1004327422297"  # المعرّف الرقمي للقناة: ثابت مهما تغيّر اسمها
     now = datetime.now(timezone.utc)
     stats = {"updates": 0, "manual": 0, "verdicts": 0, "rejected": 0}
     try:
@@ -159,7 +159,7 @@ def main():
             from marsad import core
             con = core.connect()
             con.execute("INSERT OR IGNORE INTO sources(id, name, url, platform, category, region, lang, method, official, status, added_by) "
-                        "VALUES('manual:editors', 'إدخال يدوي (المحررون)', 'https://t.me/hassawassal', 'manual', 'إدخال يدوي', 'العراق', 'ar', 'manual', 0, 'يعمل', 'البوت')")
+                        "VALUES('manual:editors', 'إدخال يدوي (المحررون)', 'https://t.me/akamedia_iq', 'manual', 'إدخال يدوي', 'العراق', 'ar', 'manual', 0, 'يعمل', 'البوت')")
             core.ingest_batch(con, {"items": manual})
             con.commit()
             stats["manual"] = len(manual)
