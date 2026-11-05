@@ -159,6 +159,7 @@ FOREIGN_AR = [norm_ar(w) for w in ["إسرائيل", "الإسرائيلي", "ف
               "واشنطن", "ترامب", "روسيا", "أوكرانيا", "الصين", "أوروبا", "فرنسا", "بريطانيا", "هرمز", "الخليج",
               # دول وجنسيات بعيدة: خبرها مو «عن العراق» حتى لو نقلته قناة عراقية (وزير النقل الإسباني 04/11)
               "إسبانيا", "الإسباني", "الإسبانية", "أمريكا", "الأمريكي", "الأميركي", "الأمريكية", "الولايات المتحدة", "الكونغرس", "البيت الأبيض",
+              "أمريكية", "أميركية", "امريكية",  # الصفة النكرة: «حاملات طائرات أمريكية…»، «مدينة أمريكية تعترف…» كانت «عن العراق» (فحص 6، تدقيق 18:11 05/11)
               "الديمقراطيون", "الجمهوريون", "ألمانيا", "الألماني", "الفرنسي", "البريطاني", "لندن", "باريس", "برلين",
               "موسكو", "الروسي", "الأوكراني", "كييف", "بكين", "الصيني", "الهندي", "باكستان", "أفغانستان", "اليابان", "الياباني", "كوريا",
               "إيطاليا", "الإيطالي", "هولندا", "السويد", "كندا", "أستراليا", "البرازيل", "المكسيك", "الأرجنتين", "تايوان", "فنزويلا", "كوبا",
@@ -210,6 +211,7 @@ def about_iraq_title(label, about):
     return about
 
 
+NOT_IQ_NAME = re.compile(r"عراقجي|عراقچي|عراقچی|Araghchi|Araqchi", re.I)  # وزير الخارجية الإيراني: «عراق» داخل اسمه جعل خبره «عن العراق» (فحص 6، تدقيق 18:11 05/11)
 IRAQ_FOREIGN_EN = re.compile(r"\b(Spain|Spanish|Trump|Democrats|Republicans|Congress|Ukraine|Russia|China|India|Pakistan)\b", re.I)
 IRAQ_EN = re.compile(r"\b(Iraq|Iraqi|Iraqis|Baghdad|Kurdistan|Erbil|Basra|Mosul|Kirkuk|Najaf|Karbala|Sulaymaniyah|Anbar|Sinjar|Duhok)\b", re.I)
 TOPICS = [
@@ -446,7 +448,7 @@ def main(hours=24):
         origin = "عراقي" if "عراقي" in origins else "عربي" if "عربي" in origins else "أجنبي"
         alltext = " ".join(texts) + " " + (d["label"] or "")
         ntext = norm_ar(alltext)
-        iraq_kw = any(_iq_in(w, ntext) for w in IRAQ_AR) or bool(IRAQ_EN.search(alltext)) or bool(IRAQ_MULTI.search(alltext))
+        iraq_kw = any(_iq_in(w, ntext) for w in IRAQ_AR) or bool(IRAQ_EN.search(alltext)) or bool(IRAQ_MULTI.search(NOT_IQ_NAME.sub("", alltext)))
         foreign_kw = any(w in ntext for w in FOREIGN_AR)
         # «عن العراق» = كلمة عراقية صريحة، أو مصدر عراقي بخبر محلي ما يذكر دولة أخرى
         about_iraq = iraq_kw or (origin == "عراقي" and not foreign_kw and not IRAQ_FOREIGN_EN.search(alltext))
