@@ -107,7 +107,7 @@ def _backdrop(kind_name, accent):
     lay = Image.new("L", (W, H), 0)
     dl = ImageDraw.Draw(lay)
     sz = 520
-    while sz > 160 and _tw(dl, word, _H(sz)) > W - 120:
+    while sz > 160 and _tw(dl, word, _H(sz)) > W - 300:
         sz -= 20
     f = _H(sz)
     tw = _tw(dl, word, f)
@@ -120,8 +120,10 @@ def card(photo_jpg, title, breaking=False, when_utc=None, source=None, kind=None
     kick, head = C.split_kicker(title)
     kind = kind or ("security" if breaking and KINDS_RX["security"].search(title or "") else kind_of(title))
     kname, accent = (KINDS[kind][0], KINDS[kind][1]) if kind in KINDS else ("خبر", (240, 240, 240))
-    if breaking:
-        accent = RED if kind in ("security", "news", "politics") else accent
+    # 05/11: إيهاب اختار بطاقة «سلف الرافدين» (لسان أحمر + صورة الخبر + عنوان كبير) قالباً أساسياً ⇒ أحمر الهوية لكل الأخبار،
+    # ونوع الخبر يُكتب نصاً بالوسم بدل تعدد الألوان (KINDS تبقى للكشف والاسم فقط)
+    accent = RED
+    backdrop_tint = KINDS[kind][1] if kind in KINDS else RED
     has_photo = bool(photo_jpg) and not C.looks_like_logo(photo_jpg)
     num = key_number(head) if kind in ("economy", "weather", "education", "health", "news", "politics") else None
     quote = bool(kick) and not num and len(kick.split()) <= 6 and kind in ("politics", "news")
@@ -138,14 +140,14 @@ def card(photo_jpg, title, breaking=False, when_utc=None, source=None, kind=None
         else:
             im.paste(_photo(photo_jpg, W, H), (0, 0))
     else:
-        im = _backdrop(kname, accent)
+        im = _backdrop("عاجل" if breaking and kind == "news" else kname, _mix(RED, backdrop_tint, 0.35))
     d = ImageDraw.Draw(im)
 
     P = 72
     text_w = W - 2 * P - 24  # 24 = العمود الملوّن + فراغه
     # قياس كتلة النص من الأسفل للأعلى
     max_lines = 3 if num else 4
-    f, sz, lines = C._fit_font(d, head, text_w, max_lines, [86, 80, 74, 68, 62, 58, 54], _H)
+    f, sz, lines = C._fit_font(d, head, text_w, max_lines, [92, 86, 80, 74, 68, 62, 58], _H)
     lh = int(sz * 1.46)  # Alexandria عالية الصواعد: أقل من 1.4 تتلامس السطور
     y_meta = H - 108
     y_text = y_meta - 46 - lh * len(lines)
@@ -188,12 +190,13 @@ def card(photo_jpg, title, breaking=False, when_utc=None, source=None, kind=None
         if lab2:
             fl2 = _M(30)
             C._draw_rtl(d, cx - 26, y_label + 10, lab2, fl2, _mix(WHITE, INK, 0.25))
-    else:
-        fl = _M(32)
-        d.rounded_rectangle([x1 - 14, y_label + 18, x1, y_label + 32], radius=3, fill=accent)
-        C._draw_rtl(d, x1 - 28, y_label + 4, kname, fl, accent)
-        tw = _tw(d, kname, fl)
-        d.line([(P, y_label + 26), (x1 - 46 - tw, y_label + 26)], fill=_mix(INK, WHITE, 0.22), width=2)
+    else:  # وسم أبيض بنص أحمر (نوع الخبر) — نفس شكل لسان «عاجل» حتى تبقى الهوية واحدة
+        lab = kname
+        fl = _H(34)
+        tw = _tw(d, lab, fl)
+        bw = int(tw + 46)
+        d.rounded_rectangle([x1 - bw, y_label, x1, y_label + 58], radius=6, fill=WHITE)
+        C._draw_rtl(d, x1 - 23, y_label + 1, lab, fl, RED)
 
     # المتحدث/الجهة (تصريح) + علامة اقتباس
     yy = y_label + 74
