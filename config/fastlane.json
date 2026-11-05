@@ -3,6 +3,7 @@
  "every_sec": 25,
  "max_age_min": 10,
  "per_hour": 30,
+ "quiet_min": 6,
  "loud": [
   "SecMedCell",
   "iraqicts",

@@ -423,6 +423,16 @@ def main():
                         why_no = "gem_unavailable"  # والكلمات الصريحة لم تكفِ
                     if ok and T.ROUTINE_RX.search(first) and not STRICT.search(first):
                         ok, why_no = False, "routine"  # نشاط روتيني لجهة رسمية (حملة تشجير، يترأس جلسة، لقاءات أسبوعية: 2958، 2979، 2991) قبله النموذج
+                # القناة ساكتة (لا منشور خلال quiet_min دقيقة): خبر عراقي من جهة غير ضعيفة رفضه النموذج كـ«غير مهم» يُنشر —
+                # الإيقاع المطلوب خبر كل ~2 دقيقة، والصمت 20 دقيقة صباح 05/11 كان من صرامة النموذج لا من قلة الأخبار
+                # (مجلس كردستان يعقد جلسته الأولى، خطة النفط لحقول الإقليم رُفضتا gem_no). الروتيني والضعيف والقصير يبقى مرفوضاً.
+                quiet = False
+                if not ok and why_no == "gem_no" and iraqi and not regional and ttier != "ضعيفة" and not T.ROUTINE_RX.search(first) \
+                        and not ROUTINE.search(first) and len(first.split()) >= 7:
+                    qmin = CFG.get("quiet_min", 6)
+                    last = max([x.get("ts", 0) for x in mine + main_sigs] or [0])
+                    if time.time() - last >= qmin * 60:
+                        ok, quiet = True, True
                 if not ok:
                     skip("غير مهم", why_no); continue
                 head0 = FB.fast_head(first)
@@ -470,10 +480,15 @@ def main():
                         r = T.api(token, "sendPhoto", files={"photo": ("card.jpg", card)}, chat_id=chat_id, caption=cap[:1024], parse_mode="HTML",
                                   reply_markup=kb, disable_notification="false" if loud else "true")
                 except Exception as e:  # noqa: BLE001
-                    r = {"ok": False}
-                    print("::warning title=fastlane send::", type(e).__name__)
+                    desc = ""
+                    try:  # سبب رفض تلغرام (Bad Request: …) — كان يضيع فلا نعرف لماذا فشل الإرسال
+                        desc = json.loads(e.read().decode()).get("description", "")[:80]
+                    except Exception:  # noqa: BLE001
+                        pass
+                    r = {"ok": False, "description": desc}
+                    print("::warning title=fastlane send::", type(e).__name__, desc)
                 if not r.get("ok"):
-                    decide(ch, p["id"], head, "fail", "send_failed")
+                    decide(ch, p["id"], head, "fail", "send_failed:" + str(r.get("description") or r.get("error_code") or "")[:80])
                 if r.get("ok"):
                     stats["posted"] += 1
                     FB.LAT.add("fast" if crit else "normal", time.time() - t_det)
@@ -481,7 +496,7 @@ def main():
                     mine.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time(), "title": first[:200], "id": f"fast:{ch}/{p['id']}",
                                  "lag_min": round(age, 1), "reg": regional})
                     gh_put("fast_sigs.json", mine)
-                    decide(ch, p["id"], head, "post", "loud" if loud else tier)
+                    decide(ch, p["id"], head, "post", "loud" if loud else "quiet" if quiet else tier)
                     DECISIONS[-1].update(lat_s=round(time.time() - t_det, 2), **({"stage": "fast"} if crit else {}), **({"doc": 1} if from_doc else {}))
                     try:  # تغذية لحظية للتطبيق (موقّعة) — يظهر بالتطبيق خلال ثوانٍ بدل انتظار الجولة
                         from tools import live_feed
