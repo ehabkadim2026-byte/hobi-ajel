@@ -4,6 +4,7 @@ import json
 import re
 import sys
 import time
+import urllib.parse
 import urllib.request
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -120,6 +121,16 @@ if __name__ == "__main__":
         for u in fl[k]:
             known.setdefault(u.lower(), "fastlane")
     out = {"at": NOW.isoformat()}
+    # 0: بحث عام (DuckDuckGo/Bing) عن روابط t.me
+    def search(q):
+        found = []
+        for url in (f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(q)}", f"https://www.bing.com/search?q={urllib.parse.quote(q)}&count=50"):
+            p = get(url, 1_500_000, tries=1) or ""
+            found += [m for m in re.findall(r"t\.me(?:/|%2F)(?:s(?:/|%2F))?([A-Za-z][A-Za-z0-9_]{4,31})", p) if m.lower() not in SKIP]
+        return q, sorted(set(found))
+    with ThreadPoolExecutor(4) as ex:
+        out["search"] = dict(ex.map(search, cfg.get("queries", [])))
+    srch = [u for v in out["search"].values() for u in v]
     # A: المواقع الرسمية
     with ThreadPoolExecutor(8) as ex:
         web = list(ex.map(web_links, cfg["web"]))
@@ -127,7 +138,7 @@ if __name__ == "__main__":
     webtg = [u for _, _, tg, _ in web for u in tg]
     # B: مراجع القنوات المرصودة
     deep_rx = re.compile(r"الأنبار|ديالى|صلاح|سامراء|بابل|الديوانية|القادسية|كرد|كورد|أربيل|دهوك|السليمانية|اتحادي|رسمي")
-    seeds = [(u, bool(deep_rx.search(v))) for u, v in known.items() if v != "fastlane"]
+    seeds = [(u, bool(deep_rx.search(v))) for u, v in known.items() if v != "fastlane" and (not cfg.get("seed_deep_only") or deep_rx.search(v))]
     cnt, by = Counter(), defaultdict(set)
     with ThreadPoolExecutor(6) as ex:
         for u, refs in ex.map(seed_refs, seeds):
@@ -137,7 +148,7 @@ if __name__ == "__main__":
                     by[r].add(u)
     out["refcount"] = {k: [v, sorted(by[k])[:6]] for k, v in cnt.most_common(400)}
     # C: المرشحون
-    cands = list(dict.fromkeys([c for c in cfg["cands"]] + webtg + [k for k, _ in cnt.most_common(cfg.get("top_refs", 220))]))
+    cands = list(dict.fromkeys([c for c in cfg["cands"]] + webtg + srch + [k for k, _ in cnt.most_common(cfg.get("top_refs", 220))]))
     cands = [c for c in cands if c.lower() not in known or c in cfg.get("force", [])]
     with ThreadPoolExecutor(6) as ex:
         res = list(ex.map(probe, cands))
