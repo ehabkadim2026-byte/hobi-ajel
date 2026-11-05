@@ -1,0 +1,41 @@
+name: probe-radars
+on: {workflow_dispatch: {}}
+permissions: {contents: write}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - env: {GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"}
+        run: |
+          mkdir out; cd out
+          NOW=$(date +%s); FROM=$((NOW-14400))
+          curl -sS -m 20 -o usgs.json -w "usgs %{http_code} %{size_download}\n" "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson" >> codes.txt
+          curl -sS -m 20 -o usgs_day.json -w "usgs_day %{http_code} %{size_download}\n" "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson" >> codes.txt
+          curl -sS -m 20 -o emsc.json -w "emsc %{http_code} %{size_download}\n" "https://www.seismicportal.eu/fdsnws/event/1/query?format=json&limit=20&minmag=3" >> codes.txt
+          curl -sS -m 25 -o ioda_raw.json -w "ioda_raw %{http_code} %{size_download}\n" "https://api.ioda.inetintel.cc.gatech.edu/v2/signals/raw/country/IQ?from=$FROM&until=$NOW" >> codes.txt
+          curl -sS -m 25 -o ioda_alerts.json -w "ioda_alerts %{http_code} %{size_download}\n" "https://api.ioda.inetintel.cc.gatech.edu/v2/outages/alerts?entityType=country&entityCode=IQ&from=$((NOW-86400*7))&until=$NOW" >> codes.txt
+          curl -sS -m 25 -o ioda_events.json -w "ioda_events %{http_code} %{size_download}\n" "https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events?entityType=country&entityCode=IQ&from=$((NOW-86400*30))&until=$NOW" >> codes.txt
+          for c in dollarirq borsa_erbil dollariraqi iraqm iqborsa borsakirkuk dollar_price; do
+            curl -sS -m 20 -A "Mozilla/5.0 (Linux; Android 14) Chrome/126 Mobile" -o tg_$c.html -w "tg_$c %{http_code} %{size_download}\n" "https://t.me/s/$c" >> codes.txt
+          done
+          python3 - <<'PY'
+          import json,os,urllib.request,base64,struct,io,wave
+          b=io.BytesIO(); w=wave.open(b,'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000); w.writeframes(b'\0\0'*16000); w.close()
+          out={}
+          k=os.environ.get("GEMINI_API_KEY","")
+          for model in ["gemini-3.5-flash-lite","gemini-3.1-flash-lite","gemini-flash-lite-latest","gemini-2.5-flash-lite","gemini-2.5-flash"]:
+            body=json.dumps({"contents":[{"parts":[{"inline_data":{"mime_type":"audio/wav","data":base64.b64encode(b.getvalue()).decode()}},{"text":"فرّغ هذا التسجيل حرفياً. إذا كان صامتاً اكتب: صامت"}]}],"generationConfig":{"maxOutputTokens":50}}).encode()
+            try:
+              r=urllib.request.urlopen(urllib.request.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",data=body,headers={"Content-Type":"application/json","x-goog-api-key":k}),timeout=30)
+              d=json.loads(r.read()); out[model]=d["candidates"][0]["content"]["parts"][0].get("text","")[:100]
+            except Exception as e:
+              out[model]="ERR "+str(e)[:120]
+          open("gemini_audio.json","w").write(json.dumps(out,ensure_ascii=False))
+          PY
+          cat codes.txt
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          cd out; tar czf radars_probe.tgz *
+          gh release view probe -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create probe -R "$GITHUB_REPOSITORY" --title probe --notes "فحوص مؤقتة" --prerelease
+          gh release upload probe radars_probe.tgz -R "$GITHUB_REPOSITORY" --clobber
