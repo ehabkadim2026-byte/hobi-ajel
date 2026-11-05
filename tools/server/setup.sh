@@ -3,7 +3,16 @@
 # الاستخدام (يلصقه إيهاب بنفسه، والرمز من صفحة GitHub: Settings ← Actions ← Runners ← New self-hosted runner):
 #   curl -fsSL https://raw.githubusercontent.com/ehabkadim2026-byte/hobi-ajel/main/tools/server/setup.sh | sudo bash -s -- <TOKEN>
 set -euo pipefail
-TOKEN="${1:?ضع رمز التسجيل من صفحة GitHub بعد الأمر}"
+# يقبل الرمز وحده، أو سطر ./config.sh الملصوق كاملاً من صفحة GitHub (يلتقط ما بعد --token)
+TOKEN=""; prev=""
+for a in "$@"; do
+  [ "$prev" = "--token" ] && TOKEN="$a"
+  prev="$a"
+done
+if [ -z "$TOKEN" ]; then
+  for a in "$@"; do case "$a" in http*|./*|-*|\$|github.com*) ;; *) [ ${#a} -ge 20 ] && TOKEN="$a";; esac; done
+fi
+[ -n "$TOKEN" ] || { echo "❌ ما لگيت الرمز. الصق سطر ./config.sh كامل أو الرمز بعد الأمر"; exit 1; }
 URL="https://github.com/ehabkadim2026-byte/hobi-ajel"
 export DEBIAN_FRONTEND=noninteractive
 echo "== 1/5 تحديث وتثبيت الأدوات"
