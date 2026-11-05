@@ -101,7 +101,8 @@ _EXH_AT = {}  # 429 (حد الدقيقة غالباً) يوقف النموذج 1
 EXH_RETRY_SEC = 600
 
 
-def gemini(prompt, max_tokens=120, temperature=0.2):
+def gemini(prompt, max_tokens=120, temperature=0.2, parts=None, timeout=12):
+    """parts: أجزاء وسائط اختيارية قبل النص (مثل {"inline_data": {"mime_type": ..., "data": base64}}) — بوابة المراسل (صوت/صورة)."""
     key = _os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         return None
@@ -115,12 +116,12 @@ def gemini(prompt, max_tokens=120, temperature=0.2):
     for model in ([_os.environ["GEMINI_MODEL"]] if _os.environ.get("GEMINI_MODEL") else MODELS):
         if model in _EXHAUSTED:
             continue
-        body = _json.dumps({"contents": [{"parts": [{"text": prompt}]}],
+        body = _json.dumps({"contents": [{"parts": list(parts or []) + [{"text": prompt}]}],
                             "generationConfig": {"temperature": temperature, "maxOutputTokens": max_tokens}}).encode()
         req = _ur.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
                           data=body, headers={"Content-Type": "application/json", "x-goog-api-key": key})
         try:
-            with _ur.urlopen(req, timeout=12) as r:
+            with _ur.urlopen(req, timeout=timeout) as r:
                 d = _json.loads(r.read().decode())
             return d["candidates"][0]["content"]["parts"][0]["text"]
         except _ue.HTTPError as e:

@@ -57,4 +57,6 @@ from tools import test_reliability  # noqa: E402
 test_reliability.run()  # موثوقية المصادر، «☑️ تطابق لدى مصدر موثوق»، بوابة «ضعيفة»، بوابة الإساءة
 from tools import test_web_push  # noqa: E402
 test_web_push.run()  # تنبيهات الهاتف (VAPID، التشفير، الاشتراكات، التفضيلات) وشارة الموثوقية
+from tools import test_insider  # noqa: E402
+test_insider.run()  # بوابة المراسل (صوت/صورة/ملاحظات ← مسودة ← زر) ورادارات الزلازل/الإنترنت/الدولار
 print("selftest ok")

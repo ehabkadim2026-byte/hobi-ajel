@@ -55,6 +55,7 @@ def main():
         ups = api(token, "getUpdates", offset=sent.get("_offset", 0), timeout=0,
                   allowed_updates=json.dumps(["message", "channel_post"])).get("result", [])
         manual = []
+        done_i = None
         for u in ups:
             sent["_offset"] = u["update_id"] + 1
             cp = u.get("channel_post")
@@ -135,6 +136,10 @@ def main():
             if tg_video.handle(token, chat_id, cid, m["message_id"], text):
                 stats["video"] = stats.get("video", 0) + 1
                 continue
+            if MP.insider_kind(m) or m.get("reply_to_message"):  # بوابة المراسل بالمسار السريع عالجتها (مسودة بأزرار): لا تُدخل للرصد مرة ثانية
+                done_i = done_i if done_i is not None else MP.done_ids()
+                if f"{cid}:{m['message_id']}" in done_i:
+                    continue
             urls = URL.findall(text)
             if not text and not m.get("photo"):
                 continue

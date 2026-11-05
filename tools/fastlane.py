@@ -221,6 +221,12 @@ def main():
         WP.start(token, run_until - 30, load=lambda: gh_get(WP.ASSET), save=lambda d: gh_put(WP.ASSET, d))
     except Exception as e:  # noqa: BLE001
         print("::warning title=web_push::", type(e).__name__)
+    try:  # رادارات الإشارات (زلازل USGS/EMSC، انقطاع الإنترنت IODA، قفزات الدولار): خيط خلفي بمؤقتاته الخاصة، لا يؤخر النشر
+        from tools import signal_radars as SR
+        SR.start(token, chat_id, run_until - 30, latest_posts, load=lambda: gh_get(SR.ASSET), save=lambda d: gh_put(SR.ASSET, d))
+    except Exception as e:  # noqa: BLE001
+        SR = None
+        print("::warning title=radars::", type(e).__name__)
     LOWER = {c.lower(): c for c in _all0}
     NAMES = {}
     from tools import confirm as CF
@@ -238,7 +244,7 @@ def main():
     DECISIONS[:] = (prev_dec.get("items") or [])[-DEC_MAX:] if isinstance(prev_dec, dict) else []
     while time.time() < run_until:
         t0 = time.time()
-        try:  # أوامر المحررين /نشر و/عاجل: تُنشر خلال ثوانٍ
+        try:  # أوامر المحررين /نشر و/عاجل تُنشر خلال ثوانٍ، وبوابة المراسل (صوت/صورة/ملاحظات ← مسودة بأزرار) وضغطات أزرارها
             stats["manual"] = stats.get("manual", 0) + MP.poll(token, chat_id, seen_manual)
         except Exception as e:  # noqa: BLE001
             print("::warning title=manual_pub::", type(e).__name__)
@@ -455,6 +461,11 @@ def main():
             try:
                 from tools import web_push as _WP
                 stats["push"] = _WP.status()
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                stats["radars"] = SR.status() if SR else None  # حالة الرادارات (منفصلة عن errors: أخطاء جلب القنوات فقط)
+                stats["insider"] = dict(MP.STATUS)  # بوابة المراسل
             except Exception:  # noqa: BLE001
                 pass
             gh_put("fast_status.json", {**stats, "confirm_log": _CF.LOG[-10:], "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")})
