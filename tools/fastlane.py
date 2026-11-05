@@ -451,8 +451,8 @@ def main():
                 if not ok:
                     skip("غير مهم", why_no); continue
                 head0 = FB.fast_head(first)
-                crit = CFG.get("two_stage", True) and not regional and FB.critical(oname, pflag, first,
-                                                                                   FB.loud_of(p["text"], first, head0, flag=pflag))
+                crit = CFG.get("two_stage", True) and not regional and (CFG.get("two_stage_all", False) or FB.critical(oname, pflag, first,
+                                                                                   FB.loud_of(p["text"], first, head0, flag=pflag)))
                 # الحرج: عنوان القواعد فوراً (الصياغة بالنموذج تأتي بالإثراء خلال 30–120 ث)، وغيره كما كان
                 head = head0 if crit else edit_headline(first, context=p["text"][:500])
                 if T.low_value(head) or T.incomplete(head) or len(head.split()) < 5:
