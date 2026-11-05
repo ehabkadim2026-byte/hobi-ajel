@@ -430,8 +430,8 @@ def main():
                 if not ok and why_no == "gem_no" and iraqi and not regional and ttier != "ضعيفة" and not T.ROUTINE_RX.search(first) \
                         and not ROUTINE.search(first) and len(first.split()) >= 7:
                     qmin = CFG.get("quiet_min", 6)
-                    last = max([x.get("ts", 0) for x in mine + main_sigs] or [0])
-                    if time.time() - last >= qmin * 60:
+                    last_post = max([x.get("ts", 0) for x in mine + main_sigs if isinstance(x, dict)] or [0])
+                    if time.time() - last_post >= qmin * 60:
                         ok, quiet = True, True
                 if not ok:
                     skip("غير مهم", why_no); continue
