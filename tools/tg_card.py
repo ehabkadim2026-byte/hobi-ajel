@@ -1306,7 +1306,21 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
 
     if style == "A":
         P = 70
-        im.paste(photo(H), (0, 0))
+        wide = False
+        try:  # صورة عريضة (اجتماع، مؤتمر): ملء الإطار كله يقص الناس من الجانبين — تُعرض بثلثي البطاقة العلوية وتذوب بالأسفل الداكن
+            if photo_jpg and not looks_like_logo(photo_jpg):
+                _s = Image.open(io.BytesIO(photo_jpg))
+                wide = _s.width / max(1, _s.height) > 1.15
+        except Exception:  # noqa: BLE001
+            wide = False
+        if wide:
+            im.paste(Image.new("RGB", (W, H), (4, 8, 18)), (0, 0))
+            ph_h = int(H * 0.70)
+            fade = Image.linear_gradient("L").resize((W, ph_h))  # 0 أعلى ← 255 أسفل
+            fade = fade.point(lambda v: 255 if v < 150 else int(255 * (255 - v) / 105))  # الثلث الأخير يذوب في الخلفية بلا حافة
+            im.paste(photo(ph_h), (0, 0), fade)
+        else:
+            im.paste(photo(H), (0, 0))
         f, sz, lines = _fit_font(tmp, head, W - 2 * P, 4, [84, 78, 72, 66, 60, 56], lambda s: _cairo(s, 900))
         lh = int(sz * 1.36)
         block = lh * len(lines)

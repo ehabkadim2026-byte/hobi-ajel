@@ -255,7 +255,7 @@ def main():
     from concurrent.futures import ThreadPoolExecutor as _TPE
     photo_pool = _TPE(2, thread_name_prefix="photo")
     EN = FB.Enricher(after=CFG.get("enrich_after_sec", 45), edit_headline=edit_headline, anim=tg_card.breaking_anim,
-                     card=tg_card.card_news4, fetch=tg_card.fetch_jpeg)
+                     card=tg_card.card_news4, fetch=tg_card.fetch_jpeg, wm=lambda b: FB.watermarked(b, gem_ok=gem_ok))
     RECENT = []
     try:
         stats["trust"] = load_trust()  # طبقات المصادر (تُحدَّث يومياً بالجولة الرئيسية)
@@ -467,6 +467,11 @@ def main():
                             photo = tg_card.fetch_jpeg(p["img"])
                         except Exception:  # noqa: BLE001
                             pass
+                # صور الجهات غير الرسمية قد تحمل شعار قناة أخرى (السابعة، وطن…): لا تُرسل فوراً، بل تُفحص بالإثراء وتُضاف إن كانت نظيفة (طلب إيهاب 05/11)
+                hold = bool(CFG.get("wm_hold", True) and not oname and (photo or photo_fut))
+                photo_hold = photo if hold else None
+                if hold:
+                    photo = None
                 # «عاجل» (شارة حمراء + وميض) فقط لما وسمته المصادر عاجلاً أو حدث أمني عراقي — لا لكل منشورات الجهات الرسمية
                 # وسم «عاجل» من المصدر وحده لا يكفي: بعض القنوات (ABC العربية) تسم كل منشور عاجلاً — يلزم حدث عاجل بالمضمون
                 # (أمني/انفجار/كارثة/تعطيل دوام/استقالة) لا موعد مباراة ولا سعر أمبير ولا حالة جوية (فحص 4، تدقيق 18:15 04/11: 3025، 3038، 3044، 3049، 3060)
@@ -530,7 +535,7 @@ def main():
                     if crit:  # المرحلة 2: إثراء المنشور نفسه بعد ~45 ث (مرة واحدة)
                         EN.add({"mid": r["result"]["message_id"], "sent_at": time.time(), "src_ts": p["t"].timestamp(), "ch": ch, "first": first,
                                 "text": p["text"], "head": head, "loud": bool(loud), "src": src_name, "when": p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"),
-                                "photo": photo, "photo_future": photo_fut, "img": p.get("img"), "kb": kb, "tags": tags,
+                                "photo": photo, "photo_future": photo_fut, "img": p.get("img"), "kb": kb, "tags": tags, "hold": hold, "photo_hold": photo_hold,
                                 "official": bool(oname), "ref": RSS[ch]["url"] if tier == "rss" and ch in RSS else ch})
                     print(f"::notice title=fastlane posted::{ch}/{p['id']} بعد {age:.1f} د من نشر المصدر — {head[:80]}")
         RECENT[:] = [x for x in RECENT if x["ts"] >= time.time() - 1800]

@@ -187,7 +187,7 @@ def verify_for(job, others):
     return "⏳ التحقق: غير مؤكد بعد — مصدر واحد" if not others else "⏳ التحقق: غير مؤكد بعد", None, None
 
 
-def prepare(job, recent, edit_headline=None, anim=None, card=None, fetch=None):
+def prepare(job, recent, edit_headline=None, anim=None, card=None, fetch=None, wm=None):
     """الخطوات البطيئة (بخيط خلفي): صياغة العنوان، التفاصيل، المصادر اللاحقة، التحقق، البطاقة المتحركة. يرجع خطة التعديل أو None."""
     from tools import tg_push as T
     t0 = time.time()
@@ -220,6 +220,10 @@ def prepare(job, recent, edit_headline=None, anim=None, card=None, fetch=None):
             photo = fetch(job["img"])
         except Exception:  # noqa: BLE001
             photo = None
+    if job.get("hold") and photo is None and job.get("photo_hold") is not None:
+        photo = job["photo_hold"]
+    if job.get("hold") and photo is not None and (wm is None or wm(photo) is not False):
+        photo = None  # صورة من جهة غير رسمية: لا تُستخدم إلا إذا تأكدنا أنها بلا شعار وسيلة أخرى
     media = None
     if job["loud"] and anim:
         try:
@@ -358,6 +362,41 @@ class Enricher:
 # ───────── قراءة صور الوثائق الرسمية ─────────
 OCR_PER_HOUR = 20
 OCR_CALLS = []
+WM_PROMPT = ("Look at this news photo. Does it contain a visible logo, watermark, bug or channel name of a TV channel, news agency, "
+             "website or social-media page (usually in a corner, semi-transparent, or a banner/ticker)? Official government emblems that are "
+             "part of the scene (flags, ministry signs on walls) do NOT count. Answer with exactly one word: YES or NO.")
+_WM_CACHE = {}
+WM_CALLS = []
+
+
+def watermarked(img, gem=None, gem_ok=None):
+    """هل على الصورة شعار/علامة مائية لوسيلة إعلام أخرى؟ True/False، وNone إذا تعذّر الفحص (الحصة/النموذج).
+    طلب إيهاب 05/11: لا تظهر شعارات القنوات الأخرى بمنشوراتنا. لا نغطيها بشعارنا (ذلك نسب لمحتوى غيرنا لأنفسنا)
+    بل لا نستخدم الصورة الموسومة: البطاقة تنزل بتصميم النص، والصورة النظيفة فقط تُضاف بالإثراء."""
+    if not img:
+        return None
+    import hashlib
+    k = hashlib.sha1(img).hexdigest()
+    if k in _WM_CACHE:
+        return _WM_CACHE[k]
+    now = time.time()
+    WM_CALLS[:] = [t for t in WM_CALLS if t >= now - 3600]
+    if len(WM_CALLS) >= 40 or (gem_ok is not None and not gem_ok()):
+        return None
+    if gem is None:
+        from tools.editorial import gemini as gem
+    WM_CALLS.append(now)
+    try:
+        out = gem(WM_PROMPT, max_tokens=4, temperature=0, parts=[{"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(img).decode()}}])
+    except Exception:  # noqa: BLE001
+        out = None
+    v = None if not out else (True if "YES" in out.upper() else False if "NO" in out.upper() else None)
+    if v is not None:
+        _WM_CACHE[k] = v
+        STATUS["wm_yes" if v else "wm_no"] = STATUS.get("wm_yes" if v else "wm_no", 0) + 1
+    return v
+
+
 OCR_PROMPT = (
     "هذه صورة نشرتها قناة جهة رسمية عراقية بلا نص تقريباً. اقرأ الصورة فقط ولا تخمّن ولا تضف شيئاً غير مكتوب فيها.\n"
     "أعد JSON فقط بالمفاتيح:\n"
