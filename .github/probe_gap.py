@@ -70,6 +70,18 @@ def probe(u):
         return {"u": u, "ok": False, "err": "fetch"}
     r = parse(u, p)
     r["ok"] = bool(r["last"])
+    if not r["ok"]:
+        time.sleep(3)
+        p = get(f"https://t.me/s/{u}") or ""
+        if "tgme_widget_message_wrap" in p:
+            r = parse(u, p)
+            r["ok"] = bool(r["last"])
+        else:
+            q = get(f"https://t.me/{u}") or ""
+            t = re.search(r'<meta property="og:title" content="([^"]*)"', q)
+            d = re.search(r'<meta property="og:description" content="([^"]*)"', q)
+            e = re.search(r'class="tgme_page_extra">([^<]+)', q)
+            r["plain"] = [H.unescape(t.group(1)) if t else "", H.unescape(d.group(1))[:200] if d else "", e.group(1).strip() if e else ""]
     return r
 
 
