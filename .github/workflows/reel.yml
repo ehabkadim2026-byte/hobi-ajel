@@ -28,7 +28,7 @@ jobs:
       - run: curl -sSL -m 30 "https://ehabkadim2026-byte.github.io/hobi-ajel/news.json" -o pwa/news.json
       - run: python3 -c "from PIL import features; print('raqm', features.check('raqm'))"
       - run: python3 -m tools.reel
-        env: {MARSAD_TG_BOT_TOKEN: "${{ secrets.MARSAD_TG_BOT_TOKEN }}", GH_TOKEN: "${{ github.token }}", REEL_TO_CHANNEL: "${{ inputs.to_channel }}"}
+        env: {MARSAD_TG_BOT_TOKEN: "${{ secrets.MARSAD_TG_BOT_TOKEN }}", GH_TOKEN: "${{ github.token }}", REEL_TO_CHANNEL: "${{ inputs.to_channel }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"}
       - name: archive
         if: always()
         env: {GH_TOKEN: "${{ github.token }}"}

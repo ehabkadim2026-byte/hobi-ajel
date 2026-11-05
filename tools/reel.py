@@ -8,6 +8,7 @@ import functools
 import io
 import json
 import math
+import re
 import os
 import subprocess
 import sys
@@ -176,7 +177,7 @@ def bg_base():
     d = ImageDraw.Draw(im)
     for y in range(H):
         k = y / H
-        d.line([(0, y), (W, y)], fill=(int(14 - 8 * k), int(38 - 22 * k), int(86 - 50 * k), 255))
+        d.line([(0, y), (W, y)], fill=(int(58 - 46 * k), int(14 - 8 * k), int(22 - 14 * k), 255))  # نبيذي داكن ← حبر (هوية أكا) بدل الكحلي
     return im
 
 
@@ -297,6 +298,7 @@ def pick(news, k=5):
         if any(T.same_story(sig, {"w": sorted(o["_sig"][0]), "d": sorted(o["_sig"][1])}) for o in out):
             continue
         title = clean_headline(pick_best([n["title"]] + list(n.get("alts") or [])))
+        title = re.sub(r"^\W*(?:مصدر|مصادر|خاص|عاجل|حصري|بالفيديو|بالصور)\s*[:：|]\s*", "", title)  # «مصدر: النزاهة…»
         if "|" in title:  # «كوردستان 24 | كتلة …» اسم مصدر قبل الفاصل
             title = max((p.strip() for p in title.split("|")), key=lambda p: len(p.split()))
         # مراجعة 06/11 قبل النشر بالقناة: خبر رياضي أجنبي (رونالدو) وعنوان بلا واقعة دخلا «أهم أخبار العراق»
@@ -321,7 +323,7 @@ def render(items, out_path, day_txt, music=None):
             if jpg:
                 from tools import fastbreak as _FB
                 _g = Image.open(io.BytesIO(jpg)).convert("L").resize((64, 64))
-                if sum(_g.getdata()) / 4096 < 45 or _FB.watermarked(jpg) is True:  # صورة مظلمة أو عليها شعار قناة أخرى
+                if sum(_g.getdata()) / 4096 < 45 or _FB.watermarked(jpg) is not False:  # غير مؤكد = لا نستخدمها  # صورة مظلمة أو عليها شعار قناة أخرى
                     jpg = None
             ph = photo_layer(jpg)
         except Exception:  # noqa: BLE001
