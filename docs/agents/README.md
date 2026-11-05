@@ -31,7 +31,7 @@
 **توقع المدقق:** كل commit يمس هذه الملفات بلا سطر مقابل في `docs/changes_log.md` (أو أُلغي فيه تشغيل fastlane خلال 10 دقائق من سابقه بلا سبب مذكور) يُسجَّل مخالفةً في `docs/audit_log.md`.
 
 ## ملفات للمدقق (إصدار probe بعد تشغيل audit.yml)
-- `fast_decisions.json`: آخر ~400 قرار للمسار السريع `{t, ch, id, head, decision, reason}`؛ السبب رمز محدد (`fresh` قديم، `dup` مكرر، `same_actor`، `routine`، `short`، `cap`، `not_iraq`، `dialect`، `excluded`، `incomplete`، `press`، `low_value`، `gem_no` رفضه النموذج، `gem_unavailable` النموذج غير متاح، `gem_cap` سقف النموذج، `no_strict`، `edited_*` بعد التحرير، `offensive` مسيء للعراق/العراقيين أو مكوّن عراقي، `weak_src` مصدر بطبقة «ضعيفة»، `send_failed`)، و`decision` = skip/post/confirm/fail. يُحدَّث كل ~5 دقائق.
+- `fast_decisions.json`: آخر ~400 قرار للمسار السريع `{t, ch, id, head, decision, reason}`؛ السبب رمز محدد (`fresh` قديم، `dup` مكرر، `same_actor`، `routine`، `short`، `cap`، `not_iraq`، `dialect`، `excluded`، `incomplete`، `press`، `low_value`، `gem_no` رفضه النموذج، `gem_unavailable` النموذج غير متاح، `gem_cap` سقف النموذج، `no_strict`، `edited_*` بعد التحرير، `offensive` مسيء للعراق/العراقيين أو مكوّن عراقي، `weak_src` مصدر بطبقة «ضعيفة»، `send_failed`، `ocr_*` صورة وثيقة رسمية لم تُقبل: `ocr_unreadable`/`ocr_not_doc`/`ocr_not_public`/`ocr_unsafe` كلمة ليست بالوثيقة/`ocr_old`/`ocr_cap`/`ocr_unavailable`)، و`decision` = skip/post/confirm/fail؛ منشور `post` فيه `lat_s` (الرصد ← الإرسال بالثواني) و`stage: fast` للعاجل على مرحلتين و`doc: 1` إذا العنوان من صورة وثيقة. يُحدَّث كل ~5 دقائق.
 - `posted_fast.json` و`posted_main.json`: سجل المنشورات (48 ساعة) ومحاولات «✅ أكدته» و«☑️ تطابق» (`type` = off/trust).
 - `source_trust.json` (إصدار fastlane، يومياً): طبقات موثوقية المصادر وأرقامها — الطريقة في `docs/source_trust.md`.
 - `fastlane_auto.json` (إصدار fastlane، يومياً بعد موثوقية المصادر — `tools/auto_tune.py`): الضبط الذاتي للمسار السريع بلا نموذج لغوي.
@@ -43,3 +43,9 @@
 - `radars_state.json` (إصدار fastlane، كل ~5 دقائق — `tools/signal_radars.py`): حالة رادارات الإشارات (زلازل USGS/EMSC تُنشر آلياً بعتباتها،
   مؤشر انقطاع الإنترنت IODA وقفزات الدولار رسائل خاصة للمحررين فقط)، وحالتها الحية في `radars` داخل `fast_status.json`؛ و`insider` فيه = عدادات «بوابة المراسل»
   (`tools/manual_pub.py`: صوت/صورة/ملاحظات من المحرر ← مسودة بأزرار، لا نشر بلا ضغطة زر).
+- **العاجل على مرحلتين** (`tools/fastbreak.py`): الخبر الحرج (جهة رسمية مُصدِرة + «عاجل»/حدث أمني أو كبير/MUST_RX، أو ما يومض) يُرسل فوراً بطاقة ثابتة بعنوان القواعد،
+  ثم يُعدَّل المنشور نفسه مرة واحدة بعد ~45 ث (عنوان محرر، تفاصيل من النص/مصدر لاحق منسوب، «ونقلته أيضاً»، سطر التحقق، وللعاجل البطاقة المتحركة) — سجل `type: enrich`
+  في `posted_fast.json` ضمن سقف 20 تعديلاً بالساعة. القياس في `fast_status.json` → `lat` (`fast`/`normal`/`radar` وسيط الجلسة، `prep` = الخطوات المؤجلة) و`fastbreak`.
+  الإيقاف: `"two_stage": false` في `config/fastlane.json`؛ وقراءة صور الوثائق: `"ocr": false`.
+- **أنواع تحديثات البوت:** كل من يقرأ `getUpdates` يطلب `tg_push.ALLOWED_UPDATES` (message + callback_query + channel_post) — تلغرام يحفظ آخر قيمة ويُسقط ما لا تشملها،
+  وطلب قائمة أضيق كان يُسقط منشورات قناة الرصد التلفزيوني (منذ 03/11) أو ضغطات الأزرار. لا تُضيّق القائمة في أي قارئ جديد.

@@ -68,19 +68,34 @@ def recent_sigs(T):
     return [x for x in T.fastlane_sigs() + T.fastlane_sigs("main_sigs.json") + T.fastlane_sigs("tv_sigs.json") if x.get("ts", 0) >= time.time() - 6 * 3600]
 
 
-def send_card(token, chat_id, head, hot, src=None, extra="", photo=None, ref="manual:0", editor_name="محرر", api=None):
+_RS = {"t": 0.0, "v": []}
+RS_TTL = 120
+
+
+def recent_sigs_cached(T):
+    """للرادارات (العاجل على مرحلتين): ثلاثة تنزيلات من الإصدار (~3–6 ث) قبل كل إرسال تؤخر الزلزال؛ نسخة عمرها ≤ دقيقتين تكفي،
+    ومنع تكرار الزلزال نفسه بحالة الرادار (معرّف الحدث)."""
+    if time.time() - _RS["t"] > RS_TTL:
+        _RS.update(t=time.time(), v=recent_sigs(T))
+    return _RS["v"]
+
+
+def send_card(token, chat_id, head, hot, src=None, extra="", photo=None, ref="manual:0", editor_name="محرر", api=None, two_stage=False):
     """المسار الموحد للنشر اليدوي/بوابة المراسل/الرادارات: فحص التكرار ← بطاقة (يومض للعاجل) ← بصمة مشتركة ← تغذية التطبيق وتنبيه الهاتف.
+    two_stage (الرادارات): العاجل يُرسل بطاقة ثابتة فوراً ثم تتحول للمتحركة بتعديل المنشور نفسه (editMessageMedia) — لا منشور ثانٍ.
     يرجع (ok, رسالة, message_id)."""
     from tools import tg_push as T, tg_card
+    from tools import fastbreak as FB
     api = api or T.api
+    t0 = time.time()
     sig = T.title_sig(head)
-    if any(T.same_story(sig, x) for x in recent_sigs(T)):
+    if any(T.same_story(sig, x) for x in (recent_sigs_cached(T) if two_stage else recent_sigs(T))):
         return False, "⚠️ هذا الخبر منشور بالقناة خلال آخر 6 ساعات، فما نشرته حتى ما يتكرر. إذا بيه تطور جديد اكتب العنوان بالتفصيل الجديد.", None
     when = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     cap = f"<b>{'🔴 عاجل | ' if hot else ''}{H.escape(head)}</b>" + (f"\n{H.escape(extra)}" if extra else "") + \
           (f"\n\n📌 المصدر: {H.escape(src)}" if src else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"
     r = {"ok": False}
-    if hot:
+    if hot and not two_stage:
         try:
             anim = tg_card.breaking_anim(photo, head, when, style="news4A", source=src)
             r = api(token, "sendAnimation", files={"animation": ("breaking.mp4", anim, "video/mp4")}, chat_id=chat_id, caption=cap[:1024],
@@ -94,7 +109,22 @@ def send_card(token, chat_id, head, hot, src=None, extra="", photo=None, ref="ma
     if not r.get("ok"):
         return False, "تعذر النشر: " + str(r.get("description"))[:100], None
     mid = r["result"]["message_id"]
+    FB.LAT.add("radar" if two_stage else "manual", time.time() - t0)
+    if hot and two_stage:  # المرحلة 2: البطاقة المتحركة بالمنشور نفسه (مرة واحدة؛ فشلها يُبقي البطاقة الثابتة)
+        try:
+            t1 = time.time()
+            anim = tg_card.breaking_anim(photo, head, when, style="news4A", source=src)
+            im = {"type": "animation", "media": "attach://m", "caption": cap[:1024], "parse_mode": "HTML", "width": 1080, "height": 1350}
+            ru = api(token, "editMessageMedia", files={"m": ("breaking.mp4", anim, "video/mp4")}, chat_id=chat_id, message_id=str(mid),
+                     media=json.dumps(im, ensure_ascii=False), reply_markup=SHARE_KB)
+            if ru.get("ok"):
+                FB.STATUS["anim_ok"] += 1
+                FB.LAT.add("prep", time.time() - t1)
+        except Exception:  # noqa: BLE001
+            pass
     entry = {"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time(), "id": ref, "title": head[:200], "by": editor_name}
+    if two_stage:
+        _RS["v"].append(entry)
     T.publish_main_sigs([x for x in T.fastlane_sigs("tv_sigs.json")] + [entry], "tv_sigs.json")  # بصمة مشتركة: لا يكرره أي مسار
     try:  # تغذية لحظية للتطبيق (+ تنبيه الهاتف عبر web_push)
         from tools import live_feed
@@ -487,7 +517,10 @@ def _strip_kb(token, api, d):
         pass
 
 
-ALLOWED = json.dumps(["message", "callback_query"])  # أزرار المسودات؛ channel_post كما كان (لا يُغيَّر سلوك مسار التلفزيون هنا)
+# allowed_updates يحفظه تلغرام للبوت حتى الطلب التالي، والتحديث غير المسموح وقت وصوله يُسقط نهائياً: كانت هذه الحلقة (كل ~8 ث)
+# تطلب ["message"] ثم ["message","callback_query"] فتُسقط channel_post لقناة الرصد التلفزيوني (tv_source عبر tg_inbox) منذ 03/11،
+# وtg_inbox يطلب ["message","channel_post"] فيُسقط ضغطات الأزرار بين الدورتين. الآن كل القرّاء يطلبون الاتحاد نفسه (tg_push.ALLOWED_UPDATES).
+from tools.tg_push import ALLOWED_UPDATES as ALLOWED  # noqa: E402
 _POOL = {"ex": None}
 
 

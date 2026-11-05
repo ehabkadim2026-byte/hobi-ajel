@@ -59,4 +59,6 @@ from tools import test_web_push  # noqa: E402
 test_web_push.run()  # تنبيهات الهاتف (VAPID، التشفير، الاشتراكات، التفضيلات) وشارة الموثوقية
 from tools import test_insider  # noqa: E402
 test_insider.run()  # بوابة المراسل (صوت/صورة/ملاحظات ← مسودة ← زر) ورادارات الزلازل/الإنترنت/الدولار
+from tools import test_fastbreak  # noqa: E402
+test_fastbreak.run()  # العاجل على مرحلتين (إرسال فوري ← إثراء المنشور نفسه)، قراءة صور الوثائق الرسمية، ذيل اسم الناشر، تصنيف الموضوع، أنواع تحديثات البوت
 print("selftest ok")

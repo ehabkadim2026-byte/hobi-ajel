@@ -381,7 +381,7 @@ def make_ctx(token, chat_id, api=None):
     api = api or T.api
 
     def send(head, hot, src, extra, ref):
-        return MP.send_card(token, chat_id, head, hot, src, extra, None, ref, "رادار", api=api)
+        return MP.send_card(token, chat_id, head, hot, src, extra, None, ref, "رادار", api=api, two_stage=True)
 
     def reply(mid, txt):
         try:

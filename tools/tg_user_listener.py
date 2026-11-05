@@ -76,6 +76,7 @@ async def _run(token, channels, stop_at):
 
     @client.on(events.NewMessage(incoming=True))
     async def on_msg(ev):
+        rx = time.time()  # لحظة الوصول (قبل تنزيل الصورة) لقياس «الرصد ← الإرسال»
         try:
             chat = await ev.get_chat()
             u = (getattr(chat, "username", None) or "").lower()
@@ -83,8 +84,8 @@ async def _run(token, channels, stop_at):
                 return
             m = ev.message
             text = (m.message or "").strip()
-            if not text:
-                return
+            if not text and not m.photo:
+                return  # صورة بلا نص تبقى: قد تكون كتاباً رسمياً (قراءة الوثيقة بالمسار السريع)
             img = None
             if m.photo:
                 try:
@@ -93,7 +94,7 @@ async def _run(token, channels, stop_at):
                     img = b.getvalue() or None
                 except Exception:  # noqa: BLE001
                     img = None
-            PUSH.put({"ch": u, "id": m.id, "text": text, "t": m.date, "img_bytes": img, "img": None})
+            PUSH.put({"ch": u, "id": m.id, "text": text, "t": m.date, "img_bytes": img, "img": None, "rx": rx})
             STATUS["pushed"] += 1
             WAKE.set()
         except Exception as e:  # noqa: BLE001

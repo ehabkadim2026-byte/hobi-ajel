@@ -33,6 +33,11 @@ REGION_MIN_SOURCES = 6
 REGION_PER_HOUR = 8
 
 
+# أنواع التحديثات التي يحتاجها كل قرّاء getUpdates معاً (manual_pub بالمسار السريع، tg_inbox بالجولة الرئيسية): تلغرام يحفظ آخر قيمة
+# ويُسقط ما لا تشمله، فكل قارئ يطلب الاتحاد كاملاً (رسائل المحررين، أزرار المسودات، منشورات قناة الرصد التلفزيوني).
+ALLOWED_UPDATES = json.dumps(["message", "callback_query", "channel_post"])
+
+
 def api(token, method, files=None, **params):
     if files:  # multipart لرفع صورة البطاقة
         b = uuid.uuid4().hex
@@ -1339,7 +1344,7 @@ def main():
         chat = load(CHAT, {})
         chat_id = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or chat.get("id") or "@hassawassal"  # القناة عامة: اسمها يكفي
         if not chat_id:
-            ups = api(token, "getUpdates", timeout=0).get("result", [])
+            ups = api(token, "getUpdates", timeout=0, allowed_updates=ALLOWED_UPDATES).get("result", [])
             for u in reversed(ups):
                 c = (u.get("channel_post") or u.get("message") or (u.get("my_chat_member") or {}) or {}).get("chat") or {}
                 if c.get("type") in ("channel", "supergroup", "group"):

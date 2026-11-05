@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from tools import tg_push as T  # noqa: E402
 from tools.tv_source import important, PROMO  # noqa: E402
+from tools import fastbreak as FB  # noqa: E402
 
 CFG = json.loads((ROOT / "config" / "fastlane.json").read_text(encoding="utf-8"))
 UA = {"User-Agent": "Mozilla/5.0 (Linux; Android 14) Chrome/126 Mobile"}
@@ -82,9 +83,9 @@ def latest_posts(ch):
         tx = re.search(r'tgme_widget_message_text[^>]*>(.*?)</div>', b, re.S)
         tm = re.search(r'<time[^>]+datetime="([^"]+)"', b)
         img = re.search(r"tgme_widget_message_photo_wrap[^>]+background-image:url\('([^']+)'\)", b)
-        if not (pid and tx and tm):
-            continue
-        text = H.unescape(re.sub(r"<[^>]+>", " ", re.sub(r"<br\s*/?>", "\n", tx.group(1)))).strip()
+        if not (pid and tm and (tx or img)):
+            continue  # صورة بلا نص تبقى: قد تكون كتاباً رسمياً مصوّراً (قراءة الوثيقة، fastbreak.ocr_doc)
+        text = H.unescape(re.sub(r"<[^>]+>", " ", re.sub(r"<br\s*/?>", "\n", tx.group(1)))).strip() if tx else ""
         out.append({"id": int(pid.group(1)), "text": text, "t": datetime.fromisoformat(tm.group(1)), "img": img.group(1) if img else None})
     name = re.search(r'<meta property="og:title" content="([^"]*)"', page)
     return out, H.unescape(name.group(1)) if name else ch
@@ -236,6 +237,12 @@ def main():
         ledger = None
         print("::warning title=confirm ledger::", type(e).__name__)
     LAST_DEC = [time.time()]
+    # العاجل على مرحلتين: إرسال فوري ثم إثراء المنشور نفسه (tools/fastbreak.py)؛ RECENT = منشورات آخر 30 دقيقة لكل القنوات (مصادر لاحقة)
+    from concurrent.futures import ThreadPoolExecutor as _TPE
+    photo_pool = _TPE(2, thread_name_prefix="photo")
+    EN = FB.Enricher(after=CFG.get("enrich_after_sec", 45), edit_headline=edit_headline, anim=tg_card.breaking_anim,
+                     card=tg_card.card_news4, fetch=tg_card.fetch_jpeg)
+    RECENT = []
     try:
         stats["trust"] = load_trust()  # طبقات المصادر (تُحدَّث يومياً بالجولة الرئيسية)
     except Exception as e:  # noqa: BLE001
@@ -279,9 +286,12 @@ def main():
 
         def fetch(c):
             try:
-                return c, (latest_rss(c[0]) if c[1] == "rss" else latest_posts(c[0]))
+                r = latest_rss(c[0]) if c[1] == "rss" else latest_posts(c[0])
             except Exception:  # noqa: BLE001
                 return c, None
+            for x in r[0]:
+                x.setdefault("rx", time.time())  # لحظة الرصد (لقياس «الرصد ← الإرسال»)
+            return c, r
         with ThreadPoolExecutor(10) as ex:
             results = list(ex.map(fetch, chans)) if chans else []
         tiers = dict(allc) | {k: "rss" for k in RSS}
@@ -308,12 +318,32 @@ def main():
             for p in new:
                 from tools.editorial import complete_line
                 raw = first = complete_line(p["text"])
+                t_det = p.get("rx") or time.time()
 
                 def skip(why, code=None):
                     stats["skipped"][why] = stats["skipped"].get(why, 0) + 1
                     decide(ch, p["id"], raw, "skip", code or REASON.get(why, why))
                 age = (now - p["t"]).total_seconds() / 60
                 oname = official_ch(ch, tier)
+                from_doc = False
+                if tier == "official" and len(first.split()) < 6 and (p.get("img_bytes") or p.get("img")) and age <= CFG["max_age_min"] \
+                        and CFG.get("ocr", True) and not ROUTINE.search(p["text"]) and not PROMO.search(p["text"]):
+                    # صورة كتاب/بيان رسمي بلا نص: Gemini يقرأ الجهة والتاريخ والقرار (سقف 20/س منفصل + سقف النموذج)، ثم البوابات المعتادة كلها
+                    try:
+                        img = p.get("img_bytes") or tg_card.fetch_jpeg(p["img"])
+                        p["img_bytes"] = img
+                        doc, code = FB.ocr_doc(img, re.sub(r" — .*$", "", oname or NAMES.get(ch) or ch), gem_ok=gem_ok)
+                    except Exception as e:  # noqa: BLE001
+                        doc, code = None, "ocr_" + type(e).__name__
+                    if not doc:
+                        skip("وثيقة غير صالحة", code); continue
+                    raw = first = doc["head"]
+                    p["text"] = doc["text"]
+                    from_doc = True
+                if first:
+                    RECENT.append({"ch": ch, "name": NAMES.get(ch) or (RSS.get(ch) or {}).get("name") or ch, "first": first, "text": p["text"][:1500],
+                                   "ts": p["t"].timestamp(), "ref": RSS[ch]["url"] if tier == "rss" and ch in RSS else ch})
+                    del RECENT[:-600]
                 if oname and ledger is not None and first and age <= CF.WINDOW_H * 60:
                     try:  # جهة رسمية نشرت: هل نشرنا الخبر نفسه من مصدر غير رسمي؟ ← «✅ أكدته» على منشورنا (قبل فلاتر النشر: غالباً يُرفض هنا كمكرر)
                         c_n = CF.check(ledger, T.api, token, chat_id, oname, first, p["t"].timestamp())
@@ -395,30 +425,39 @@ def main():
                         ok, why_no = False, "routine"  # نشاط روتيني لجهة رسمية (حملة تشجير، يترأس جلسة، لقاءات أسبوعية: 2958، 2979، 2991) قبله النموذج
                 if not ok:
                     skip("غير مهم", why_no); continue
-                head = edit_headline(first, context=p["text"][:500])
+                head0 = FB.fast_head(first)
+                crit = CFG.get("two_stage", True) and not regional and FB.critical(oname, bool(FLAG.search(p["text"][:40])), first,
+                                                                                   FB.loud_of(p["text"], first, head0))
+                # الحرج: عنوان القواعد فوراً (الصياغة بالنموذج تأتي بالإثراء خلال 30–120 ث)، وغيره كما كان
+                head = head0 if crit else edit_headline(first, context=p["text"][:500])
                 if T.low_value(head) or T.incomplete(head) or len(head.split()) < 5:
                     skip("عنوان غير صالح", "edited_" + (bad_title_reason(head) if len(head.split()) >= 5 else "short")); continue  # التحرير قد يبتر العنوان (حذف هاشتاغ/سطر): نفحص الناتج النهائي لا الخام (تدقيق 2883، 2884)
                 photo = p.get("img_bytes")
+                photo_fut = None
                 if not photo and p["img"]:
-                    try:
-                        photo = tg_card.fetch_jpeg(p["img"])
-                    except Exception:  # noqa: BLE001
-                        pass
+                    if crit:  # مهلة قصيرة: الصورة المتأخرة تُضاف بالإثراء
+                        photo, photo_fut = FB.photo_within(tg_card.fetch_jpeg, p["img"], CFG.get("fast_photo_sec", 1.5), photo_pool)
+                    else:
+                        try:
+                            photo = tg_card.fetch_jpeg(p["img"])
+                        except Exception:  # noqa: BLE001
+                            pass
                 # «عاجل» (شارة حمراء + وميض) فقط لما وسمته المصادر عاجلاً أو حدث أمني عراقي — لا لكل منشورات الجهات الرسمية
                 # وسم «عاجل» من المصدر وحده لا يكفي: بعض القنوات (ABC العربية) تسم كل منشور عاجلاً — يلزم حدث عاجل بالمضمون
                 # (أمني/انفجار/كارثة/تعطيل دوام/استقالة) لا موعد مباراة ولا سعر أمبير ولا حالة جوية (فحص 4، تدقيق 18:15 04/11: 3025، 3038، 3044، 3049، 3060)
                 loud = (bool(FLAG.search(p["text"][:40])) or bool(T.SEC_RX.search(first) and T.iraq_strict(first))) and not T.NOT_URGENT_RX.search(head) \
                     and bool(T.SEC_RX.search(head) or T.EVENT_RX.search(head) or T.URGENT_RX.search(head)) \
                     and not (T.STATEMENT_RX.search(head) and not (T.SEC_RX.search(head) or T.EVENT_RX.search(head))) and T.iraq_strict(head)  # سعر الدولار/السلف/التقديم بلا «عاجل» (تدقيق 2835)
+                src_name = re.sub(r" — .*$", "", cname) + (" (وثيقة رسمية)" if from_doc else "")
                 card = tg_card.card_news4(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), source=re.sub(r" — .*$", "", cname), style="A")
                 tags = T.province_tags(first)
-                cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}" + \
+                cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(src_name)}" + \
                       (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"
                 kb = json.dumps({"inline_keyboard": [[{"text": "📖 المصدر", "url": p.get("url") or f"https://t.me/{ch}/{p['id']}"},
                                                       {"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fhassawassal"}]]})
                 r = {"ok": False}
                 kind = "photo"
-                if loud:  # العاجل يومض: بطاقة متحركة (تُحفظ فيديو من تلغرام)، والصورة احتياط
+                if loud and not crit:  # العاجل يومض: بطاقة متحركة (تُحفظ فيديو من تلغرام)، والصورة احتياط — الحرج يتحول للمتحرك بالإثراء
                     try:
                         anim = tg_card.breaking_anim(photo, head, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), style="news4A", source=re.sub(r" — .*$", "", cname))
                         r = T.api(token, "sendAnimation", files={"animation": ("breaking.mp4", anim, "video/mp4")}, chat_id=chat_id, caption=cap[:1024],
@@ -437,10 +476,13 @@ def main():
                     decide(ch, p["id"], head, "fail", "send_failed")
                 if r.get("ok"):
                     stats["posted"] += 1
+                    FB.LAT.add("fast" if crit else "normal", time.time() - t_det)
+                    FB.STATUS["fast_sent"] += int(bool(crit))
                     mine.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time(), "title": first[:200], "id": f"fast:{ch}/{p['id']}",
                                  "lag_min": round(age, 1), "reg": regional})
                     gh_put("fast_sigs.json", mine)
                     decide(ch, p["id"], head, "post", "loud" if loud else tier)
+                    DECISIONS[-1].update(lat_s=round(time.time() - t_det, 2), **({"stage": "fast"} if crit else {}), **({"doc": 1} if from_doc else {}))
                     try:  # تغذية لحظية للتطبيق (موقّعة) — يظهر بالتطبيق خلال ثوانٍ بدل انتظار الجولة
                         from tools import live_feed
                         live_feed.publish(token, {"id": f"{ch}/{p['id']}", "title": head, "t": p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -455,8 +497,20 @@ def main():
                             ledger.save()
                         except Exception as e:  # noqa: BLE001
                             print("::warning title=confirm add::", type(e).__name__)
+                    if crit:  # المرحلة 2: إثراء المنشور نفسه بعد ~45 ث (مرة واحدة)
+                        EN.add({"mid": r["result"]["message_id"], "sent_at": time.time(), "src_ts": p["t"].timestamp(), "ch": ch, "first": first,
+                                "text": p["text"], "head": head, "loud": bool(loud), "src": src_name, "when": p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                "photo": photo, "photo_future": photo_fut, "img": p.get("img"), "kb": kb, "tags": tags,
+                                "official": bool(oname), "ref": RSS[ch]["url"] if tier == "rss" and ch in RSS else ch})
                     print(f"::notice title=fastlane posted::{ch}/{p['id']} بعد {age:.1f} د من نشر المصدر — {head[:80]}")
+        RECENT[:] = [x for x in RECENT if x["ts"] >= time.time() - 1800]
+        try:
+            stats["enriched"] = stats.get("enriched", 0) + EN.tick(RECENT, ledger, T.api, token, chat_id)
+        except Exception as e:  # noqa: BLE001
+            print("::warning title=enrich::", type(e).__name__, str(e)[:80])
         if stats["loops"] % 10 == 0:
+            stats["lat"] = FB.LAT.summary()  # «الرصد ← الإرسال» بالثواني: fast (مرحلتان) وnormal وradar، وprep = الخطوات المؤجلة
+            stats["fastbreak"] = dict(FB.STATUS, pending=len(EN.jobs))
             from tools import confirm as _CF
             try:
                 from tools import web_push as _WP

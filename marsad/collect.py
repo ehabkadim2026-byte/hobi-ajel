@@ -147,7 +147,8 @@ def _google_news(items):
             if 1 < len(outlet) <= 60:
                 if EXCLUDED_SRC.search(outlet):
                     continue
-                it["title"], it["source_name"] = head.strip(), _gn_outlet(outlet) + " (عبر Google News)"
+                from .textnorm import strip_site_suffix
+                it["title"], it["source_name"] = strip_site_suffix(head.strip(), outlet.strip()), _gn_outlet(outlet) + " (عبر Google News)"
         it["text"] = ""
         out.append(it)
     return out

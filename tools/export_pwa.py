@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from marsad import core  # noqa: E402
 from marsad.report import cluster_dossier  # noqa: E402
-from marsad.textnorm import iso, now_utc  # noqa: E402
+from marsad.textnorm import iso, now_utc, strip_site_suffix  # noqa: E402
 from tools.export_app import status_of  # noqa: E402
 from tools import verify as V, watch as W, analysis as A  # noqa: E402
 from tools import provinces as P  # noqa: E402
@@ -99,7 +99,7 @@ def event_timeline(irows, now):
         if r["collected_utc"] and t > r["collected_utc"]:
             t = r["collected_utc"]  # لا وقت بعد وقت رصدنا
         t = min(t, iso(now))
-        h = URL_RX.sub("", complete_line(r["title"] or r["text"] or "")).strip(" -–|:🔻🔴📌⭕️🚨•")[:140]
+        h = strip_site_suffix(URL_RX.sub("", complete_line(r["title"] or r["text"] or "")).strip(" -–|:🔻🔴📌⭕️🚨•"))[:140]
         if not h:
             continue
         ref = re.sub(r"^telegram:", "", r["source_id"] or "")
@@ -134,7 +134,7 @@ def _event_fields(irows, now):
 def clean_title(label, texts):
     """عنوان مقروء: يتجاهل الروابط وتواقيع القنوات، ويأخذ أول سطر له معنى (مع ضم سطر المتحدث للكلام)."""
     def ok(line):
-        line = URL_RX.sub("", line).strip(" -–|:🔻🔴📌⭕️🚨•")
+        line = strip_site_suffix(URL_RX.sub("", line).strip(" -–|:🔻🔴📌⭕️🚨•"))
         return line if len(line) >= 20 and not (SIG_RX.search(line) and len(line) < 45) else ""
     for t in texts:
         c = complete_line(t)
@@ -205,21 +205,35 @@ TOPICS = [
      r"parliament|minister|government|election|president|diplomat|envoy|talks|lawmaker|coalition|party|policy|sanction"),
     ("اقتصاد", "الدولار النفط الموازنة رواتب مصرف البنك المركزي أسعار تجارة استثمار صادرات الذهب الدينار الضرائب الكمارك برميل",
      r"oil|dollar|budget|bank|trade|economy|investment|exports|salaries|crude|market|price|dinar"),
-    ("خدمات", "الكهرباء الماء المياه مجاري طرق مشاريع مشروع سد بلدية إعمار الإسكان النقل المطار جسر ماء الشرب انقطاع",
+    ("خدمات", "الكهرباء الماء المياه مجاري طرق طريق شارع مجسر تقاطع المرور مشاريع مشروع سد بلدية إعمار الإسكان النقل المطار جسر ماء الشرب انقطاع",
      r"electricity|water|infrastructure|housing|airport|project|power outage"),
     ("صحة", "صحة مستشفى وباء مرض طبي دواء كوليرا لقاح إصابات الأطباء علاج",
      r"health|hospital|disease|medical|cholera|vaccine|outbreak|patients"),
     ("تعليم", "التربية امتحانات جامعة طلاب مدارس الدوام التعليم العالي الطلبة نتائج القبول",
      r"school|university|students|education|exam"),
     ("ثقافة", "ثقافة مهرجان فن فنان كتاب معرض تراث آثار مسرح سينما شعر رواية متحف",
-     r"culture|festival|art|artist|heritage|museum|film|book|archaeolog"),
+     r"culture|festival|art|artist|heritage|museum|film|book|archaeolog\w*"),
     ("رياضة", "منتخب كرة الدوري مباراة نادي لاعب بطولة الاتحاد العراقي لكرة القدم أولمبي",
      r"football|soccer|match|league|team|player|sport|olympic|cup"),
     ("مجتمع", "عشائر عشيرة نزاع مناشدة حادث مروري غرق حريق زواج طلاق متظاهرين تظاهرة احتجاج مواطنين المرأة الأطفال",
      r"protest|tribe|women|children|refugees|displaced|society|rights"),
     ("طقس", "طقس أمطار درجات الحرارة الأنواء عاصفة غبار سيول", r"weather|rain|storm|flood|heat"),
 ]
-TOPICS = [(n, [norm_ar(w) for w in ar.split()], re.compile(r"\b(" + en + r")", re.I)) for n, ar, en in TOPICS]
+_TOK_PRE = ("", "و", "ب", "ل", "ال", "وال", "بال", "لل", "ولل")  # لا «ف/ك» المفردتين: «فكرة» ليست «ف+كرة»
+
+
+def _variants(w):
+    """صيغ الكلمة الكاملة بسوابقها (و، ب، ل، ال…): مطابقة كلمة كاملة لا جزء كلمة — «الدوري» كانت تطابق «الدوريات»
+    و«كرة» تطابق «فكرة/مذكرة» و«نادي» تطابق «ينادي» فصار خبر افتتاح طريق «رياضة» (لقطة التطبيق 05/11)."""
+    base = w[2:] if w.startswith("ال") and len(w) > 4 else w
+    out = {w} | {p + base for p in _TOK_PRE if len(p + base) >= 2}
+    if base.startswith("ل") and w.startswith("ال"):
+        out.add("لل" + base[1:])  # الليل ← لليل
+    return out
+
+
+TOPICS = [(n, [_variants(norm_ar(w)) for w in ar.split()], re.compile(r"\b(" + en + r")\b", re.I)) for n, ar, en in TOPICS]
+_AR_TOK = re.compile(r"[\u0600-\u06FF]+")
 
 
 KURDISH = re.compile(r"[ەێۆڵڕڤ]")
@@ -258,9 +272,10 @@ def is_pmf(ntext, raw):
 
 
 def topic_of(norm_text, en_text):
+    toks = set(_AR_TOK.findall(norm_text or ""))
     best, score = "عام", 0
     for name, words, rx in TOPICS:
-        sc = sum(1 for w in words if w and w in norm_text) + len(rx.findall(en_text or ""))
+        sc = sum(1 for v in words if v & toks) + len(rx.findall(en_text or ""))
         if sc > score:
             best, score = name, sc
     return best
@@ -622,7 +637,7 @@ def main(hours=24):
     for r in con.execute("SELECT i.title, i.text, i.source_name, i.url, i.published_utc, i.collected_utc, i.kind, i.time_precision, s.official, s.region "
                          "FROM items i LEFT JOIN sources s ON s.id=i.source_id WHERE COALESCE(i.published_utc, i.collected_utc) >= ? "
                          "ORDER BY COALESCE(i.published_utc, i.collected_utc)", (iso(now - timedelta(hours=72)),)):
-        t = (r["title"] or "").strip()
+        t = strip_site_suffix((r["title"] or "").strip())
         if len(KURDISH.findall(t)) >= 3:
             continue
         txt = (r["text"] or "").strip()

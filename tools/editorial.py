@@ -6,6 +6,8 @@
 """
 import re
 
+from marsad.textnorm import strip_site_suffix
+
 EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿⬀-⯿️‍←-⇿■-◿]+")
 TAGS = re.compile(r"^\s*(?:[\[\(«]?\s*(?:عاجل|عــاجل|عاااجل|خاص|حصري|بالفيديو|بالصور|فيديو|صور|متابعة|مباشر|الآن|هام|مهم|تحديث)\s*[\]\)»]?\s*(?:[|:：\-–—/…]|\.{2,})+\s*)+")
 TAGS_END = re.compile(r"\s*[|\-–—]\s*(?:عاجل|خاص|بالفيديو)\s*$")
@@ -36,6 +38,7 @@ def clean_headline(title, max_len=170):
     t = re.sub(r"^\s*(?:عاجل|خاص|هام|مهم)\s+(?=\S)", "", t)
     t = TAGS_END.sub("", t)
     t = SIGN.sub("", t)
+    t = strip_site_suffix(t)  # «… » وكالة الانباء العراقية (واع) | اخبار العراق» (لقطة التطبيق 05/11)
     t = t.replace('"', "«", 1).replace('"', "»", 1) if t.count('"') >= 2 else t
     t = re.sub(r"\.{2,}", "…", t)
     t = re.sub(r"«\s+", "«", re.sub(r"\s+»", "»", t))

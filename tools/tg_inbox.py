@@ -52,8 +52,8 @@ def main():
                 (sent.get("_subs") or {}).pop(d, None)
         except Exception:  # noqa: BLE001
             pass
-        ups = api(token, "getUpdates", offset=sent.get("_offset", 0), timeout=0,
-                  allowed_updates=json.dumps(["message", "channel_post"])).get("result", [])
+        from tools.tg_push import ALLOWED_UPDATES  # الاتحاد نفسه لكل القرّاء: لا يُسقط أحدهم تحديثات غيره (انظر manual_pub.ALLOWED)
+        ups = api(token, "getUpdates", offset=sent.get("_offset", 0), timeout=0, allowed_updates=ALLOWED_UPDATES).get("result", [])
         manual = []
         done_i = None
         for u in ups:
