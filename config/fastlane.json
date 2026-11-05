@@ -208,5 +208,8 @@
  "auto_never": [
   "Al_thawaq",
   "Shahadyasiri"
+ ],
+ "flag_ignore": [
+  "fm98_1"
  ]
 }

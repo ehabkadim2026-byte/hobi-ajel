@@ -71,10 +71,11 @@ def fast_head(first):
     return formal_rules(clean_headline(first, max_len=170))
 
 
-def loud_of(text, first, head):
+def loud_of(text, first, head, flag=None):
     """صيغة الوميض «🔴 عاجل» كما بالمسار السريع (fastlane.loud) على عنوان معيّن."""
     from tools import tg_push as T
-    flag = bool(re.match(r"^\W{0,6}(عاجل|عــاجل|عاااجل|⚡|🔴|🚨)", text[:40] or ""))
+    if flag is None:  # المسار السريع يمرر وسماً مُصفّى (قنوات تسم كل شيء عاجلاً لا يُعتد بوسمها)
+        flag = bool(re.match(r"^\W{0,6}(عاجل|عــاجل|عاااجل|⚡|🔴|🚨)", text[:40] or ""))
     return (flag or bool(T.SEC_RX.search(first) and T.iraq_strict(first))) and not T.NOT_URGENT_RX.search(head) \
         and bool(T.SEC_RX.search(head) or T.EVENT_RX.search(head) or T.URGENT_RX.search(head)) \
         and not (T.STATEMENT_RX.search(head) and not (T.SEC_RX.search(head) or T.EVENT_RX.search(head))) and T.iraq_strict(head)

@@ -46,6 +46,20 @@ FLAG = re.compile(r"^\W{0,6}(عاجل|عــاجل|عاااجل|⚡|🔴|🚨)")
 ROUTINE = re.compile(r"(يهنئ|تهنئ|هنأ|هنّأ|هنأت|(?:يستقبل|تستقبل|استقبل)\s+(?:لجنة|وفد|وفداً|وفدا|مدير|عدد|كادر)|تبارك|يبارك|تهنئة|يعزي|تعزية|ينعى|نعى|بمناسبة|ذكرى|عيد|يستذكر|صباح الخير|جمعة مباركة|رحم الله|إنا لله|تابعونا|رابط القناة)")
 STATE = ROOT / "data" / "fastlane_state.json"
 
+# قنوات تسم كل منشوراتها «عاجل» (fm98_1 نشرت تدريب سباحة لطلبة الشرطة بوميض عاجل 05/11): نتتبع نسبة الوسم لكل قناة،
+# وإذا تجاوزت 60% من آخر 20 منشوراً (بعد 8 منشورات على الأقل) أو كانت القناة في flag_ignore يُهمل وسمها والحكم للمضمون فقط
+_FLAG_HIST = {}
+
+
+def flagged(ch, text):
+    f = bool(FLAG.search((text or "")[:40]))
+    h = _FLAG_HIST.setdefault(ch, [])
+    h.append(f)
+    del h[:-20]
+    if ch in CFG.get("flag_ignore", []) or (len(h) >= 8 and sum(h) / len(h) > 0.6):
+        return False
+    return f
+
 
 def story_old(sig, stories, now, fresh_min=None, title=None):
     """هل الخبر متداول لدى الجهات المرصودة (3+) منذ أكثر من FRESH_MIN دقيقة؟ رسالة القناة الجديدة لا تجعل الخبر جديداً."""
@@ -384,6 +398,7 @@ def main():
                 if ttier == "ضعيفة":
                     skip("مصدر ضعيف", "weak_src"); continue  # مصدر وحيد بطبقة «ضعيفة»: لا نشر سريع، والجولة الرئيسية تنشره إذا عززه مصدر آخر
                 # قناة عراقية (لا عربية/دولية): خبر جهة رسمية بصيغة محلية بلا اسم العراق يكفي إذا خلا من أي علامة أجنبية («التقاعد: …»، «شرطة …»)
+                pflag = flagged(ch, p["text"])
                 iraqi = T.iraq_strict(first) or (ch not in CFG.get("intl", []) and T.iraq_domestic(first))
                 if ch in CFG.get("agency", []) or tier == "rss" or (tier == "breaking" and ttier == "موثوقة"):
                     # وكالة موثوقة (أو موقعها مباشرة عبر RSS): عاجلها (أو حدث مهم بكلمات صريحة) عن العراق يُنشر فوراً منسوباً لها، بلا انتظار مصدر ثانٍ
@@ -392,7 +407,7 @@ def main():
                     elif not iraqi:
                         skip("وكالة: ليس عراقياً"); continue
                     why_no = "no_strict"
-                    if regional or FLAG.search(p["text"][:40]) or STRICT.search(first):
+                    if regional or pflag or STRICT.search(first):
                         ok = True
                     else:  # خبر وكالة غير موسوم: يحكم النموذج على أهميته (واع سبقتنا 12 مرة بأخبار عادية مهمة كنا ننتظرها للجولة الرئيسية)
                         ok, by = important(p["text"][:600], news=True) if gem_ok() else (False, "سقف")
@@ -405,7 +420,7 @@ def main():
                     elif not iraqi:
                         skip("ليس عراقياً"); continue
                     why_no = "no_strict"
-                    if regional or FLAG.search(p["text"][:40]) or T.SEC_RX.search(first):
+                    if regional or pflag or T.SEC_RX.search(first):
                         ok = True  # عاجل عراقي، أو خبر أمني عراقي حتى بلا وسم «عاجل» (الأمني لا ينتظر)
                     elif gem_ok():
                         # خبر عراقي غير موسوم من قناة سريعة (دجلة، السومرية، 964…): المسار السريع هو الناشر الأساسي الآن،
@@ -436,8 +451,8 @@ def main():
                 if not ok:
                     skip("غير مهم", why_no); continue
                 head0 = FB.fast_head(first)
-                crit = CFG.get("two_stage", True) and not regional and FB.critical(oname, bool(FLAG.search(p["text"][:40])), first,
-                                                                                   FB.loud_of(p["text"], first, head0))
+                crit = CFG.get("two_stage", True) and not regional and FB.critical(oname, pflag, first,
+                                                                                   FB.loud_of(p["text"], first, head0, flag=pflag))
                 # الحرج: عنوان القواعد فوراً (الصياغة بالنموذج تأتي بالإثراء خلال 30–120 ث)، وغيره كما كان
                 head = head0 if crit else edit_headline(first, context=p["text"][:500])
                 if T.low_value(head) or T.incomplete(head) or len(head.split()) < 5:
@@ -455,7 +470,7 @@ def main():
                 # «عاجل» (شارة حمراء + وميض) فقط لما وسمته المصادر عاجلاً أو حدث أمني عراقي — لا لكل منشورات الجهات الرسمية
                 # وسم «عاجل» من المصدر وحده لا يكفي: بعض القنوات (ABC العربية) تسم كل منشور عاجلاً — يلزم حدث عاجل بالمضمون
                 # (أمني/انفجار/كارثة/تعطيل دوام/استقالة) لا موعد مباراة ولا سعر أمبير ولا حالة جوية (فحص 4، تدقيق 18:15 04/11: 3025، 3038، 3044، 3049، 3060)
-                loud = (bool(FLAG.search(p["text"][:40])) or bool(T.SEC_RX.search(first) and T.iraq_strict(first))) and not T.NOT_URGENT_RX.search(head) \
+                loud = (pflag or bool(T.SEC_RX.search(first) and T.iraq_strict(first))) and not T.NOT_URGENT_RX.search(head) \
                     and bool(T.SEC_RX.search(head) or T.EVENT_RX.search(head) or T.URGENT_RX.search(head)) \
                     and not (T.STATEMENT_RX.search(head) and not (T.SEC_RX.search(head) or T.EVENT_RX.search(head))) and T.iraq_strict(head)  # سعر الدولار/السلف/التقديم بلا «عاجل» (تدقيق 2835)
                 src_name = re.sub(r" — .*$", "", cname) + (" (وثيقة رسمية)" if from_doc else "")
