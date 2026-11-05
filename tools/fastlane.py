@@ -136,10 +136,16 @@ _DIG = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
 
 
 def _new_numbers(new, old):
-    """أرقام بالخبر الجديد غير موجودة بما نشرناه (حصيلة 3 ← 5) — أو نفي/تأكيد رسمي بلا أرقام."""
-    nn = set(re.findall(r"\d+", new.translate(_DIG)))
+    """أرقام بالخبر الجديد غير موجودة بما نشرناه (حصيلة 3 ← 5) — أو نفي رسمي جديد لم يكن بما نشرناه.
+    «يؤكد/تؤكد» ليست تحديثاً (فعل إخباري عام: «الزيدي … ويؤكد رفض» نزل 3 ردود خلال 5 ث 3348–3350)، والنفي لا يُعاد
+    إذا كان منشورنا نفسه نفياً («الداخلية تنفي…» 3326 ثم 3 ردود بالنفي نفسه 3327–3329) — فحص 4، تدقيق 22:11 05/11."""
+    nn = {x for x in re.findall(r"\d+", new.translate(_DIG)) if not re.fullmatch(r"(19|20)\d\d", x)}
     oo = set(re.findall(r"\d+", old.translate(_DIG)))
-    return bool(nn - oo) or bool(re.search(r"(نفي|ينفي|تنفي|تؤكد|يؤكد)", new))
+    return bool(nn - oo) or (bool(UPD_DENY.search(new)) and not UPD_DENY.search(old))
+
+
+UPD_DENY = re.compile(r"(نفي|ينفي|تنفي|نفى|نفت|لا صحة|تكذب|يكذب|تكذيب)")
+UPD_GAP_S = 600  # 10 دقائق على الأقل بعد المنشور الأصلي وبين تحديثين عليه: جهات تنقل التحديث نفسه بثوانٍ (3301، 3303، 3305 خلال 4 د)
 
 
 def gem_ok():
@@ -408,7 +414,7 @@ def main():
                 if any(T.same_story(sig, x) for x in mine + main_sigs) or T.sec_dup(first, mine + main_sigs, time.time()):
                     # تحديث على خبر نشرناه (حصيلة/رقم جديد/نفي/تأكيد رسمي): يُرسل ردّاً على منشورنا الأصلي بدل خبر مكرر (مقترح 4، 05/11)
                     base = next((x for x in reversed(mine) if x.get("mid") and T.same_story(sig, x) and time.time() - x.get("ts", 0) <= 3 * 3600), None)
-                    if base and CFG.get("update_replies", True) and (oname or ttier != "ضعيفة") and base.get("upd", 0) < 3 \
+                    if base and CFG.get("update_replies", True) and (oname or ttier != "ضعيفة") and base.get("upd", 0) < 3 and time.time() - max(base.get("upd_ts", 0), base.get("ts", 0)) >= UPD_GAP_S \
                             and UPD_RX.search(first) and _new_numbers(first, base.get("title", "")):
                         try:
                             uh = FB.fast_head(first)
@@ -416,6 +422,7 @@ def main():
                                        parse_mode="HTML", text=f"🔄 <b>تحديث:</b> {H.escape(uh)}\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}")
                             if rr.get("ok"):
                                 base["upd"] = base.get("upd", 0) + 1
+                                base["upd_ts"] = time.time()
                                 base["title"] = (base.get("title", "") + " " + first)[:600]
                                 gh_put("fast_sigs.json", mine)
                                 decide(ch, p["id"], uh, "update", f"reply:{base['mid']}")

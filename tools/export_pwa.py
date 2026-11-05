@@ -467,6 +467,9 @@ def main(hours=24):
             continue  # المحتوى الكردي لا يُعرض (لا توجد ترجمة كردي→عربي مجانية موثوقة حالياً)
         title = clean_title(d["label"], texts)
         title_ar = tr.get(title) or tr.get((d["label"] or "").strip())
+        # العنوان المعروض قد يكمل تمهيداً بسطر النص الثاني («الاحتجاجات تعود من جديد..» ← «…: فرنسا رهينة التظاهرات»):
+        # يُعاد فحص «عن العراق» عليه لا على تسمية العنقود وحدها (فحص 6، تدقيق 22:11 05/11)
+        about_iraq = about_iraq_title(title_ar or title, about_iraq)
         if not ARABIC_CH.search(title_ar or title):
             continue  # لا نعرض عنواناً غير مترجم للعربية
         if not title_ar and langs and langs <= {"fa", "tr"}:
