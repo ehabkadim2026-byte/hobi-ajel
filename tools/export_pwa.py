@@ -590,6 +590,11 @@ def main(hours=24):
             n["trust_badge"] = None
             print("::warning title=trust_badge::", type(e).__name__, str(e)[:100])
         n.pop("_tb", None)
+        try:  # آراء المحللين والخبراء (إيهاب 05/11: «نرصد شنو يكولون») — قسم خاص بالتطبيق
+            from tools.tg_push import analyst as _an
+            n["analyst"] = bool(n.get("about_iraq") and _an(n.get("title") or ""))
+        except Exception:  # noqa: BLE001
+            n["analyst"] = False
         n["province"] = P.province_of(n.get("title") or "") if n.get("about_iraq") else None  # «محافظتي» والخريطة: أول محافظة بالعنوان
     analysis.sort(key=lambda x: (x["last_time"] or ""), reverse=True)
     try:

@@ -317,7 +317,9 @@ def worthy(n, now):
 
 
 # عناوين ليست أخباراً: أسئلة رأي وتحليل، مسلسلات، فتاوى، توعية، مقالات رأي
-LOWVAL_RX = re.compile(r"((?<![A-Za-z])pinned(?![A-Za-z])|(?:ال)?(?:محلل|خبير|باحث)\s+(?:ال)?(?:سياسي|اقتصادي|أمني|امني|قانوني|استراتيجي|عسكري)|من (?:ال)?مفارقات|مفارقة|يا جماعة|شنو رأيكم|رأيكم|^\W*\(\s*(?!عاجل|خاص|بالفيديو|فيديو|صور|محدث|تحديث)[^)]{2,25}\)\s*:|حب من أول نظرة|خصوصية البنت|؟\s*$|\?\s*$|مسلسل|الحلقة|حلقة|^\W*(?:ال)?جزء\s+(?:ال)?\S+(?:\s+عشر)?\s*:|تعترف لوالد|ما حكم|حكم إعطاء|زكاة|فتوى|اليوم الدولي|اليوم العالمي|رحلة تبدأ بتجربة|"
+# آراء المحللين والخبراء: إيهاب 05/11 «لا نلغيهم، نرصد شنو يكولون» — تُنشر بوسم «تحليل» وبسقف، وللتطبيق قسم خاص
+ANALYST_RX = re.compile(r"(?:ال)?(?:محلل|خبير|باحث|أكاديمي|اكاديمي)\s+(?:ال)?(?:سياسي|اقتصادي|أمني|امني|قانوني|استراتيجي|عسكري|نفطي|مالي|بالشأن)")
+LOWVAL_RX = re.compile(r"((?<![A-Za-z])pinned(?![A-Za-z])|من (?:ال)?مفارقات|مفارقة|يا جماعة|شنو رأيكم|رأيكم|^\W*\(\s*(?!عاجل|خاص|بالفيديو|فيديو|صور|محدث|تحديث)[^)]{2,25}\)\s*:|حب من أول نظرة|خصوصية البنت|؟\s*$|\?\s*$|مسلسل|الحلقة|حلقة|^\W*(?:ال)?جزء\s+(?:ال)?\S+(?:\s+عشر)?\s*:|تعترف لوالد|ما حكم|حكم إعطاء|زكاة|فتوى|اليوم الدولي|اليوم العالمي|رحلة تبدأ بتجربة|"
                        r"^بالرغم من|^في كف|يشتكي من|حلاق|فكريات|نرسل لكم|عناوين جريدة|صباحكم|مساءكم|تصفح جريدة|تصفح العدد|عدد اليوم|"
                        r"^بسم الله|صدق الله|الرصد اليومي|لبرنامج|في برنامج|ضيف برنامج|\|\s*\S+(?:\s+\S+){0,3}\s+مع\s+\S+|الميدان مع|"
                        r"^(?:الإرهابي|الارهابي|المجرم|الفاسد|العميل|الخائن)\s+\S+|^كتب\s+[^:]{2,30}:|^(?:[^:]{2,25}:\s*)?(?:لماذا|ماذا|هل|كيف)\s|تنشر قائمة|«[^»]{2,25}»\s*(?:تكشف|تنفرد|ترصد|تنشر)|^(?:أكد|اكد|أكدت|اكدت|يؤكد|تؤكد)\s[^:،]{0,90}?\s(?:على\s+)?(?:أهمية|اهمية|التعاون|ضرورة)\s|"
@@ -400,10 +402,16 @@ NOTNEWS_RX = re.compile(r"(?:إلى|الى)\s+(?:متابعي|متابعين)|ل
 # (فحص 4، تدقيق 22:11 04/11: 3062 متداول، 3063 ترويج نشرة بسؤال، 3067 حوار، 3076 «الرد مكفول»، 3086/3095 ترقب وتخمين، 3092/3102/3103 تقييم؛ «مصدر:» يُنشر بلا «عاجل» فقط: 3096)
 
 
+def analyst(t):
+    """تصريح/رأي محلل أو خبير أو باحث: يُنشر بوسم «تحليل» وبسقف بالساعة (إيهاب 05/11: نرصد شنو يكولون)."""
+    t = (t or "").strip()
+    return bool(PUNDIT_RX.search(t) or ANALYST_RX.search(t))
+
+
 def low_value(t):
     """عنوان ليس خبراً: سؤال/برنامج/فتوى/عرض صحف/شعار (فقرات بنقاط تعليق بلا فعل)، أو مكتوب بالعامية، أو تصريح جهة مستبعدة، أو مسيء."""
     t = (t or "").strip()
-    if NOTNEWS_RX.search(t) or LOWVAL_RX.search(t) or dialect(t) or EXCL_RX.search(t) or PROTOCOL_RX.search(t) or PUNDIT_RX.search(t) or offensive(t):
+    if NOTNEWS_RX.search(t) or LOWVAL_RX.search(t) or dialect(t) or EXCL_RX.search(t) or PROTOCOL_RX.search(t) or offensive(t):  # آراء المحللين لم تعد «ليس خبراً» (إيهاب 05/11) — تُوسم «تحليل» بـ analyst()
         return True
     if re.search(r"(?:الآن|الان)\s*$", t) and not VERB_RX.search(t) and not _has_verb(t):
         return True  # وصف مقطع بلا واقعة: «قضاء المدائن في محافظة بغداد الان» (فحص 4، تدقيق 22:11 04/11: 3089، 3065)
@@ -1185,12 +1193,59 @@ def send_pending(token, chat_id, only_breaking=False):
     except Exception as e:  # noqa: BLE001
         DEBUG.append(f"digest:{type(e).__name__}:{str(e)[:50]}")
     try:
+        done.update(hourly_digest(token, chat_id, msgs) or {})
+    except Exception as e:  # noqa: BLE001
+        DEBUG.append(f"hdigest:{type(e).__name__}:{str(e)[:50]}")
+    try:
         done.update(daily_stats(token, msgs) or {})
     except Exception as e:  # noqa: BLE001
         DEBUG.append(f"stats:{type(e).__name__}:{str(e)[:50]}")
     keep_ids = sorted(((k, v) for k, v in msgs.items() if not k.startswith("_")), key=lambda kv: kv[1])[-1500:]
     MSGS.write_text(json.dumps({**{k: v for k, v in msgs.items() if k.startswith("_")}, **dict(keep_ids)}, ensure_ascii=False), encoding="utf-8")
     return done
+
+
+def hourly_digest(token, chat_id, msgs):
+    """«أهم أخبار الساعة» (مقترح 2، وافق عليه إيهاب 05/11): بطاقة موجز بأهم 5 أخبار عراقية خلال الساعة الماضية، من 10 صباحاً
+    إلى 11 ليلاً بغداد (8 و9 مساءً لهما موجزا الصباح والحصاد)، بلا تنبيه صوتي. الخبر المنشور بالقناة يأخذ رابط منشوره."""
+    now = datetime.now(timezone.utc)
+    bgd = now + timedelta(hours=3)
+    if not (10 <= bgd.hour <= 23) or bgd.hour == 21:
+        return None
+    key = bgd.strftime("%Y-%m-%dT%H")
+    if msgs.get("_hourly") == key:
+        return None
+    news = load(PWA / "news.json", [])
+    start = (now - timedelta(minutes=60)).strftime("%Y-%m-%dT%H:%M:%S")
+    from tools.editorial import clean_headline as _ch
+    pool = [n for n in news if (n.get("first_utc") or "") >= start and (n.get("about_iraq") or n.get("pmf"))
+            and iraq_strict(n["title"]) and not low_value(_ch(n["title"], 110)) and not incomplete(_ch(n["title"], 110).rstrip("…").strip())
+            and (n["id"] in msgs or (n.get("n_sources") or 0) >= 3)]
+    top = sorted(pool, key=lambda n: -importance(n))[:5]
+    if len(top) < 4:
+        return None
+    from tools import tg_card
+    heads = [_ch(n["title"], 110) for n in top]
+    h0 = (bgd - timedelta(hours=1)).strftime("%H:00")
+    title, sub = "أهم أخبار الساعة", f"من {h0} إلى {bgd.strftime('%H:00')} بتوقيت بغداد"
+    ch = CHANNEL.rstrip("/").split("/")[-1]
+    lines = [f"⏱ <b>{title}</b> — {sub}", ""]
+    for i, (n, h) in enumerate(zip(top, heads), 1):
+        lines.append(f"{i}. <a href=\"https://t.me/{ch}/{msgs[n['id']]}\">{H.escape(h)}</a>" if n["id"] in msgs else f"{i}. {H.escape(h)}")
+    lines += ["", f"تابعونا لحظة بلحظة 👇\n{CHANNEL}"]
+    cap = "\n".join(lines)
+    r = {"ok": False}
+    try:
+        months = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول']
+        card = tg_card.card_digest(title, sub, f"{bgd.day} {months[bgd.month - 1]} {bgd.year}", heads)
+        r = api(token, "sendPhoto", files={"photo": ("hourly.jpg", card)}, chat_id=chat_id, caption=cap[:1024], parse_mode="HTML",
+                disable_notification="true")
+    except Exception as e:  # noqa: BLE001
+        DEBUG.append(f"hdigestcard:{type(e).__name__}:{str(e)[:40]}")
+    if r.get("ok"):
+        msgs["_hourly"] = key
+        return {"hourly": key}
+    return None
 
 
 def evening_digest(token, chat_id, msgs):

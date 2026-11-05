@@ -33,6 +33,7 @@ KINDS = {  # الاسم المعروض، اللون، كلمات الكشف (ع�
     "politics": ("سياسة", (96, 165, 250), r"(البرلمان|مجلس النواب|رئيس الوزراء|السوداني|الحكومة|مجلس الوزراء|الوزير|وزير|الانتخابات|"
                                          r"المحافظ|رئيس الجمهورية|الكتلة|تحالف|الإطار|السفير|وفد|يستقبل|يلتقي|اجتماع|قانون)"),
 }
+KINDS["analysis"] = ("تحليل", (167, 139, 250), r"(?!x)x")
 KINDS_RX = {k: re.compile(v[2]) for k, v in KINDS.items()}
 ORDER = ["security", "education", "weather", "economy", "sport", "health", "politics"]  # التعليم قبل الطقس: «تعطيل الدوام بسبب الأمطار» خبر تعليم
 
@@ -117,6 +118,12 @@ def _backdrop(kind_name, accent):
 def card(photo_jpg, title, breaking=False, when_utc=None, source=None, kind=None, dim=False):
     kick, head = C.split_kicker(title)
     kind = kind or ("security" if breaking and KINDS_RX["security"].search(title or "") else kind_of(title))
+    try:
+        from tools.tg_push import analyst as _an
+        if _an(title):
+            kind, breaking = "analysis", False  # رأي محلل: وسم «تحليل» ولا يكون عاجلاً أبداً
+    except Exception:  # noqa: BLE001
+        pass
     kname, accent = (KINDS[kind][0], KINDS[kind][1]) if kind in KINDS else ("خبر", (240, 240, 240))
     # 05/11: إيهاب اختار بطاقة «سلف الرافدين» (لسان أحمر + صورة الخبر + عنوان كبير) قالباً أساسياً ⇒ أحمر الهوية لكل الأخبار،
     # ونوع الخبر يُكتب نصاً بالوسم بدل تعدد الألوان (KINDS تبقى للكشف والاسم فقط)

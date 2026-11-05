@@ -477,6 +477,12 @@ def main():
                 # الإيقاع المطلوب خبر كل ~2 دقيقة، والصمت 20 دقيقة صباح 05/11 كان من صرامة النموذج لا من قلة الأخبار
                 # (مجلس كردستان يعقد جلسته الأولى، خطة النفط لحقول الإقليم رُفضتا gem_no). الروتيني والضعيف والقصير يبقى مرفوضاً.
                 quiet = False
+                is_an = T.analyst(first)
+                if is_an:  # رأي محلل/خبير عن العراق: يُقبل بوسم «تحليل» وبسقف analyst_per_hour (لا يمر عبر حكم الأهمية)
+                    n_an = sum(1 for x in mine if x.get("an") and x.get("ts", 0) >= time.time() - 3600)
+                    if not iraqi or ttier == "ضعيفة" or n_an >= CFG.get("analyst_per_hour", 3):
+                        skip("سقف", "analyst_cap"); continue
+                    ok = True
                 if not ok and why_no == "gem_no" and iraqi and not regional and ttier != "ضعيفة" and not T.ROUTINE_RX.search(first) \
                         and not ROUTINE.search(first) and len(first.split()) >= 7:
                     qmin = CFG.get("quiet_min", 6)
@@ -553,7 +559,7 @@ def main():
                     FB.LAT.add("fast" if crit else "normal", time.time() - t_det)
                     FB.STATUS["fast_sent"] += int(bool(crit))
                     mine.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time(), "title": first[:200], "id": f"fast:{ch}/{p['id']}",
-                                 "mid": (r.get("result") or {}).get("message_id"),
+                                 "mid": (r.get("result") or {}).get("message_id"), "an": bool(is_an),
                                  "lag_min": round(age, 1), "reg": regional})
                     gh_put("fast_sigs.json", mine)
                     decide(ch, p["id"], head, "post", "loud" if loud else "quiet" if quiet else tier)
