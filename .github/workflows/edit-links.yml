@@ -1,0 +1,52 @@
+name: edit-links
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  e:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TOK: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
+      CHAT: ${{ secrets.MARSAD_TG_CHAT_ID }}
+    steps:
+      - run: |
+          gh release download fastlane -p posted_fast.json -p posted_main.json -R ${{ github.repository }}
+          python3 - <<'PY' > edit_out.txt 2>&1
+          import os, json, time, urllib.request, urllib.parse
+          T=os.environ["TOK"].strip(); chat=os.environ.get("CHAT","").strip() or "-1004327422297"
+          def api(m, **p):
+              for _ in range(3):
+                  try:
+                      return json.loads(urllib.request.urlopen(urllib.request.Request(f"https://api.telegram.org/bot{T}/{m}", data=urllib.parse.urlencode(p).encode()), timeout=30).read())
+                  except urllib.error.HTTPError as e:
+                      r=json.loads(e.read() or b"{}")
+                      ra=(r.get("parameters") or {}).get("retry_after")
+                      if ra: time.sleep(ra+1); continue
+                      return r
+          seen=set(); ok=fail=skip=0
+          for f in ("posted_fast.json","posted_main.json"):
+              d=json.load(open(f)); posts=d.get("posts",d) if isinstance(d,dict) else d
+              posts=list(posts.values()) if isinstance(posts,dict) else posts
+              for x in posts:
+                  mid=x.get("message_id"); cap=x.get("caption") or ""
+                  if not mid or mid in seen: continue
+                  seen.add(mid)
+                  kb=x.get("kb"); kbs=json.dumps(kb,ensure_ascii=False) if isinstance(kb,(dict,list)) else (kb or "")
+                  if "hassawassal" not in cap+kbs: skip+=1; continue
+                  cap=cap.replace("hassawassal","akamedia_iq"); kbs=kbs.replace("hassawassal","akamedia_iq")
+                  p=dict(chat_id=chat, message_id=mid, parse_mode="HTML")
+                  if kbs: p["reply_markup"]=kbs
+                  if x.get("kind") in ("text","link"):
+                      p["text"]=cap
+                      if x.get("lp"): p["link_preview_options"]=x["lp"] if isinstance(x["lp"],str) else json.dumps(x["lp"])
+                      r=api("editMessageText",**p)
+                  else:
+                      p["caption"]=cap[:1024]; r=api("editMessageCaption",**p)
+                  if r and r.get("ok"): ok+=1
+                  else: fail+=1; print("fail",mid,(r or {}).get("description"))
+                  time.sleep(1.2)
+          print("edited",ok,"failed",fail,"skipped",skip)
+          PY
+          sed -i "s/$TOK/***/g" edit_out.txt; tail -40 edit_out.txt
+          gh release upload probe edit_out.txt --clobber -R ${{ github.repository }}
