@@ -69,4 +69,12 @@ from tools import test_fastbreak  # noqa: E402
 test_fastbreak.run()  # العاجل على مرحلتين (إرسال فوري ← إثراء المنشور نفسه)، قراءة صور الوثائق الرسمية، ذيل اسم الناشر، تصنيف الموضوع، أنواع تحديثات البوت
 import subprocess as _sp  # noqa: E402
 assert _sp.run([sys.executable, "-m", "tools.proof"], cwd=str(__import__("pathlib").Path(__file__).resolve().parent.parent)).returncode == 0, "المدقق اللغوي السريع"  # همزات/تشكيل/بادئات القنوات
+# تدقيق 14:11 05/11: «رانية» داخل «الأوكرانية» (3225)، الخبراء بلا نقطتين (3214، 3218)، «الحربية» ليست حرباً (3226)، السنة المبتورة (3188)
+assert not T.iraq_strict("روسيا تشن هجوما جويا واسعا على العاصمة الأوكرانية كييف، والرئيس زيلينسكي يقول")
+assert T.iraq_strict("14 سائقا عراقيا عالقون في سوريا") and T.iraq_strict("انفجار في قضاء رانية بالسليمانية")
+assert T.low_value("الخبير القانوني علي التميمي يستبعد إلغاء المحكمة الاتحادية لقرارات برلمان إقليم كوردستان")
+assert not T.EVENT_RX.search("الزيدي يزور هيئة التصنيع الحربي ويدعم الصناعات الحربية") and T.EVENT_RX.search("الحرب على إيران")
+assert T.incomplete("بتخصيص 467 مليار دينار ضمن الموازنة الاتحادية لعام 20") and not T.incomplete("ضمن الموازنة الاتحادية لعام 2026 تُقر غداً")
+from tools.export_pwa import about_iraq_title as _ait
+assert _ait("العثور على 6 نقوش لبابلو بيكاسو سرقت في فرنسا", True) is False and _ait("محافظ بابل يعلن عطلة رسمية في فرنسا", True) is True
 print("selftest ok")
