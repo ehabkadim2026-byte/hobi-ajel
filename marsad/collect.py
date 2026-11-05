@@ -169,6 +169,17 @@ def collect_source(source, state):
             if (source.get("region") or "").startswith("إقليمي"):  # الإعلام العربي غير العراقي فقط؛ العراقي مرصود مباشرة
                 items = [i for i in items if not IRAQI_OUTLETS.search(i.get("source_name") or "")]
             return items
+        if "api.gdeltproject.org" in source["url"]:  # GDELT: آلاف المواقع المفتوحة عالمياً؛ الناشر الحقيقي من رابط كل مادة
+            from urllib.parse import urlsplit as _us
+            from .cli import EXCLUDED_SRC as _EX
+            keep = []
+            for i in items:
+                dom = _us(i.get("url") or "").netloc.replace("www.", "")
+                if not dom or _EX.search(dom + " " + (i.get("title") or "")):
+                    continue
+                i["source_name"] = f"{dom} (عبر GDELT)"
+                keep.append(i)
+            return [i for i in keep if IRAQ_RX.search(i["title"] or "")]
         if source.get("category") == "صحافة أجنبية" and "/iraq" not in source["url"].lower() and "iraq" not in source["url"].lower():
             items = [i for i in items if IRAQ_RX.search((i["title"] or "") + " " + (i["text"] or ""))]
         return items

@@ -8822,6 +8822,34 @@
    "official": true,
    "added_by": "سد الفجوات 2026-11-05",
    "evidence": "خلاصة عربية للموقع الرسمي؛ 30 مادة وأحدثها 03/11/2026"
+  },
+  {
+   "id": "rss:gdelt-ar",
+   "name": "GDELT — المواقع العربية عن العراق",
+   "url": "https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=rss&sort=datedesc&maxrecords=75&timespan=30min&query=%28%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%20OR%20%D8%A8%D8%BA%D8%AF%D8%A7%D8%AF%20OR%20%D8%A7%D9%84%D8%A8%D8%B5%D8%B1%D8%A9%20OR%20%D8%A7%D9%84%D9%85%D9%88%D8%B5%D9%84%20OR%20%D8%A3%D8%B1%D8%A8%D9%8A%D9%84%20OR%20%D9%83%D8%B1%D9%83%D9%88%D9%83%20OR%20%D8%A7%D9%84%D9%86%D8%AC%D9%81%20OR%20%D9%83%D8%B1%D8%A8%D9%84%D8%A7%D8%A1%29%20sourcelang%3Aarabic",
+   "platform": "rss",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "كل جولة",
+   "category": "مجمّع مصادر مفتوحة",
+   "region": "العراق/دولي",
+   "lang": "ar",
+   "official": false,
+   "note": "05/11 توسيع الرصد بروابط مفتوحة المصدر: GDELT يفهرس آلاف المواقع عالمياً كل 15 دقيقة — للتغطية الأوسع لا للسبق"
+  },
+  {
+   "id": "rss:gdelt-en",
+   "name": "GDELT — English sites on Iraq",
+   "url": "https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=rss&sort=datedesc&maxrecords=75&timespan=30min&query=%28Iraq%20OR%20Baghdad%20OR%20Erbil%20OR%20Basra%20OR%20Mosul%20OR%20Kirkuk%29%20sourcelang%3Aenglish",
+   "platform": "rss",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "كل جولة",
+   "category": "مجمّع مصادر مفتوحة",
+   "region": "العراق/دولي",
+   "lang": "en",
+   "official": false,
+   "note": "05/11 توسيع الرصد بروابط مفتوحة المصدر: GDELT يفهرس آلاف المواقع عالمياً كل 15 دقيقة — للتغطية الأوسع لا للسبق"
   }
  ]
 }

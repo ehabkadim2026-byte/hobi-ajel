@@ -68,8 +68,57 @@ TOWNS_AR = {"sarpol-e zahab": "سربل ذهاب", "qasr-e shirin": "قصر شي
 
 STATUS = {"quake": {"ok": None, "err": 0, "seen": 0, "posted": 0, "updates": 0, "last": None},
           "ioda": {"ok": None, "err": 0, "alerts": 0, "drop": None, "last": None},
-          "usd": {"ok": None, "err": 0, "readings": 0, "alerts": 0, "last": None}}
-STATE = {"quakes": {}, "ioda": {"last_alert": 0, "active": False}, "usd": {"read": {}, "last_alert": {}}, "posts": []}
+          "usd": {"ok": None, "err": 0, "readings": 0, "alerts": 0, "last": None},
+          "trends": {"ok": None, "err": 0, "alerts": 0, "last": None}}
+STATE = {"quakes": {}, "ioda": {"last_alert": 0, "active": False}, "usd": {"read": {}, "last_alert": {}}, "posts": [], "trends": {"seen": {}}}
+
+# ───────── ترند بحث كوكل بالعراق ─────────
+# طلب إيهاب 05/11 «كوكل كروم تنقل أخبار»: موجز Discover بكروم لا واجهة له، لكن «الرائج الآن» من Google Trends مفتوح (RSS)
+# ويكشف ما يبحث عنه العراقيون قبل أن تكتب عنه القنوات أحياناً. تنبيه خاص للمحررين فقط — البحث ليس خبراً ولا يُنشر.
+TRENDS_URL = "https://trends.google.com/trending/rss?geo=IQ"
+TRENDS_EVERY, TRENDS_MIN = 600, 1000
+
+
+def parse_trends(xml):
+    out = []
+    for it in re.findall(r"<item>(.*?)</item>", xml or "", re.S):
+        t = re.search(r"<title>(.*?)</title>", it, re.S)
+        tr = re.search(r"<ht:approx_traffic>([\d,+]+)</ht:approx_traffic>", it)
+        news = re.findall(r"<ht:news_item_title>(.*?)</ht:news_item_title>", it, re.S)
+        if not t:
+            continue
+        n = int(re.sub(r"\D", "", tr.group(1)) or 0) if tr else 0
+        clean = lambda x: re.sub(r"<!\[CDATA\[|\]\]>", "", x).strip()
+        out.append({"q": clean(t.group(1)), "traffic": n, "news": [clean(x) for x in news[:2]]})
+    return out
+
+
+def trends_tick(ctx, fetch=None):
+    import urllib.request
+    try:
+        if fetch:
+            xml = fetch(TRENDS_URL)
+        else:
+            req = urllib.request.Request(TRENDS_URL, headers={"User-Agent": "Mozilla/5.0"})
+            xml = urllib.request.urlopen(req, timeout=15).read().decode("utf-8", "replace")
+    except Exception:  # noqa: BLE001
+        STATUS["trends"].update(ok=False, err=STATUS["trends"]["err"] + 1)
+        return 0
+    STATUS["trends"].update(ok=True, last=_iso())
+    seen = STATE["trends"].setdefault("seen", {})
+    now = _now()
+    for k in [k for k, v in seen.items() if now - v > 2 * 86400]:
+        del seen[k]
+    sent = 0
+    for t in parse_trends(xml):
+        if t["traffic"] < TRENDS_MIN or t["q"] in seen:
+            continue
+        seen[t["q"]] = now
+        rel = "\n".join("• " + x for x in t["news"]) or "• لا أخبار مرتبطة بعد — قد يكون سبقاً، تحقق"
+        ctx["dm"](f"🔎 رائج ببحث كوكل في العراق الآن: «{t['q']}» (+{t['traffic']:,} بحث)\n{rel}\n\nتنبيه للمحررين فقط — البحث مؤشر لا خبر.", None)
+        sent += 1
+    STATUS["trends"]["alerts"] += sent
+    return sent
 _LOCK = threading.RLock()
 
 
@@ -408,7 +457,7 @@ def start(token, chat_id, until, posts_fn, load=None, save=None, api=None):
     try:
         d = load() if load else None
         if isinstance(d, dict):
-            for k in ("quakes", "ioda", "usd"):
+            for k in ("quakes", "ioda", "usd", "trends"):
                 if isinstance(d.get(k), dict):
                     STATE[k] = d[k]
             STATE["usd"].setdefault("read", {})
@@ -418,10 +467,10 @@ def start(token, chat_id, until, posts_fn, load=None, save=None, api=None):
     ctx = make_ctx(token, chat_id, api)
 
     def run():
-        nxt = {"q": 0, "i": 0, "u": 0, "s": _now() + 300}
+        nxt = {"q": 0, "i": 0, "u": 0, "g": _now() + 120, "s": _now() + 300}
         while _now() < until:
             for k, every, fn in (("q", Q_EVERY, lambda: quake_tick(ctx)), ("i", IODA_EVERY, lambda: ioda_tick(ctx)),
-                                 ("u", USD_EVERY, lambda: usd_tick(ctx, posts_fn))):
+                                 ("u", USD_EVERY, lambda: usd_tick(ctx, posts_fn)), ("g", TRENDS_EVERY, lambda: trends_tick(ctx))):
                 if _now() >= nxt[k]:
                     nxt[k] = _now() + every
                     try:
@@ -432,7 +481,7 @@ def start(token, chat_id, until, posts_fn, load=None, save=None, api=None):
                 nxt["s"] = _now() + 300
                 try:
                     with _LOCK:
-                        snap = json.loads(json.dumps({"quakes": STATE["quakes"], "ioda": STATE["ioda"], "usd": STATE["usd"], "at": _iso()}))
+                        snap = json.loads(json.dumps({"quakes": STATE["quakes"], "ioda": STATE["ioda"], "usd": STATE["usd"], "trends": STATE["trends"], "at": _iso()}))
                     save(snap)
                 except Exception:  # noqa: BLE001
                     pass
