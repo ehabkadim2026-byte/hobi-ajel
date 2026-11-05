@@ -340,7 +340,7 @@ def render(items, out_path, day_txt, music=None):
            "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
            "-c:a", "aac", "-b:a", "128k", "-shortest", "-t", f"{total:.2f}", "-movflags", "+faststart", str(out_path)]
     if music and Path(music).exists():
-        cmd[cmd.index("-c:a"):cmd.index("-c:a")] = ["-af", f"volume=0.35,afade=t=out:st={max(0, total - 1.2):.2f}:d=1.2"]
+        cmd[cmd.index("-c:a"):cmd.index("-c:a")] = ["-af", f"volume=0.9,afade=t=out:st={max(0, total - 1.6):.2f}:d=1.6"]  # لا تعليق صوتي: الموسيقى هي الصوت الوحيد (مقطوعة إيهاب «نهاوند الفجر» من 1:26.7، مطبّعة -16 LUFS)
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     fno, WIPE = 0, 6
     stills = []
