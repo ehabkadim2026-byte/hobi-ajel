@@ -57,7 +57,13 @@ async def _run(token, channels, stop_at, views_cb=None):
     from telethon.tl.functions.channels import JoinChannelRequest
     from telethon.errors import FloodWaitError
     api_id, api_hash = _creds()
-    ss = _session(token)
+    ss = None
+    for attempt in range(8):  # 07/11: تنزيل الجلسة فشل مرة عابرة فبقيت جلسة 6 ساعات بلا مستمع («no-session») — نعيد المحاولة
+        ss = _session(token)
+        if ss or not api_id:
+            break
+        STATUS.update(state=f"no-session-retry{attempt + 1}")
+        await asyncio.sleep(min(30 * (attempt + 1), 120))
     if not (api_id and ss):
         STATUS.update(state="no-session")
         return

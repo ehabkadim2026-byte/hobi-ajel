@@ -477,6 +477,8 @@ def main():
                     else:  # خبر وكالة غير موسوم: يحكم النموذج على أهميته (واع سبقتنا 12 مرة بأخبار عادية مهمة كنا ننتظرها للجولة الرئيسية)
                         ok, by = important(p["text"][:600], news=True) if gem_ok() else (False, "سقف")
                         why_no = "gem_cap" if by == "سقف" else "gem_unavailable" if by not in ("Gemini", "قاعدة") else "gem_no" if not ok else "routine"
+                        if by not in ("Gemini", "قاعدة"):
+                            ok = bool(STRICT.search(first) or T.EVENT_RX.search(first))
                         ok = ok and (by == "قاعدة" or (by == "Gemini" and not T.ROUTINE_RX.search(first)))  # «قاعدة» = مهم بالتعريف (كان يُهمل هنا: رواتب كردستان 04/11)
                 elif tier == "breaking":
                     # قنوات الأخبار السريعة: فقط ما وسمته «عاجل» ويذكر العراق صراحة
@@ -492,6 +494,8 @@ def main():
                         # والجولة الرئيسية تتأخر 5–10 دقائق بطبيعتها — يحكم النموذج على أهميته (تحليل السبق 2026-11-03)
                         ok, by = important(p["text"][:600], news=True)
                         why_no = "gem_unavailable" if by not in ("Gemini", "قاعدة") else "gem_no" if not ok else "routine"
+                        if by not in ("Gemini", "قاعدة"):  # 07/11: النموذج غير متاح ليلاً فضاعت أخبار مهمة — الحدث العراقي الصريح يمر بالقاعدة
+                            ok = bool(STRICT.search(first) or T.EVENT_RX.search(first))
                         ok = ok and (by == "قاعدة" or (by == "Gemini" and not T.ROUTINE_RX.search(first)))  # «قاعدة» = مهم بالتعريف (كان يُهمل هنا: رواتب كردستان 04/11)
                     else:
                         skip("سقف النموذج بالساعة"); continue
