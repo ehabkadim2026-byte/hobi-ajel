@@ -273,6 +273,10 @@ def me_title(title):
     return any(w in t for w in ME_RX)
 
 
+SPORT_IQ_RX = re.compile(r"المنتخب العراقي|منتخبنا الوطني|المنتخب الوطني العراقي|أسود الرافدين|اسود الرافدين|المنتخب الأولمبي العراقي|منتخب العراق|"
+                         r"الدوري العراقي|دوري نجوم العراق|الزوراء|القوة الجوية|الشرطة العراقي|نادي الشرطة|نادي الطلبة|الكرخ|اتحاد الكرة العراقي|كأس العراق")
+SPORT_WORLD_RX = re.compile(r"دوري أبطال أوروبا|دوري الأبطال|كأس العالم|المونديال|الكلاسيكو|ريال مدريد|برشلونة|ميسي|رونالدو|كأس آسيا|دوري أبطال آسيا|"
+                            r"الدوري الإنكليزي|الدوري الإنجليزي|ليفربول|مانشستر|الفيفا|كأس العرب|محمد صلاح")
 VARIETY = [("رياضة", re.compile(r"(المنتخب العراقي|منتخبنا|أسود الرافدين|الدوري العراقي|دوري نجوم العراق|الزوراء|القوة الجوية|الشرطة الرياضي|نادي الطلبة|نادي الكرخ|اتحاد الكرة|كأس العراق|الأولمبية العراقية|بطولة|ملعب|مدرب)")),
            ("طقس", re.compile(r"(الأنواء الجوية|الانواء الجوية|طقس|أمطار|امطار|درجات الحرارة|موجة حر|موجة برد|غبار|عاصفة|سيول)")),
            ("ثقافة", re.compile(r"(معرض|مهرجان|فيلم|مسرح|كتاب|تراث|آثار|اثار|متحف|فنان|فنانة|شاعر|موسيقى|سياحة|سياحي)")),
@@ -1870,6 +1874,45 @@ def main():
                 except Exception as e:  # noqa: BLE001
                     DEBUG.append(f"variety:{type(e).__name__}:{str(e)[:40]}")
         sent["_variety"] = dict(list(vs.items())[-300:])
+        # ⚽ رياضة مهمة (إيهاب 06/11): خط مستقل عن المنوعات — المنتخب والدوري العراقي (حتى 14 يومياً، فاصل 25 د) +
+        # حدث رياضي عالمي كبير تتناقله 6 جهات فأكثر (حتى 4 يومياً). 8 ص – 1 ل بغداد، إشعار صامت.
+        sp = sent.get("_sport") or {}
+        s_today = [v for v in sp.values() if v.get("d") == day]
+        s_last = max([v.get("t", 0) for v in sp.values()] or [0])
+        if (bh0 >= 8 or bh0 < 1) and len(s_today) < 14 and now.timestamp() - s_last > 1500:
+            sc = []
+            for n in news:
+                if n["id"] in sent or n["id"] in sp or n["id"] in vs:
+                    continue
+                t0 = n.get("title") or ""
+                iq = bool(SPORT_IQ_RX.search(t0))
+                big = not iq and SPORT_WORLD_RX.search(t0) and (n.get("n_sources") or 1) >= 6
+                if not (iq or big) or (big and sum(1 for v in s_today if v.get("w")) >= 4):
+                    continue
+                if (n.get("first_utc") or "9") < (now - timedelta(minutes=45)).strftime("%Y-%m-%dT%H:%M:%S") or n.get("ctype") == "تحليل/رأي":
+                    continue
+                from tools.editorial import clean_headline
+                ct = clean_headline(t0)
+                if len(ct.split()) < 5 or PROMO_RX.search(ct) or JUNK.match(ct) or low_value(ct) or offensive(ct):
+                    continue
+                sig = title_sig(t0)
+                if any(same_story(sig, x) for x in posted_all):
+                    continue
+                sc.append(((n.get("n_sources") or 1) + (5 if iq else 0), n, sig, bool(big)))
+            if sc:
+                _, n, sig, big = max(sc, key=lambda x: x[0])
+                try:
+                    card, _kind = prepare_card(n, tag="رياضة")
+                    text = fmt(n).replace("<b>", "<b>⚽ ", 1).replace("\n\nزورونا", "\n#رياضة\n\nزورونا", 1)
+                    pend.append({"id": n["id"], "card": card, "text": text, "b": False, "kb": buttons(n)})
+                    sent[n["id"]] = {"r": rank(n), "n": n.get("n_sources") or 1, "t": now.timestamp(), "v": "رياضة"}
+                    sp[n["id"]] = {"d": day, "t": now.timestamp(), "w": big}
+                    posted.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": now.timestamp(), "id": n["id"], "title": (n.get("title") or "")[:200]})
+                    sent["_titles"] = posted[-600:]
+                    status["sport_post"] = {"id": n["id"], "world": big}
+                except Exception as e:  # noqa: BLE001
+                    DEBUG.append(f"sport:{type(e).__name__}:{str(e)[:40]}")
+        sent["_sport"] = dict(list(sp.items())[-300:])
         pp = sent.get("_pos") or {}  # التحليل الإيجابي القديم دُمج في «قراءة أكا ميديا» (طلب إيهاب 2026-11-02)
         sent["_pos"] = pp
         from tools.editorial import LLM_STATS

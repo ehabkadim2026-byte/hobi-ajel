@@ -8850,6 +8850,32 @@
    "lang": "en",
    "official": false,
    "note": "05/11 توسيع الرصد بروابط مفتوحة المصدر: GDELT يفهرس آلاف المواقع عالمياً كل 15 دقيقة — للتغطية الأوسع لا للسبق"
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D8%A3%D8%B3%D9%88%D8%AF%20%D8%A7%D9%84%D8%B1%D8%A7%D9%81%D8%AF%D9%8A%D9%86%20OR%20%D8%A7%D9%84%D8%B2%D9%88%D8%B1%D8%A7%D8%A1%20OR%20%22%D8%A7%D9%84%D9%82%D9%88%D8%A9%20%D8%A7%D9%84%D8%AC%D9%88%D9%8A%D8%A9%22%20OR%20%22%D9%86%D8%A7%D8%AF%D9%8A%20%D8%A7%D9%84%D8%B4%D8%B1%D8%B7%D8%A9%22%20OR%20%22%D8%A7%D8%AA%D8%AD%D8%A7%D8%AF%20%D8%A7%D9%84%D9%83%D8%B1%D8%A9%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%D9%8A%22%20when%3A1d",
+   "name": "رياضة عراقية (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%D8%A3%D8%B3%D9%88%D8%AF%20%D8%A7%D9%84%D8%B1%D8%A7%D9%81%D8%AF%D9%8A%D9%86%20OR%20%D8%A7%D9%84%D8%B2%D9%88%D8%B1%D8%A7%D8%A1%20OR%20%22%D8%A7%D9%84%D9%82%D9%88%D8%A9%20%D8%A7%D9%84%D8%AC%D9%88%D9%8A%D8%A9%22%20OR%20%22%D9%86%D8%A7%D8%AF%D9%8A%20%D8%A7%D9%84%D8%B4%D8%B1%D8%B7%D8%A9%22%20OR%20%22%D8%A7%D8%AA%D8%AD%D8%A7%D8%AF%20%D8%A7%D9%84%D9%83%D8%B1%D8%A9%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A7%D9%82%D9%8A%22%20when%3A1d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "منوعات",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false
+  },
+  {
+   "id": "rss:https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%22%D8%AF%D9%88%D8%B1%D9%8A%20%D8%A3%D8%A8%D8%B7%D8%A7%D9%84%20%D8%A3%D9%88%D8%B1%D9%88%D8%A8%D8%A7%22%20OR%20%D8%A7%D9%84%D9%83%D9%84%D8%A7%D8%B3%D9%8A%D9%83%D9%88%20OR%20%22%D9%83%D8%A3%D8%B3%20%D8%A7%D9%84%D8%B9%D8%A7%D9%84%D9%85%22%20OR%20%22%D8%AF%D9%88%D8%B1%D9%8A%20%D8%A3%D8%A8%D8%B7%D8%A7%D9%84%20%D8%A2%D8%B3%D9%8A%D8%A7%22%20when%3A1d",
+   "name": "رياضة عالمية كبرى (Google News)",
+   "url": "https://news.google.com/rss/search?hl=ar&gl=IQ&ceid=IQ:ar&q=%22%D8%AF%D9%88%D8%B1%D9%8A%20%D8%A3%D8%A8%D8%B7%D8%A7%D9%84%20%D8%A3%D9%88%D8%B1%D9%88%D8%A8%D8%A7%22%20OR%20%D8%A7%D9%84%D9%83%D9%84%D8%A7%D8%B3%D9%8A%D9%83%D9%88%20OR%20%22%D9%83%D8%A3%D8%B3%20%D8%A7%D9%84%D8%B9%D8%A7%D9%84%D9%85%22%20OR%20%22%D8%AF%D9%88%D8%B1%D9%8A%20%D8%A3%D8%A8%D8%B7%D8%A7%D9%84%20%D8%A2%D8%B3%D9%8A%D8%A7%22%20when%3A1d",
+   "platform": "web",
+   "method": "rss",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "category": "منوعات",
+   "region": "العراق",
+   "lang": "ar",
+   "official": false
   }
  ]
 }

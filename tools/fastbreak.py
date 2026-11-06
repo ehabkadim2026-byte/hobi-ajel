@@ -248,6 +248,12 @@ def prepare(job, recent, edit_headline=None, anim=None, card=None, fetch=None, w
                 break
             if tries >= 3:
                 break
+    if photo is None and not job.get("photo"):  # آخر خيار قبل خلفية الشعار: أرشيف مرخّص حسب الموضوع (إيهاب 06/11)
+        try:
+            from tools import archive_photo as _AP
+            photo = _AP.pick(job.get("head") or "")
+        except Exception:  # noqa: BLE001
+            photo = None
     media = None
     if job["loud"] and anim:
         try:
