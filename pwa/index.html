@@ -372,7 +372,7 @@ function tagsOf(n){
 }
 function card(n){
   const s=(n.sources||[])[0]||{};
-  return `<div role="button" tabindex="0" class="card ${isUrg(n)?"l-urgent":LV[n.level]?LV[n.level].c:""}" data-id="${esc(n.id)}">
+  return `<div role="button" tabindex="0" class="card ${isUrg(n)?"l-urgent":(n.level==="عاجل"||n.source_flag)?LV["مهم"].c:LV[n.level]?LV[n.level].c:""}" data-id="${esc(n.id)}">
     <div class="when"><b>${esc(hm(t0(n)))}</b><small>${esc(day(t0(n)))}</small><small>${esc(dm(t0(n)))}</small></div>
     <div class="body"><div class="tags">${tagsOf(n)}</div><h3 class="title">${esc(n.title)}</h3>${n.title_orig?`<p class="orig">${esc(n.title_orig)}</p>`:""}
     <div class="meta"><span>${esc(srcName(s.name))}${n.n_sources>2?` و${n.n_sources-1} جهات`:n.n_sources===2?" وجهة أخرى":""}</span><span class="sep">رُصد ${esc(hm(n.collected_utc))}${TB[n.trust_badge]&&!n.live?" "+tbPill(n):""}${lateMin(n)>15?` · <b style="color:var(--gold)">نُشر قبل رصدنا بـ${esc(fmtDelay(lateMin(n)))}</b>`:""}</span>${s.url?`<a class="sep" href="${esc(s.url)}" target="_blank" rel="noopener" data-stop>الأصل ↗</a>`:""}</div></div></div>`;

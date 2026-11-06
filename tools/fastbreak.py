@@ -116,6 +116,9 @@ def detail_lines(full_text, head, n=2):
         words = c.split()
         if not (6 <= len(words) <= 45) or T.offensive(c) or T.dialect(c) or T.EXCL_RX.search(c) or T.PROMO_RX.search(c):
             continue
+        if T.incomplete(c) or re.search(r"(?:^|\s)(?:إن|أن|ان|بأن|بان|إنه|انه|أنه|قائلاً|قائلا|مضيفاً|مضيفا|وأضاف|واضاف)\s*[،,:]?$", c) or \
+                (c.endswith("…") and not x.rstrip().endswith(("…", "..."))):
+            continue  # سطر مبتور («وقال مصدر محلي لوكالة شفق نيوز، إن» 3463؛ قص النص الطويل بـ«…» 3453 — تدقيق 10:11 06/11)
         cw = T.title_sig(c)[0]
         if not cw or len(cw & hw) / max(1, len(cw)) >= 0.6:
             continue  # تكرار للعنوان
