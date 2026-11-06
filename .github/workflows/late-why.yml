@@ -1,0 +1,21 @@
+name: late-why
+on: {workflow_dispatch: {}}
+permissions: {contents: read}
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/marsad.db
+            data/translations.json
+            data/tg_sent.json
+            data/tg_chat.json
+          key: "marsad-db-late-${{ github.run_id }}"
+          restore-keys: "marsad-db-"
+      - run: python3 -m tools.late_why
