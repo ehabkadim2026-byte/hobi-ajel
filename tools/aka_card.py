@@ -156,6 +156,12 @@ def card(photo_jpg, title, breaking=False, when_utc=None, source=None, kind=None
     _pp = re.split(r"\s*(?:\.{2,}|…)\s*", head, maxsplit=1)
     if len(head.split()) > 15 and len(_pp) == 2 and len(_pp[1].split()) >= 6 and len(_pp[0].split()) <= 6:
         head = _pp[1]  # «خطوة حاسمة في ملف السلاح... الخبر» ← التمهيد التشويقي يُحذف من البطاقة (يبقى بالنص تحتها)
+    if len(head.split()) > 16:  # v7 (06/11): عنوان طويل يُقص عند أول فاصلة/نقطة بين الكلمة 8 و16 بدل تصغير الخط و«…»
+        ws = head.split()
+        for k in range(7, min(16, len(ws) - 3)):
+            if re.search(r"[،؛.!؟]$", ws[k]):
+                head = " ".join(ws[:k + 1]).rstrip("،؛.")
+                break
     f, sz, lines = C._fit_font(d, head, text_w, max_lines, sizes, _H)
     if lines and lines[-1].endswith("…"):  # عنوان مبتور (ملاحظة إيهاب 05/11): نحذف التمهيد التشويقي قبل «...» ونبقي الخبر نفسه
         parts = re.split(r"\s*(?:\.{2,}|…)\s*", head, maxsplit=1)
@@ -189,7 +195,7 @@ def card(photo_jpg, title, breaking=False, when_utc=None, source=None, kind=None
         d = ImageDraw.Draw(im)
 
     # الشعار
-    C._paste_badge(im, W - P - 150 + 8, 50, 150)
+    C._paste_badge(im, W - P - 124 + 8, 54, 124)  # v7: شعار أصغر قليلاً حتى لا ينافس الصورة
     d = ImageDraw.Draw(im)
 
     # وسم النوع: عاجل = لسان أحمر مصمت بنقطة، غيره = نقطة ملوّنة + اسم القسم
@@ -247,8 +253,9 @@ def card(photo_jpg, title, breaking=False, when_utc=None, source=None, kind=None
     fm = _f("IBMPlexSansArabic-Medium.ttf", 28)
     w = C._when(when_utc)
     meta = " · ".join([x for x in [source, w] if x])
-    if meta:
-        C._draw_rtl(d, x1, y_meta, meta, fm, _mix(WHITE, INK, 0.28))
+    if meta:  # v7: نقطة حمراء قبل الوقت (إشارة «مباشر») ونص أوضح
+        C._draw_rtl(d, x1 - 30, y_meta, meta, fm, _mix(WHITE, INK, 0.15))
+        d.ellipse([x1 - 16, y_meta + 14, x1, y_meta + 30], fill=RED)
     d.text((P, y_meta + 2), "@akamedia_iq", font=_f("IBMPlexSansArabic-Medium.ttf", 28), fill=_mix(WHITE, INK, 0.4))
     d.rectangle([0, H - 12, W, H], fill=accent if not breaking else RED)
     return C._jpg(im)

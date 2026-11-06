@@ -370,7 +370,8 @@ OCR_PER_HOUR = 20
 OCR_CALLS = []
 WM_PROMPT = ("Look at this news photo. Does it contain a visible logo, watermark, bug or channel name of a TV channel, news agency, "
              "website or social-media page (usually in a corner, semi-transparent, or a banner/ticker)? Official government emblems that are "
-             "part of the scene (flags, ministry signs on walls) do NOT count. Answer with exactly one word: YES or NO.")
+             "part of the scene (flags, ministry signs on walls) do NOT count. Also answer YES if the image is mainly a screenshot of a "
+             "social-media post or text, or carries a large overlaid caption, headline or date stamp. Answer with exactly one word: YES or NO.")
 _WM_CACHE = {}
 WM_CALLS = []
 
