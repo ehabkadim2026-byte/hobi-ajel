@@ -1,0 +1,12 @@
+name: probe-channels
+on:
+  workflow_dispatch:
+    inputs: {handles: {description: "معرّفات مفصولة بمسافات", required: true}}
+permissions: {contents: read}
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/probe_channels.py ${{ inputs.handles }}
