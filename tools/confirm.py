@@ -148,6 +148,7 @@ def visible_len(s):
     return len(H.unescape(re.sub(r"<[^>]+>", "", s)).encode("utf-16-le")) // 2
 
 
+SHOW_LINES = False  # إيهاب 06/11 مساءً: لا أسطر تأكيد/تطابق بالمنشورات
 SHOW_NAMES = False  # إيهاب 06/11: لا نذكر اسم أي مصدر بالمنشور — التأكيد يُذكر بلا اسم الجهة
 
 
@@ -297,6 +298,8 @@ def check(ledger, api, token, chat_id, name, title, pub_ts, nid=None, now=None, 
     """جهة رسمية «name» نشرت «title» وقت pub_ts. يعدّل منشوراتنا المطابقة (غير الرسمية، أحدث من 6 ساعات، غير المعدّلة). يرجع عدد التعديلات."""
     from tools import tg_push as T
     now = now or time.time()
+    if not SHOW_LINES:  # إيهاب 06/11 مساءً: لا نعدّل المنشور لإضافة «أكدته»
+        return 0
     if not name or not title or DENY_RX.search(title):
         return 0  # نفي رسمي ليس تأكيداً
     sig = T.title_sig(title.translate(AR_DIGITS))
@@ -337,6 +340,8 @@ def check_trusted(ledger, api, token, chat_id, name, title, pub_ts, ref, nid=Non
     """مصدر مستقل بطبقة «موثوقة» (source_trust.json) نشر «title» وقت pub_ts ← «☑️ تطابق لدى مصدر موثوق: name» على منشوراتنا للخبر نفسه
     مرة واحدة. شروط صارمة: ليس نفياً، مطابقة confirm.matches (تشمل اتفاق الأرقام)، شبكة مختلفة عن مصدر منشورنا (لا قناة وموقع وتلفزيون
     الجهة نفسها)، وليس نسخاً (نص شبه متطابق نُشر بعد مصدرنا أو خلال دقيقتين منه). «✅ أكدته» أولى ويمنع هذا السطر."""
+    if not SHOW_LINES:
+        return 0
     from tools import reliability as R
     from tools import tg_push as T
     now = now or time.time()

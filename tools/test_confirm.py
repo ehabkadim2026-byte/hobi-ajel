@@ -11,7 +11,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from tools import confirm as CF  # noqa: E402
 from tools import tg_push as T  # noqa: E402
 from tools import confirm as _CF_names  # noqa: E402
-_CF_names.SHOW_NAMES = True  # الاختبارات تتحقق من منطق الأسماء؛ الإنتاج بلا أسماء (إيهاب 06/11)
+_CF_names.SHOW_NAMES = _CF_names.SHOW_LINES = True
+from tools import fastbreak as _FB_v, tg_push as _TP_v  # noqa: E402
+_FB_v.SHOW_VERIFY = _TP_v.SHOW_VERIFY = True  # الاختبارات تتحقق من منطق الأسماء؛ الإنتاج بلا أسماء (إيهاب 06/11)
 
 
 class Store:

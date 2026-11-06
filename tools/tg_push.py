@@ -912,6 +912,7 @@ def verify_line(n):
 
 
 SHOW_SOURCE = False
+SHOW_VERIFY = False
 HOLIDAY_RX = re.compile(r"تعطيل الدوام الرسمي|عطلة رسمية|تعطيل الدوام في|عطّلت الدوام|تعطيل الدوام ل")
 SALARY_RX = re.compile(r"(?:إطلاق|اطلاق|تمويل|صرف|توزيع|إيداع|ايداع)\s+(?:ال)?رواتب|رواتب (?:شهر|موظفي|المتقاعدين)")
 
@@ -942,7 +943,8 @@ def fmt(n, update=False, kind="news"):
     sl = src_label(n)
     if sl and SHOW_SOURCE:  # إيهاب 06/11: لا نذكر اسم المصدر
         lines.append(f"📌 المصدر: {H.escape(sl)}")
-    lines.append(verify_line(n))
+    if SHOW_VERIFY:  # إيهاب 06/11 مساءً: لا سطر تحقق بالمنشور
+        lines.append(verify_line(n))
     tags = province_tags(n.get("title"))
     if tags:
         lines.append(" ".join(tags))
