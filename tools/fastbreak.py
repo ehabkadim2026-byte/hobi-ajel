@@ -230,6 +230,23 @@ def prepare(job, recent, edit_headline=None, anim=None, card=None, fetch=None, w
         photo = job["photo_hold"]
     if job.get("hold") and photo is not None and (wm is None or wm(photo) is not False):
         photo = None  # صورة من جهة غير رسمية: لا تُستخدم إلا إذا تأكدنا أنها بلا شعار وسيلة أخرى
+    if photo is None and wm is not None:  # 06/11 (إيهاب: صمّم بصورة الحدث): صورة نظيفة من مصدر آخر نقل الخبر نفسه — الجهة الرسمية أولاً
+        tries = 0
+        for r in sorted(others, key=lambda r: not r.get("official")):
+            b = r.get("img_bytes")
+            if b is None and r.get("img") and fetch:
+                try:
+                    b = fetch(r["img"])
+                except Exception:  # noqa: BLE001
+                    b = None
+            if not b:
+                continue
+            tries += 1
+            if r.get("official") or wm(b) is False:
+                photo = b
+                break
+            if tries >= 3:
+                break
     media = None
     if job["loud"] and anim:
         try:
@@ -388,7 +405,7 @@ def watermarked(img, gem=None, gem_ok=None):
         return _WM_CACHE[k]
     now = time.time()
     WM_CALLS[:] = [t for t in WM_CALLS if t >= now - 3600]
-    if len(WM_CALLS) >= 25 or (gem_ok is not None and not gem_ok()):
+    if len(WM_CALLS) >= 60 or (gem_ok is not None and not gem_ok()):
         return None
     if gem is None:
         from tools.editorial import gemini as gem

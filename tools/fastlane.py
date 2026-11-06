@@ -392,8 +392,11 @@ def main():
                     from_doc = True
                 if first:
                     RECENT.append({"ch": ch, "name": NAMES.get(ch) or (RSS.get(ch) or {}).get("name") or ch, "first": first, "text": p["text"][:1500],
-                                   "ts": p["t"].timestamp(), "ref": RSS[ch]["url"] if tier == "rss" and ch in RSS else ch})
+                                   "ts": p["t"].timestamp(), "ref": RSS[ch]["url"] if tier == "rss" and ch in RSS else ch,
+                                   "img_bytes": p.get("img_bytes"), "img": p.get("img"), "official": bool(oname)})
                     del RECENT[:-600]
+                    for _r in RECENT[:-150]:  # صور آخر 150 منشوراً فقط بالذاكرة (06/11: صورة الحدث من مصدر آخر)
+                        _r.pop("img_bytes", None)
                 if oname and ledger is not None and first and age <= CF.WINDOW_H * 60:
                     try:  # جهة رسمية نشرت: هل نشرنا الخبر نفسه من مصدر غير رسمي؟ ← «✅ أكدته» على منشورنا (قبل فلاتر النشر: غالباً يُرفض هنا كمكرر)
                         c_n = CF.check(ledger, T.api, token, chat_id, oname, first, p["t"].timestamp())
