@@ -30,7 +30,7 @@ def ts(s):
 
 
 def notify(text):
-    token, chat = os.environ.get("MARSAD_TG_BOT_TOKEN"), os.environ.get("MARSAD_TG_CHAT_ID")
+    token, chat = os.environ.get("MARSAD_TG_BOT_TOKEN"), (os.environ.get("MARSAD_TG_CHAT_ID") or "@akamedia_iq")
     if not token or not chat:
         return
     try:
