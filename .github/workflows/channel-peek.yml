@@ -1,0 +1,10 @@
+name: channel-peek
+on: {workflow_dispatch: {}}
+permissions: {contents: read}
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/channel_peek.py
