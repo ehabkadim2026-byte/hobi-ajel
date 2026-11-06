@@ -1,0 +1,15 @@
+name: first-sources
+# تحليل للقراءة فقط: من ينشر الأحداث العراقية الكبيرة أولاً، وما القنوات المذكورة خارج رادارنا
+on: {workflow_dispatch: {}}
+permissions: {contents: read}
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - uses: actions/cache/restore@v4
+        with: {path: data/marsad.db, key: "marsad-db-first-${{ github.run_id }}", restore-keys: "marsad-db-"}
+      - run: python3 -m tools.first_sources
