@@ -1,16 +1,16 @@
 name: reel
-# «نشرة دقيقة»: فيديو عمودي يومي لأهم 5 أخبار، يُرسل للمحررين بالخاص (9:17 مساءً بغداد)
+# ريل «أهم 10 أخبار في العراق خلال 12 ساعة» — كل 12 ساعة بالقناة (9:17 صباحاً و9:17 مساءً بغداد) + نسخة للمحررين
 on:
-  schedule: [{cron: "17 18 * * *"}]
+  schedule: [{cron: "17 6,18 * * *"}]
   workflow_dispatch:
     inputs:
-      to_channel: {description: "نشر بالقناة (1) أو للمحررين فقط (0)", default: "0"}
+      to_channel: {description: "نشر بالقناة (1) أو للمحررين فقط (0)", default: "1"}
 permissions: {contents: write}
 concurrency: {group: reel, cancel-in-progress: true}
 jobs:
   reel:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,7 +28,7 @@ jobs:
       - run: curl -sSL -m 30 "https://ehabkadim2026-byte.github.io/hobi-ajel/news.json" -o pwa/news.json
       - run: python3 -c "from PIL import features; print('raqm', features.check('raqm'))"
       - run: python3 -m tools.reel
-        env: {MARSAD_TG_BOT_TOKEN: "${{ secrets.MARSAD_TG_BOT_TOKEN }}", GH_TOKEN: "${{ github.token }}", REEL_TO_CHANNEL: "${{ inputs.to_channel }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"}
+        env: {MARSAD_TG_BOT_TOKEN: "${{ secrets.MARSAD_TG_BOT_TOKEN }}", GH_TOKEN: "${{ github.token }}", REEL_TO_CHANNEL: "${{ inputs.to_channel || '1' }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"}
       - name: archive
         if: always()
         env: {GH_TOKEN: "${{ github.token }}"}

@@ -209,14 +209,14 @@ def photo_layer(jpg):
 
 
 # ---------------- المشاهد
-def scene_intro(cv, t, day_txt):
+def scene_intro(cv, t, day_txt, n=5, period="اليوم"):
     cv.alpha_composite(bg_base())
     lw = logo_white(150)
     a = clamp(prog(t, 0.05, f2s(12)) * 1.3)
     cv.alpha_composite(fade(lw, a), ((W - lw.width) // 2, 440))
     pill_tag(cv, t, "نشرة دقيقة", RED + (255,), PAPER, (255, 255, 255), XR, 760, 0.25)
-    rise_line(cv, t, "أهم 5 أخبار", "black", 124, PAPER, XR, 1030, 0.45, exit_at=2.2)
-    rise_line(cv, t, "في العراق اليوم", "black", 124, GOLD, XR, 1205, 0.6, exit_at=2.25)
+    rise_line(cv, t, f"أهم {n} أخبار", "black", 124, PAPER, XR, 1030, 0.45, exit_at=2.2)
+    rise_line(cv, t, f"في العراق {period}", "black", 124, GOLD, XR, 1205, 0.6, exit_at=2.25)
     rise_line(cv, t, day_txt, "semi", 48, (190, 204, 228), XR, 1335, 0.8, exit_at=2.3)
 
 
@@ -258,7 +258,7 @@ def scene_story(cv, t, i, n, s, ph):
         rise_line(cv, t, ln, "black", s["size"], PAPER, XR, y, 0.3 + f2s(4) * k_, exit_at=s["dur"] - 0.35)
         y += lh
     counter(cv, t, s["n_sources"], "مصدراً تناول الخبر", XR, y + 40, 0.9)
-    if s.get("src"):
+    if s.get("src") and False:  # إيهاب 06/11: لا اسم للمصدر
         rise_line(cv, t, s["src"], "med", 38, (160, 176, 205), XR, y + 120, 1.2)
 
 
@@ -283,14 +283,14 @@ def wipe(cv, p):
 
 
 # ---------------- اختيار الأخبار
-def pick(news, k=5):
+def pick(news, k=10, hours=12):
     from tools import tg_push as T
     from tools.editorial import clean_headline, pick_best
     from tools.learn import topic
     T.build_idf([x.get("title") or "" for x in news])
     now = datetime.now(timezone.utc)
     cands = [n for n in news if n.get("about_iraq") and T.iraq_title(n.get("title") or "") and not T.far_title(n.get("title") or "")
-             and (n.get("latest_utc") or "") >= (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M")
+             and (n.get("latest_utc") or "") >= (now - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M")
              and n.get("vstatus") != "ثبت عدم صحته" and n.get("ctype") != "تحليل/رأي"]
     out = []
     for n in sorted(cands, key=lambda x: -(x.get("n_sources") or 1)):
@@ -313,7 +313,7 @@ def pick(news, k=5):
     return out
 
 
-def render(items, out_path, day_txt, music=None):
+def render(items, out_path, day_txt, music=None, period="اليوم"):
     from tools import tg_push as T
     scenes = [("intro", 2.6, None)]
     for i, it in enumerate(items):
@@ -333,7 +333,7 @@ def render(items, out_path, day_txt, music=None):
         while len(lines) > 4 and size > 54:
             size -= 6
             lines = wrap(it["title"], "black", size, XR - XL)
-        dur = max(4.6, min(6.6, 2.8 + 0.09 * len(it["title"].split()) * 1.0 + 0.6))  # وقت قراءة كافٍ حسب طول العنوان
+        dur = max(4.2, min(6.0, 2.6 + 0.09 * len(it["title"].split()) + 0.5))  # وقت قراءة كافٍ حسب طول العنوان
         it.update({"lines": lines[:4], "size": size, "dur": dur,
                    "tag_fill": (110, 112, 120, 255) if it["tag"] == "غير مؤكد" else (226, 24, 38, 255),
                    "dot": (255, 196, 92) if it["tag"] == "غير مؤكد" else (255, 255, 255)})
@@ -346,7 +346,7 @@ def render(items, out_path, day_txt, music=None):
         ff = imageio_ffmpeg.get_ffmpeg_exe()
     except Exception:  # noqa: BLE001
         pass
-    audio = ["-i", str(music)] if music and Path(music).exists() else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
+    audio = ["-stream_loop", "-1", "-i", str(music)] if music and Path(music).exists() else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
     cmd = [ff, "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", *audio,
            "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
            "-c:a", "aac", "-b:a", "128k", "-shortest", "-t", f"{total:.2f}", "-movflags", "+faststart", str(out_path)]
@@ -361,7 +361,7 @@ def render(items, out_path, day_txt, music=None):
             t = f / FPS
             cv = Image.new("RGBA", (W, H), NAVY + (255,))
             if kind == "intro":
-                scene_intro(cv, t, day_txt)
+                scene_intro(cv, t, day_txt, len(items), period)
             elif kind == "story":
                 scene_story(cv, t, data[0], len(items), data[1], data[2])
             else:
@@ -391,16 +391,21 @@ AR_D = ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس"
 def main():
     from tools import tg_push as T
     news = json.loads((ROOT / "pwa" / "news.json").read_text(encoding="utf-8"))
-    items = pick(news)
+    hours = int(os.environ.get("REEL_HOURS", "12"))
+    items = pick(news, k=int(os.environ.get("REEL_K", "10")), hours=hours)
+    if len(items) < 6:  # ساعات هادئة: توسيع النافذة بدل ريل ناقص
+        items = pick(news, k=int(os.environ.get("REEL_K", "10")), hours=hours + 6)
     if len(items) < 3:
         print("::warning title=reel::أقل من 3 أخبار مناسبة")
         return
     b = datetime.now(timezone.utc) + timedelta(hours=3)
     day_txt = f"{AR_D[b.weekday()]} {b.day} {AR_M[b.month - 1]} {b.year}"
-    out = ROOT / "data" / f"reel_{b.strftime('%Y%m%d')}.mp4"
+    half = "صباحية" if b.hour < 15 else "مسائية"
+    period = f"خلال {hours} ساعة"
+    out = ROOT / "data" / f"reel_{b.strftime('%Y%m%d_%H')}.mp4"
     out.parent.mkdir(exist_ok=True)
     music = ROOT / "assets" / "music" / "reel.mp3"
-    total = render(items, out, day_txt, music if music.exists() else None)
+    total = render(items, out, day_txt, music if music.exists() else None, period)
     size = out.stat().st_size / 1e6
     print(f"::notice title=reel::{len(items)} أخبار، {total:.1f} ث، {size:.1f} MB")
     token = os.environ.get("MARSAD_TG_BOT_TOKEN", "").strip()
@@ -408,8 +413,8 @@ def main():
     cap = (f"🎬 نشرة دقيقة — {day_txt}\n{len(items)} أخبار · {total:.0f} ثانية · 1080×1920\n\n"
            + "\n".join(f"{k + 1}. {it['title'][:90]}" for k, it in enumerate(items))
            + "\n\nجاهز للنشر على تيك توك وريلز. " + ("بدون موسيقى (أرسل مقطوعة لإضافتها)." if not music.exists() else "مع الموسيقى المعتمدة."))
-    if token and os.environ.get("REEL_TO_CHANNEL") == "1":  # نشر بالقناة بطلب صريح من إيهاب (06/11) — يدوي فقط عبر workflow_dispatch
-        ccap = (f"🎬 <b>أهم أخبار العراق اليوم بدقيقة</b> — {day_txt}\n\n"
+    if token and os.environ.get("REEL_TO_CHANNEL") == "1":  # إيهاب 06/11: ريل أهم 10 أخبار كل 12 ساعة بالقناة (مجدول + يدوي)
+        ccap = (f"🎬 <b>أهم {len(items)} أخبار في العراق {period}</b> — النشرة ال{half}، {day_txt}\n\n"
                 + "\n".join(f"{k + 1}. {it['title'][:100]}" for k, it in enumerate(items))
                 + f"\n\nتابعونا لحظة بلحظة 👇\n{T.CHANNEL}")
         chat = os.environ.get("MARSAD_TG_CHAT_ID", "").strip() or "-1004327422297"  # المعرّف الرقمي للقناة
