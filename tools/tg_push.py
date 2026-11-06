@@ -1107,6 +1107,68 @@ PENDING = DATA / "tg_pending.json"
 
 def news_photo(n):
     from tools import tg_card
+    _, url = src(n)
+    img = tg_card.find_image(url)
+    if img:
+        try:
+            return tg_card.fetch_jpeg(img)
+        except Exception:  # noqa: BLE001
+            return None
+    return None
+
+
+def save_card(jpg, key):
+    CARDS.mkdir(parents=True, exist_ok=True)
+    name = re.sub(r"[^A-Za-z0-9_]", "", key)[:40] + f"_{int(datetime.now(timezone.utc).timestamp())}.jpg"
+    (CARDS / name).write_bytes(jpg)
+    return name
+
+
+def pick_photo(n, tries=4):
+    """صورة الحدث (إيهاب 06/11: كل خبر بصورة مرتبة لا خلفية الشعار): نجرب مصدر الخبر ثم بقية مصادره (حتى 4)، ونرفض الشعار/لقطة الشاشة/المظلمة.
+    إن لم نجد: صورة من أرشيف القناة حسب موضوع الخبر (assets/archive)."""
+    from tools import tg_card
+    try:
+        from tools import fastbreak as _FB
+    except Exception:  # noqa: BLE001
+        _FB = None
+    urls, seen = [src(n)[1]] + [s_.get("url") for s_ in (n.get("sources") or [])], set()
+    for url in urls:
+        if not url or url in seen or len(seen) >= tries:
+            continue
+        seen.add(url)
+        img = tg_card.find_image(url)
+        if not img:
+            continue
+        try:
+            photo = tg_card.fetch_jpeg(img)
+        except Exception as e:  # noqa: BLE001
+            DEBUG.append(f"imgfail:{type(e).__name__}")
+            continue
+        if tg_card.looks_like_logo(photo):
+            continue
+        try:
+            from PIL import Image as _I
+            g = _I.open(io.BytesIO(photo)).convert("L").resize((48, 48))
+            if sum(g.getdata()) / 2304 < 40:
+                continue
+        except Exception:  # noqa: BLE001
+            pass
+        wm = _FB.watermarked(photo) if _FB else None
+        if wm is False or (wm is None and url == urls[0]):
+            DEBUG.append(f"photo:{urllib.parse.urlparse(url).netloc}")
+            return photo
+        DEBUG.append("wm_drop")
+    try:
+        from tools import archive_photo
+        return archive_photo.pick(headline(n))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def prepare_card(n, tag=None):
+    """يصنع بطاقة الخبر (صورة الحدث أو خلفية الهوية) ويحفظها في pwa/cards ليُنشر رابطها مع موقع التطبيق."""
+    from tools import tg_card
     photo = pick_photo(n)
     maker = {"news2": tg_card.card_news2, "news": tg_card.card_news, "lux": tg_card.card_lux, "a": tg_card.card_a, "b": tg_card.card_b, "c": tg_card.card_c, "v3": tg_card.news_card3}.get(CARD_STYLE, tg_card.news_card2)
     if CARD_STYLE == "news4A":
