@@ -1274,6 +1274,14 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
     A «شاشة الحدث»: صورة كاملة سينمائية، العنوان أبيض كبير فوق تدرّج أسود، لسان أحمر حاد بأسلوب الشاشات الإخبارية.
     B «الصحيفة»: صورة أعلى وورق عاجي أسفل، عنوان أسود ثقيل وسطر أحمر — رصانة الصحافة الكبرى.
     C «البطاقة العائمة»: صورة كاملة وبطاقة بيضاء عائمة بحواف مستديرة، عنوان كحلي ولسان أحمر يتقاطع مع حافتها."""
+    if style == "A":  # v7 «شريط النشرة» (اختيار إيهاب 06/11 من card_lab): صورة كاملة + شريط عنوان أبيض ولسان أحمر وساعة — v6 احتياطاً
+        try:
+            from tools import card_lab, aka_card
+            k = aka_card.kind_of(title, breaking)
+            kind = tag if tag not in (None, "عاجل", "خبر") else (aka_card.KINDS[k][0] if k in aka_card.KINDS else None)
+            return card_lab.card_A(photo_jpg, title, breaking=breaking, when_utc=when_utc, kind=kind)
+        except Exception as e:  # noqa: BLE001
+            print("::warning title=card_v7::", type(e).__name__, str(e)[:120])
     if style == "A" and tag in (None, "عاجل", "خبر"):  # v6: قالب حسب نوع الخبر (tools/aka_card.py) — القديم احتياطاً عند أي خطأ
         try:
             from tools import aka_card

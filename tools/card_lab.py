@@ -27,8 +27,13 @@ def tw(d, t, f):
 
 
 def photo(jpg, w, h):
-    im = Image.open(io.BytesIO(jpg)).convert("RGB") if jpg else Image.new("RGB", (w, h), NAVY)
-    return C._grade(C._cover(im, w, h))
+    if not jpg:  # بلا صورة: تدرّج الهوية مع شعار أكا خافت (أفضل من الكحلي المسطح) — آخر خيار بعد مصادر الخبر والأرشيف
+        try:
+            from tools import aka_card
+            return C._cover(aka_card._backdrop("news", RED), w, h)
+        except Exception:  # noqa: BLE001
+            return Image.new("RGB", (w, h), NAVY)
+    return C._grade(C._cover(Image.open(io.BytesIO(jpg)).convert("RGB"), w, h))
 
 
 def when_txt(when_utc):
