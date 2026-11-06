@@ -507,7 +507,7 @@ def main():
                     ok, by = important(p["text"][:600], news=True)
                     why_no = "gem_no"
                     if by != "Gemini":
-                        ok = bool(STRICT.search(p["text"][:400]))  # بلا نموذج لغوي: كلمات الحدث المهم فقط (لا «يلتقي/يستقبل»)
+                        ok = bool(STRICT.search(p["text"][:400]) or (iraqi and T.EVENT_RX.search(first)))  # بلا نموذج لغوي: كلمات الحدث المهم فقط (لا «يلتقي/يستقبل»)
                         why_no = "gem_unavailable"  # والكلمات الصريحة لم تكفِ
                     if ok and T.ROUTINE_RX.search(first) and not STRICT.search(first):
                         ok, why_no = False, "routine"  # نشاط روتيني لجهة رسمية (حملة تشجير، يترأس جلسة، لقاءات أسبوعية: 2958، 2979، 2991) قبله النموذج
@@ -524,10 +524,13 @@ def main():
                 # وضع السكوت للنهار فقط (8 ص – 12 ل بغداد كهدف الإيقاع)، ولقناة عراقية، ولعنوان خبري لا رأي/محلل/مصدر مجهول:
                 # ليلاً وبالصباح الباكر كان يملأ القناة بغير الأخبار (3448 مقال، 3451 موعد الأذان، 3455) ونهاراً برأي (3464) — تدقيق 10:11 06/11
                 bgh = (datetime.now(timezone.utc).hour + 3) % 24
-                if not ok and why_no == "gem_no" and iraqi and not regional and ttier != "ضعيفة" and not T.ROUTINE_RX.search(first) \
-                        and not ROUTINE.search(first) and len(first.split()) >= 7 and bgh >= 8 and ch not in CFG.get("intl", []) \
+                # ليلاً (إيهاب 07/11: «ممنوع أي قطع») يُسمح بعد 12 دقيقة سكوت للحدث/القرار العراقي الصريح فقط (لا مقالات ولا مواعيد)
+                night_ok = bgh >= 8 or bool(T.SEC_RX.search(first) or T.EVENT_RX.search(first) or STRICT.search(first)
+                                            or re.search(r"(?:ت|ي)?قرر|قرار|تعلن|أعلنت|إعلان|تعطيل|إغلاق|اغلاق|وفاة|مقتل|إصابة|حريق|انفجار|سيول|عاصفة", first))
+                if not ok and why_no in ("gem_no", "gem_unavailable") and iraqi and not regional and ttier != "ضعيفة" and not T.ROUTINE_RX.search(first) \
+                        and not ROUTINE.search(first) and len(first.split()) >= 7 and night_ok and ch not in CFG.get("intl", []) \
                         and not is_an and not QUIET_BAD.search(first):
-                    qmin = CFG.get("quiet_min", 6)
+                    qmin = CFG.get("quiet_min", 6) if bgh >= 8 else CFG.get("quiet_min_night", 12)
                     last_post = max([x.get("ts", 0) for x in mine + main_sigs if isinstance(x, dict)] or [0])
                     if time.time() - last_post >= qmin * 60:
                         ok, quiet = True, True
