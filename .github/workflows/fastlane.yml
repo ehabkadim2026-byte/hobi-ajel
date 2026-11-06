@@ -2,16 +2,24 @@
 # تُعاد كل 6 ساعات بالجدولة، وتطلقها الجولة الرئيسية إذا لم تكن تعمل.
 name: fastlane
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      runner: {description: "aka = سيرفر مرام (جلسة 23 ساعة بلا انقطاع)، فارغ = GitHub", required: false, default: ""}
   schedule:
     - cron: "7 */6 * * *"
 permissions: {contents: write}
 concurrency: {group: fastlane, cancel-in-progress: false}
 jobs:
   fast:
-    runs-on: ubuntu-latest
-    timeout-minutes: 350
+    runs-on: ${{ inputs.runner == 'aka' && fromJSON('["self-hosted","aka"]') || 'ubuntu-latest' }}
+    timeout-minutes: ${{ inputs.runner == 'aka' && 1440 || 350 }}
     steps:
+      - name: gh on self-hosted (لا يفعل شيئاً على مشغّلات GitHub)
+        run: |
+          command -v gh >/dev/null && exit 0
+          V=2.63.2; D="$HOME/.local/gh-$V"
+          [ -x "$D/bin/gh" ] || { mkdir -p "$D" && curl -fsSL "https://github.com/cli/cli/releases/download/v$V/gh_${V}_linux_amd64.tar.gz" | tar xz -C "$D" --strip-components=1; }
+          echo "$D/bin" >> "$GITHUB_PATH"
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
@@ -19,8 +27,9 @@ jobs:
       - uses: actions/cache/restore@v4
         with: {path: data/fastlane_state.json, key: "fastlane-${{ github.run_id }}", restore-keys: "fastlane-"}
       - run: python3 -m tools.fastlane
-        timeout-minutes: 340
+        timeout-minutes: ${{ inputs.runner == 'aka' && 1420 || 340 }}
         env:
+          FAST_MINUTES: ${{ inputs.runner == 'aka' && '1380' || '330' }}
           GH_TOKEN: ${{ github.token }}
           MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
           MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
@@ -33,4 +42,4 @@ jobs:
       - name: relaunch
         if: always()
         env: {GH_TOKEN: "${{ github.token }}"}
-        run: gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/fastlane.yml/dispatches" -f ref=main || true
+        run: gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/fastlane.yml/dispatches" -f ref=main -f "inputs[runner]=${{ inputs.runner }}" || true
