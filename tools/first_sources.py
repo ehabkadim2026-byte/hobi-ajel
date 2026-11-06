@@ -26,7 +26,7 @@ def handles():
     fast_rss = {re.sub(r"^https?://(www\.)?", "", (r.get("url") if isinstance(r, dict) else r) or "").split("/")[0].lower()
                 for r in (fl.get("rss") or [])}
     src = json.loads((ROOT / "config" / "sources.json").read_text(encoding="utf-8"))["sources"]
-    known = {s["id"].split(":", 1)[1].lower() for s in src if s["id"].startswith("telegram:")}
+    known = {re.sub(r"^(?:https?://)?(?:t\.me/(?:s/)?)?", "", s["id"].split(":", 1)[1]).strip("/").lower() for s in src if s["id"].startswith("telegram:")}
     return fast, fast_rss, known | fast
 
 
@@ -50,7 +50,7 @@ def main():
             continue
         r = rows[0]
         sid = r["source_id"] or ""
-        key = sid.split(":", 1)[1].lower() if ":" in sid else sid.lower()
+        key = re.sub(r"^(?:https?://)?(?:t\.me/(?:s/)?)?", "", sid.split(":", 1)[1] if ":" in sid else sid).strip("/").lower()
         dom = re.sub(r"^https?://(www\.)?", "", r["url"] or "").split("/")[0].lower()
         in_fast = key in fast or (r["platform"] == "rss" and dom in fast_rss)
         first[sid] += 1
