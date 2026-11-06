@@ -15,6 +15,8 @@ from tools import confirm as CF  # noqa: E402
 from tools import fastbreak as FB  # noqa: E402
 from tools import tg_push as T  # noqa: E402
 from tools.test_confirm import Store  # noqa: E402
+from tools import confirm as _CF_names  # noqa: E402
+_CF_names.SHOW_NAMES = True  # الاختبارات تتحقق من منطق الأسماء؛ الإنتاج بلا أسماء (إيهاب 06/11)
 
 KB = json.dumps({"inline_keyboard": [[{"text": "📖 المصدر", "url": "https://t.me/x/1"}]]})
 FIRST = "خلية الإعلام الأمني: مقتل 3 إرهابيين بضربة جوية في وادي الشاي جنوبي كركوك"

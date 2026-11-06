@@ -148,12 +148,16 @@ def visible_len(s):
     return len(H.unescape(re.sub(r"<[^>]+>", "", s)).encode("utf-16-le")) // 2
 
 
+SHOW_NAMES = False  # إيهاب 06/11: لا نذكر اسم أي مصدر بالمنشور — التأكيد يُذكر بلا اسم الجهة
+
+
 def confirm_line(name, ts):
-    return f"✅ أكدته: {H.escape(name[:60])} — {datetime.fromtimestamp(ts, timezone.utc) + timedelta(hours=3):%H:%M} بغداد"
+    who = f": {H.escape(name[:60])}" if SHOW_NAMES else " جهة رسمية"
+    return f"✅ أكدته{who} — {datetime.fromtimestamp(ts, timezone.utc) + timedelta(hours=3):%H:%M} بغداد"
 
 
 def trust_line(name):
-    return f"{TRUST_TAG}: {H.escape(name[:60])}"
+    return f"{TRUST_TAG}: {H.escape(name[:60])}" if SHOW_NAMES else TRUST_TAG
 
 
 def add_confirm(caption, line, kind="photo"):
