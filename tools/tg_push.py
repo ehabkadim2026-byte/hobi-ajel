@@ -901,11 +901,28 @@ def verify_line(n):
 
 
 SHOW_SOURCE = False
+HOLIDAY_RX = re.compile(r"تعطيل الدوام الرسمي|عطلة رسمية|تعطيل الدوام في|عطّلت الدوام|تعطيل الدوام ل")
+SALARY_RX = re.compile(r"(?:إطلاق|اطلاق|تمويل|صرف|توزيع|إيداع|ايداع)\s+(?:ال)?رواتب|رواتب (?:شهر|موظفي|المتقاعدين)")
+
+
+def topic_mark(title):
+    """(شارة، تثبيت؟) — إيهاب 06/11: «🎉 عطلة رسمية» تُثبّت بالقناة، و«💰 الرواتب» تتبع الرواتب. الأسئلة/التوقعات لا تُوسم."""
+    t = title or ""
+    if re.search(r"(?:ت|ي)?نفي|نفت|نفى|لا صحة|عار(?:ٍ)? عن الصحة|غير صحيح(?:ة)?|مفبرك|مزيف(?:ة)?|ملفق(?:ة)?|شائعات?", t) and re.search(
+            r"وزارة|خلية|قيادة|المتحدث|الحكومة|مكتب|هيئة|مديرية|مجلس|شرطة|الأمن|جهاز|محافظ", t):
+        return "🔎 تحقق أكا: غير صحيح | ", False  # نفي رسمي لشائعة متداولة (اقتراح «تحقق أكا»، إيهاب 06/11)
+    if re.search(r"\?|؟|هل |متى|موعد محتمل|مقترح|تطالب|يطالب|شائعة|غير صحيح", t):
+        return "", False
+    if HOLIDAY_RX.search(t):
+        return "🎉 عطلة رسمية | ", True
+    if SALARY_RX.search(t):
+        return "💰 الرواتب | ", False
+    return "", False
 
 
 def fmt(n, update=False, kind="news"):
     """الخبر المحرَّر + المصدر + وسم المحافظة + دعوة القناة. التفاصيل صارت زراً تحت الخبر."""
-    mark = "🔴 عاجل | " if is_breaking(n) else ""
+    mark = topic_mark(headline(n))[0] or ("🔴 عاجل | " if is_breaking(n) else "")
     if kind == "update":
         mark = "🔄 تحديث | "
     lines = [f"<b>{mark}{H.escape(headline(n))}</b>"]
@@ -1239,6 +1256,12 @@ def send_pending(token, chat_id, only_breaking=False):
                     done["text"] += 1
                 except Exception as e2:  # noqa: BLE001
                     DEBUG.append(f"sendfail2:{p['id'][:20]}:{str(e2)[:60]}")
+    for p in pend:  # تثبيت قرار العطلة الرسمية (إيهاب 06/11)
+        try:
+            if p["id"] in msgs and "🎉 عطلة رسمية" in (p.get("text") or "")[:120]:
+                api(token, "pinChatMessage", chat_id=chat_id, message_id=msgs[p["id"]], disable_notification="true")
+        except Exception as e:  # noqa: BLE001
+            DEBUG.append(f"pin:{type(e).__name__}")
     try:  # نسخة لمشتركي المحافظات والمواضيع بالخاص
         from tools import subs as SB
         items = [{"id": p["id"], "card": p.get("card"), "text": p["text"],

@@ -562,7 +562,8 @@ def main():
                 src_name = re.sub(r" — .*$", "", cname) + (" (وثيقة رسمية)" if from_doc else "")
                 card = tg_card.card_news4(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), source=re.sub(r" — .*$", "", cname), style="A")
                 tags = T.province_tags(first)
-                cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>" + (f"\n\n📌 المصدر: {H.escape(src_name)}" if FB.SHOW_SOURCE else "") + \
+                tmark, tpin = T.topic_mark(head)  # إيهاب 06/11: «🎉 عطلة رسمية» (تُثبّت) و«💰 الرواتب»
+                cap = f"<b>{tmark or ('🔴 عاجل | ' if loud else '')}{H.escape(head)}</b>" + (f"\n\n📌 المصدر: {H.escape(src_name)}" if FB.SHOW_SOURCE else "") + \
                       (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"
                 kb = json.dumps({"inline_keyboard": [[{"text": "📖 التفاصيل", "url": p.get("url") or f"https://t.me/{ch}/{p['id']}"},
                                                       {"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fakamedia_iq"}]]})
@@ -592,6 +593,11 @@ def main():
                     decide(ch, p["id"], head, "fail", "send_failed:" + str(r.get("description") or r.get("error_code") or "")[:80])
                 if r.get("ok"):
                     stats["posted"] += 1
+                    if tpin:
+                        try:
+                            T.api(token, "pinChatMessage", chat_id=chat_id, message_id=(r.get("result") or {}).get("message_id"), disable_notification="true")
+                        except Exception:  # noqa: BLE001
+                            pass
                     FB.LAT.add("fast" if crit else "normal", time.time() - t_det)
                     FB.STATUS["fast_sent"] += int(bool(crit))
                     mine.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time(), "title": first[:200], "id": f"fast:{ch}/{p['id']}",
