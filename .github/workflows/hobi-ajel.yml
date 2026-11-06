@@ -7,13 +7,13 @@ on:
   schedule: [{cron: "*/10 * * * *"}]
   workflow_dispatch:
     inputs:
-      runner: {description: "aka = سيرفر مرام (تجربة)", required: false, default: ""}
+      runner: {description: "فارغ = سيرفر مرام aka، gh = مشغّلات GitHub", required: false, default: ""}
   push: {branches: [main]}  # أي تحديث للكود يعيد تشغيل السلسلة إن انقطعت
 permissions: {contents: write, pages: write, id-token: write, actions: write}
 concurrency: {group: hobi-ajel, cancel-in-progress: false}
 jobs:
   collect-and-publish:
-    runs-on: ${{ inputs.runner == 'aka' && fromJSON('["self-hosted","aka"]') || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner == 'gh' && 'ubuntu-latest' || fromJSON('["self-hosted","aka"]') }}
     timeout-minutes: 25
     environment: {name: github-pages}
     steps:
