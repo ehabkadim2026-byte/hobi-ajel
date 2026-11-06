@@ -8,3 +8,5 @@ jobs:
       - uses: actions/checkout@v4
       - run: python3 -m tools.llm_diag
         env: {GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"}
+      - run: pip install -q pillow && python3 -m tools.wm_diag
+        env: {GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"}
