@@ -1,0 +1,16 @@
+name: archive-photos
+# يجلب صور أرشيف بترخيص ملكية عامة/CC0 (ويكيميديا كومنز) لكل موضوع ويحفظها بالمستودع — آخر خيار قبل خلفية الشعار
+on: {workflow_dispatch: {}}
+permissions: {contents: write}
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -q pillow && python3 -m tools.archive_photo fetch
+      - run: |
+          git config user.name "aka-bot"; git config user.email "bot@users.noreply.github.com"
+          git add assets/archive && git commit -qm "أرشيف صور مرخّصة (ملكية عامة/CC0) حسب الموضوع" && git pull -q --rebase && git push -q || echo "لا جديد"
