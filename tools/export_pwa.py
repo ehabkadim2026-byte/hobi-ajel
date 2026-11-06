@@ -199,10 +199,20 @@ def _iq_in(w, t):
     return w in t and bool(rx.search(t))
 
 
+_AMBIG_T = {norm_ar("السوداني"): re.compile("|".join([norm_ar("السودانيين"), norm_ar("السودانيون"), r"(?<![\u0600-\u06FF])(?:ال)?سودان(?![\u0600-\u06FF])",
+                                                       norm_ar("الخرطوم"), norm_ar("الدعم السريع")])),
+            norm_ar("الناصرية"): re.compile("|".join(norm_ar(w) for w in ["مصر", "المصري", "عبد الناصر", "جمال عبد"]))}
+
+
 def about_iraq_title(label, about):
     """يصحح «عن العراق» من العنوان: دولة بعيدة بلا كلمة عراقية صريحة ← لا؛ دولة إقليمية بلا كلمة عراقية ولا جهة محلية بأوله ← لا."""
     lab = norm_ar(label or "")
-    if not about or any(_iq_in(w, lab) for w in IRAQ_STRONG_T) or IRAQ_EN.search(label or ""):
+    # «السوداني» (رئيس الوزراء السابق) تطابق «السودانيين»، و«الناصرية» تطابق الناصرية المصرية: لا تكفي وحدها مع اسم دولة أخرى
+    # (فحص 6، تدقيق 04:11 06/11: «الجيش المصري… الدهابة السودانيين»، «المؤرخة الفرنسية: الناصرية… في مصر»)
+    strong = [w for w in IRAQ_STRONG_T if _iq_in(w, lab)]
+    if strong and all(w in _AMBIG_T and _AMBIG_T[w].search(lab) for w in strong):
+        strong = []
+    if not about or strong or IRAQ_EN.search(label or ""):
         return about
     if any(w in lab for w in FAR_T):
         return False

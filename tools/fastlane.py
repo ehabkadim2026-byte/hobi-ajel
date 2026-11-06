@@ -443,6 +443,9 @@ def main():
                 lk = T.lead_key(first)
                 if ch not in CFG["loud"] and sum(1 for x in mine + main_sigs if x.get("ts", 0) >= time.time() - 3600 and T.lead_key(x.get("title") or "") == lk) >= 2:
                     skip("نفس الجهة خلال ساعة"); continue
+                if ch not in CFG["loud"] and not T.SEC_RX.search(first) and \
+                        any(x.get("ts", 0) >= time.time() - 900 and T.lead_key(x.get("title") or "") == lk for x in mine + main_sigs):
+                    skip("نفس الجهة خلال ساعة", "same_actor_15m"); continue  # تصريحات المتحدث نفسه بالدقيقة نفسها (الغدير: 3412، 3416، 3417 — تدقيق 04:11 06/11)
                 if T.low_value(first) or T.incomplete(first) or T.PRESS_RX.search(first):
                     skip("عنوان غير صالح", bad_title_reason(first)); continue
                 if ttier == "ضعيفة":
@@ -450,6 +453,9 @@ def main():
                 # قناة عراقية (لا عربية/دولية): خبر جهة رسمية بصيغة محلية بلا اسم العراق يكفي إذا خلا من أي علامة أجنبية («التقاعد: …»، «شرطة …»)
                 pflag = flagged(ch, p["text"])
                 iraqi = T.iraq_strict(first) or (ch not in CFG.get("intl", []) and T.iraq_domestic(first))
+                # رأي محلل/خبير عن العراق يُقبل بوسم «تحليل» بلا حكم الأهمية: لا ننتظر النموذج قبله (كان يُستدعى ثم يُتجاهل —
+                # 3439 بعد 42.9 ث و3443 بعد 33.6 ث؛ فحص 7، تدقيق 04:11 06/11). السقف والشروط تُطبق أدناه كما هي.
+                an_pre = bool(iraqi and T.analyst(first))
                 if ch in CFG.get("agency", []) or tier == "rss" or (tier == "breaking" and ttier == "موثوقة"):
                     # وكالة موثوقة (أو موقعها مباشرة عبر RSS): عاجلها (أو حدث مهم بكلمات صريحة) عن العراق يُنشر فوراً منسوباً لها، بلا انتظار مصدر ثانٍ
                     if not iraqi and regional_ok(ch, p["text"], first, mine):
@@ -457,7 +463,7 @@ def main():
                     elif not iraqi:
                         skip("وكالة: ليس عراقياً"); continue
                     why_no = "no_strict"
-                    if regional or pflag or STRICT.search(first):
+                    if regional or pflag or STRICT.search(first) or an_pre:
                         ok = True
                     else:  # خبر وكالة غير موسوم: يحكم النموذج على أهميته (واع سبقتنا 12 مرة بأخبار عادية مهمة كنا ننتظرها للجولة الرئيسية)
                         ok, by = important(p["text"][:600], news=True) if gem_ok() else (False, "سقف")
@@ -470,8 +476,8 @@ def main():
                     elif not iraqi:
                         skip("ليس عراقياً"); continue
                     why_no = "no_strict"
-                    if regional or pflag or T.SEC_RX.search(first):
-                        ok = True  # عاجل عراقي، أو خبر أمني عراقي حتى بلا وسم «عاجل» (الأمني لا ينتظر)
+                    if regional or pflag or T.SEC_RX.search(first) or an_pre:
+                        ok = True  # عاجل عراقي، أو خبر أمني عراقي حتى بلا وسم «عاجل» (الأمني لا ينتظر)، أو رأي محلل (يُوسم ويُسقف أدناه)
                     elif gem_ok():
                         # خبر عراقي غير موسوم من قناة سريعة (دجلة، السومرية، 964…): المسار السريع هو الناشر الأساسي الآن،
                         # والجولة الرئيسية تتأخر 5–10 دقائق بطبيعتها — يحكم النموذج على أهميته (تحليل السبق 2026-11-03)
@@ -480,6 +486,8 @@ def main():
                         ok = ok and (by == "قاعدة" or (by == "Gemini" and not T.ROUTINE_RX.search(first)))  # «قاعدة» = مهم بالتعريف (كان يُهمل هنا: رواتب كردستان 04/11)
                     else:
                         skip("سقف النموذج بالساعة"); continue
+                elif an_pre:
+                    ok, why_no = True, ""
                 else:
                     ok, by = important(p["text"][:600], news=True)
                     why_no = "gem_no"
