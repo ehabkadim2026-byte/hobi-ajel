@@ -214,9 +214,9 @@ def scene_intro(cv, t, day_txt, n=5, period="اليوم"):
     lw = logo_white(150)
     a = clamp(prog(t, 0.05, f2s(12)) * 1.3)
     cv.alpha_composite(fade(lw, a), ((W - lw.width) // 2, 440))
-    pill_tag(cv, t, "نشرة دقيقة", RED + (255,), PAPER, (255, 255, 255), XR, 760, 0.25)
+    pill_tag(cv, t, period if period != "اليوم" else "نشرة دقيقة", RED + (255,), PAPER, (255, 255, 255), XR, 760, 0.25)
     rise_line(cv, t, f"أهم {n} أخبار", "black", 124, PAPER, XR, 1030, 0.45, exit_at=2.2)
-    rise_line(cv, t, f"في العراق {period}", "black", 124, GOLD, XR, 1205, 0.6, exit_at=2.25)
+    rise_line(cv, t, "في العراق", "black", 124, GOLD, XR, 1205, 0.6, exit_at=2.25)
     rise_line(cv, t, day_txt, "semi", 48, (190, 204, 228), XR, 1335, 0.8, exit_at=2.3)
 
 
@@ -317,17 +317,29 @@ def render(items, out_path, day_txt, music=None, period="اليوم"):
     from tools import tg_push as T
     scenes = [("intro", 2.6, None)]
     for i, it in enumerate(items):
-        ph = None
-        try:
-            jpg = T.news_photo(it["n"])
-            if jpg:
-                from tools import fastbreak as _FB
+        ph, why = None, []
+        try:  # أول صورة نظيفة من مصادر الخبر (حتى 3): لا شعار قناة أخرى ولا صورة مظلمة
+            from tools import tg_card as _TC, fastbreak as _FB
+            for s_ in (it["n"].get("sources") or [])[:3]:
+                img = _TC.find_image(s_.get("url") or "")
+                if not img:
+                    why.append("noimg"); continue
+                try:
+                    jpg = _TC.fetch_jpeg(img)
+                except Exception:  # noqa: BLE001
+                    why.append("fetch"); continue
                 _g = Image.open(io.BytesIO(jpg)).convert("L").resize((64, 64))
-                if sum(_g.getdata()) / 4096 < 45 or _FB.watermarked(jpg) is not False:  # غير مؤكد = لا نستخدمها  # صورة مظلمة أو عليها شعار قناة أخرى
-                    jpg = None
-            ph = photo_layer(jpg)
-        except Exception:  # noqa: BLE001
-            ph = None
+                if sum(_g.getdata()) / 4096 < 45:
+                    why.append("dark"); continue
+                wm = _FB.watermarked(jpg)
+                if wm is not False:
+                    why.append(f"wm={wm}"); continue
+                ph = photo_layer(jpg)
+                why.append("ok")
+                break
+        except Exception as e:  # noqa: BLE001
+            why.append(type(e).__name__)
+        print(f"::notice title=reel photo::{i + 1} {'/'.join(why)} — {it['title'][:50]}")
         size = 72
         lines = wrap(it["title"], "black", size, XR - XL)
         while len(lines) > 4 and size > 54:
