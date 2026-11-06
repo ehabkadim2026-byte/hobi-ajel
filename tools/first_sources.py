@@ -35,7 +35,7 @@ def main():
     db = sqlite3.connect(ROOT / "data" / "marsad.db")
     db.row_factory = sqlite3.Row
     since = (datetime.now(timezone.utc) - timedelta(hours=HOURS)).strftime("%Y-%m-%dT%H:%M")
-    cl = db.execute("SELECT id, title, n_sources FROM clusters WHERE last_utc >= ? AND n_sources >= ?", (since, MIN_SRC)).fetchall()
+    cl = db.execute("SELECT id, label AS title, n_sources FROM clusters WHERE last_utc >= ? AND n_sources >= ?", (since, MIN_SRC)).fetchall()
     first = collections.Counter()
     first_out = collections.Counter()
     names, examples = {}, collections.defaultdict(list)
