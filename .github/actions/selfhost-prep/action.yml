@@ -1,0 +1,13 @@
+name: selfhost-prep
+description: تجهيز سيرفر أكا (gh بدون sudo) — لا يفعل شيئاً على مشغّلات GitHub العادية
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        if command -v gh >/dev/null 2>&1; then exit 0; fi
+        V=2.63.2; D="$HOME/.local/gh-$V"
+        if [ ! -x "$D/bin/gh" ]; then
+          mkdir -p "$D" && curl -fsSL "https://github.com/cli/cli/releases/download/v$V/gh_${V}_linux_amd64.tar.gz" | tar xz -C "$D" --strip-components=1
+        fi
+        echo "$D/bin" >> "$GITHUB_PATH"
