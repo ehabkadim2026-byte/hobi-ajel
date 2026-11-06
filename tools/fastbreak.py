@@ -135,12 +135,15 @@ def visible_len(s):
     return v(s)
 
 
+SHOW_SOURCE = False  # إيهاب 06/11: لا نذكر اسم المصدر في نص الخبر (سطر التحقق «أكدته» يبقى)
+
+
 def build_caption(head, loud, src, details=(), also=(), verify=None, keep=(), tags=(), channel="https://t.me/akamedia_iq"):
     """تعليق بقالب القناة: العنوان، التفاصيل، المصدر ومن نقله، سطر التحقق وسطور التأكيد السابقة، الوسوم، دعوة القناة. يقص حتى 1024."""
     details, also = list(details), list(also)
     while True:
         cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>" + "".join("\n" + H.escape(d) for d in details) + \
-              f"\n\n📌 المصدر: {H.escape(src)}" + (f" — ونقلته أيضاً: {H.escape('، '.join(also))}" if also else "") + \
+              ((f"\n\n📌 المصدر: {H.escape(src)}" + (f" — ونقلته أيضاً: {H.escape('، '.join(also))}" if also else "")) if SHOW_SOURCE else "\n") + \
               (f"\n{verify}" if verify else "") + "".join(f"\n{k}" for k in keep) + \
               (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{channel}"
         if visible_len(cap) <= LIMIT:

@@ -896,6 +896,9 @@ def verify_line(n):
     return "⏳ التحقق: غير مؤكد بعد — مصدر واحد"
 
 
+SHOW_SOURCE = False
+
+
 def fmt(n, update=False, kind="news"):
     """الخبر المحرَّر + المصدر + وسم المحافظة + دعوة القناة. التفاصيل صارت زراً تحت الخبر."""
     mark = "🔴 عاجل | " if is_breaking(n) else ""
@@ -905,7 +908,7 @@ def fmt(n, update=False, kind="news"):
     if n.get("_lead"):
         lines[0] += "\n" + H.escape(n["_lead"])
     sl = src_label(n)
-    if sl:
+    if sl and SHOW_SOURCE:  # إيهاب 06/11: لا نذكر اسم المصدر
         lines.append(f"📌 المصدر: {H.escape(sl)}")
     lines.append(verify_line(n))
     tags = province_tags(n.get("title"))

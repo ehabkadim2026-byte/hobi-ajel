@@ -119,7 +119,7 @@ def run_insider():
     assert MP.DRAFTS[did2]["photo"] == b"OGGDATA"
     api.ups = [_cb(3, did2, "n")]
     assert poll() == 1 and api.n("sendPhoto", CH) == 1
-    assert "مدارس بغداد" in api.last("sendPhoto")["caption"] and "📌 المصدر: وزارة التربية" in api.last("sendPhoto")["caption"]
+    assert "مدارس بغداد" in api.last("sendPhoto")["caption"] and "📌 المصدر" not in api.last("sendPhoto")["caption"]
     assert MP.DRAFTS[did2]["photo"] is None  # الصورة تُحذف من الذاكرة بعد النشر
 
     # 5) غير المشرف: تجاهل تام (لا نموذج، لا رد، لا تعليم)

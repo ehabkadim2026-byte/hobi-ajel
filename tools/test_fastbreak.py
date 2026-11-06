@@ -89,7 +89,7 @@ def run_two_stage():
     media = json.loads(kw["media"])
     assert media["type"] == "animation" and media["media"] == "attach://m" and media["parse_mode"] == "HTML"
     c = media["caption"]
-    assert c.startswith("<b>🔴 عاجل | خلية الإعلام الأمني") and "وأوضحت الخلية" in c and "ونقلته أيضاً: وزارة الخارجية" in c, c
+    assert c.startswith("<b>🔴 عاجل | خلية الإعلام الأمني") and "وأوضحت الخلية" in c and "المصدر" not in c and "ونقلته" not in c, c  # لا اسم للمصدر (إيهاب 06/11)
     assert c.count("✅ أكدته: وزارة الخارجية") == 1 and "#كركوك" in c and CF.visible_len(c) <= 1024 and CF.html_ok(c)
     assert led.data["posts"][0]["kind"] == "animation"
     assert 501 in led.edited_ids("enrich") and 501 in led.edited_ids("off"), "التأكيد مسجل فلا يعيده confirm.check"

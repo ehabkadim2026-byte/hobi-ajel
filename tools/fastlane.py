@@ -430,7 +430,7 @@ def main():
                         try:
                             uh = FB.fast_head(first)
                             rr = T.api(token, "sendMessage", chat_id=chat_id, reply_to_message_id=base["mid"], disable_notification="true",
-                                       parse_mode="HTML", text=f"🔄 <b>تحديث:</b> {H.escape(uh)}\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}")
+                                       parse_mode="HTML", text=f"🔄 <b>تحديث:</b> {H.escape(uh)}" + (f"\n📌 المصدر: {H.escape(re.sub(r' — .*$', '', cname))}" if FB.SHOW_SOURCE else ""))
                             if rr.get("ok"):
                                 base["upd"] = base.get("upd", 0) + 1
                                 base["upd_ts"] = time.time()
@@ -559,9 +559,9 @@ def main():
                 src_name = re.sub(r" — .*$", "", cname) + (" (وثيقة رسمية)" if from_doc else "")
                 card = tg_card.card_news4(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), source=re.sub(r" — .*$", "", cname), style="A")
                 tags = T.province_tags(first)
-                cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>\n\n📌 المصدر: {H.escape(src_name)}" + \
+                cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>" + (f"\n\n📌 المصدر: {H.escape(src_name)}" if FB.SHOW_SOURCE else "") + \
                       (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"
-                kb = json.dumps({"inline_keyboard": [[{"text": "📖 المصدر", "url": p.get("url") or f"https://t.me/{ch}/{p['id']}"},
+                kb = json.dumps({"inline_keyboard": [[{"text": "📖 التفاصيل", "url": p.get("url") or f"https://t.me/{ch}/{p['id']}"},
                                                       {"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fakamedia_iq"}]]})
                 r = {"ok": False}
                 kind = "photo"

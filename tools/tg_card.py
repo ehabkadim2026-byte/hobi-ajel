@@ -527,7 +527,11 @@ def news_card3(photo_jpg, title, breaking=True, when_utc=None, handle="t.me/akam
     return buf.getvalue()
 
 
+SHOW_SOURCE = False  # إيهاب 06/11: لا نذكر اسم المصدر في الخبر ولا على البطاقة
+
+
 def breaking_anim(photo_jpg, title, when_utc=None, style="v3", source=None):
+    source = source if SHOW_SOURCE else None
     """بطاقة عاجل متحركة (MP4 صامت يتكرر تلقائياً في تلغرام): شارة «عاجل» تومض وأشعة الإشارة تنبض. ~2 ثانية."""
     import os
     import subprocess
@@ -1265,6 +1269,7 @@ def looks_like_logo(jpg):
 
 
 def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=None, style="A"):
+    source = source if SHOW_SOURCE else None  # إيهاب 06/11: لا اسم للمصدر على البطاقة
     """ثلاث هويات للمعاينة (1080×1350):
     A «شاشة الحدث»: صورة كاملة سينمائية، العنوان أبيض كبير فوق تدرّج أسود، لسان أحمر حاد بأسلوب الشاشات الإخبارية.
     B «الصحيفة»: صورة أعلى وورق عاجي أسفل، عنوان أسود ثقيل وسطر أحمر — رصانة الصحافة الكبرى.

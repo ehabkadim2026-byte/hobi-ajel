@@ -93,7 +93,7 @@ def send_card(token, chat_id, head, hot, src=None, extra="", photo=None, ref="ma
         return False, "⚠️ هذا الخبر منشور بالقناة خلال آخر 6 ساعات، فما نشرته حتى ما يتكرر. إذا بيه تطور جديد اكتب العنوان بالتفصيل الجديد.", None
     when = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     cap = f"<b>{'🔴 عاجل | ' if hot else ''}{H.escape(head)}</b>" + (f"\n{H.escape(extra)}" if extra else "") + \
-          (f"\n\n📌 المصدر: {H.escape(src)}" if src else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"
+          (f"\n\n📌 المصدر: {H.escape(src)}" if src and tg_card.SHOW_SOURCE else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"
     r = {"ok": False}
     if hot and not two_stage:
         try:
@@ -308,7 +308,7 @@ def new_draft(token, api, owner, chat, head, details=(), src=None, photo=None, n
     d = {"id": did, "owner": str(owner), "chat": chat, "head": head.strip()[:220], "details": [x.strip()[:200] for x in details if x and x.strip()][:2],
          "src": (src or "").strip()[:60] or None, "photo": photo, "kind": kind, "ts": time.time(), "state": "open", "group": group, "msg": None}
     body = f"📝 مسودة #{did} — تنتهي بعد 30 دقيقة\n\n<b>{H.escape(d['head'])}</b>" + \
-           ("".join("\n" + H.escape(x) for x in d["details"])) + (f"\n📌 المصدر: {H.escape(d['src'])}" if d["src"] else "") + \
+           ("".join("\n" + H.escape(x) for x in d["details"])) + (f"\n📌 المصدر: {H.escape(d['src'])}" if d["src"] and __import__('tools.tg_card', fromlist=['x']).SHOW_SOURCE else "") + \
            (f"\n\n{note}" if note else "") + ("".join("\n" + w for w in warn)) + "\n\nما يُنشر شيء إلا بضغطة زر."
     kw = {"reply_to_message_id": reply_to} if reply_to else {}
     try:
