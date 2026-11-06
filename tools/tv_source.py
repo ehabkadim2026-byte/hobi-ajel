@@ -64,7 +64,7 @@ def important(cap, news=False):
         return True, "قاعدة"
     try:
         from tools.editorial import gemini
-        ans = gemini((NEWS_GATE_PROMPT if news else GATE_PROMPT) + cap[:600], max_tokens=5, temperature=0)
+        ans = gemini((NEWS_GATE_PROMPT if news else GATE_PROMPT) + cap[:600], max_tokens=64, temperature=0)
         if ans is not None:
             return "نعم" in ans, "Gemini"
     except Exception:  # noqa: BLE001

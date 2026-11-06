@@ -128,7 +128,11 @@ def gemini(prompt, max_tokens=120, temperature=0.2, parts=None, timeout=12):
         try:
             with _ur.urlopen(req, timeout=timeout) as r:
                 d = _json.loads(r.read().decode())
-            return d["candidates"][0]["content"]["parts"][0]["text"]
+            txt = "".join(p.get("text", "") for p in d["candidates"][0]["content"].get("parts", []))
+            if not txt.strip():  # 06/11: رد فارغ (MAX_TOKENS) كان يُقرأ «لا» فيرفض أخباراً مهمة ويحجب كل الصور — نجرّب النموذج التالي
+                last = ValueError("empty")
+                continue
+            return txt
         except _ue.HTTPError as e:
             last = e
             if e.code in (429, 404, 403):

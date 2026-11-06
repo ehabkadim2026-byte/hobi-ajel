@@ -394,7 +394,7 @@ def watermarked(img, gem=None, gem_ok=None):
         from tools.editorial import gemini as gem
     WM_CALLS.append(now)
     try:
-        out = gem(WM_PROMPT, max_tokens=4, temperature=0, parts=[{"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(img).decode()}}])
+        out = gem(WM_PROMPT, max_tokens=64, temperature=0, parts=[{"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(img).decode()}}])
     except Exception:  # noqa: BLE001
         out = None
     v = None if not out else (True if "YES" in out.upper() else False if "NO" in out.upper() else None)
