@@ -5,17 +5,25 @@
 name: hobi-ajel
 on:
   schedule: [{cron: "*/10 * * * *"}]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      runner: {description: "aka = سيرفر مرام (تجربة)", required: false, default: ""}
   push: {branches: [main]}  # أي تحديث للكود يعيد تشغيل السلسلة إن انقطعت
 permissions: {contents: write, pages: write, id-token: write, actions: write}
 concurrency: {group: hobi-ajel, cancel-in-progress: false}
 jobs:
   collect-and-publish:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner == 'aka' && fromJSON('["self-hosted","aka"]') || 'ubuntu-latest' }}
     timeout-minutes: 25
     environment: {name: github-pages}
     steps:
       - run: echo "START=$(date +%s)" >> "$GITHUB_ENV"
+      - name: gh on self-hosted (لا يفعل شيئاً على مشغّلات GitHub)
+        run: |
+          command -v gh >/dev/null && exit 0
+          V=2.63.2; D="$HOME/.local/gh-$V"
+          [ -x "$D/bin/gh" ] || { mkdir -p "$D" && curl -fsSL "https://github.com/cli/cli/releases/download/v$V/gh_${V}_linux_amd64.tar.gz" | tar xz -C "$D" --strip-components=1; }
+          echo "$D/bin" >> "$GITHUB_PATH"
       - name: successor first (الجولة التالية تُحجز من البداية، فتستمر السلسلة حتى لو تعطلت هذه الجولة أو طالت)
         if: github.event_name != 'schedule' || true
         env: {GH_TOKEN: "${{ github.token }}"}
