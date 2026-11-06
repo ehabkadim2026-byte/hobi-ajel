@@ -84,8 +84,20 @@ def main():
     print(f"::notice title=first::أحداث {tot}، أولها ضمن المسار السريع {out['first_in_fast']}")
     for x in out["first_outside_fast"]:
         print(f"::notice title=first-outside::{x['n']} | {x['sid']} | {x['name']} | {' ؛ '.join(x['ex'])}")
-    for h, n in out["mentioned_unknown"]:
-        print(f"::notice title=mentioned::{n} | {h}")
+    import urllib.request, html as H
+    for h, n in out["mentioned_unknown"][:30]:
+        info = ""
+        try:
+            pg = urllib.request.urlopen(urllib.request.Request(f"https://t.me/s/{h}", headers={"User-Agent": "Mozilla/5.0"}), timeout=15).read().decode("utf-8", "ignore")
+            ttl = re.search(r'<meta property="og:title" content="([^"]*)"', pg)
+            ds = re.search(r'<meta property="og:description" content="([^"]*)"', pg)
+            sub = re.search(r'<span class="counter_value">([^<]+)</span>\s*<span class="counter_type">subscribers', pg)
+            last = re.findall(r'<div class="tgme_widget_message_text[^>]*>(.*?)</div>', pg, re.S)[-2:]
+            last = " ؛ ".join(re.sub(r"<[^>]+>", " ", H.unescape(x)).strip()[:60] for x in last)
+            info = f"{H.unescape(ttl.group(1)) if ttl else ''} | {sub.group(1) if sub else '?'} | {H.unescape(ds.group(1))[:60] if ds else ''} | {last}"
+        except Exception as e:  # noqa: BLE001
+            info = type(e).__name__
+        print(f"::notice title=mentioned::{n} | {h} | {info}")
 
 
 if __name__ == "__main__":
