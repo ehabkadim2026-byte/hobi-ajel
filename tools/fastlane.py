@@ -498,6 +498,8 @@ def main():
                 elif an_pre:
                     ok, why_no = True, ""
                 else:
+                    if not oname and T.foreign_only(first):
+                        skip("ليس عراقياً", "foreign_ch"); continue  # قناة عامة غير رسمية تنقل شأناً أجنبياً بلا ذكر العراق (3735 الحوثيون، 3753 الحرس الثوري — فحص 4، تدقيق 22:12 06/11)
                     ok, by = important(p["text"][:600], news=True)
                     why_no = "gem_no"
                     if by != "Gemini":

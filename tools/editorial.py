@@ -106,7 +106,7 @@ _EXH_AT = {}  # 429 (حد الدقيقة غالباً) يوقف النموذج 1
 EXH_RETRY_SEC = 600
 
 
-def gemini(prompt, max_tokens=120, temperature=0.2, parts=None, timeout=12):
+def gemini(prompt, max_tokens=120, temperature=0.2, parts=None, timeout=12, budget=None):
     """parts: أجزاء وسائط اختيارية قبل النص (مثل {"inline_data": {"mime_type": ..., "data": base64}}) — بوابة المراسل (صوت/صورة)."""
     key = _os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
@@ -118,15 +118,18 @@ def gemini(prompt, max_tokens=120, temperature=0.2, parts=None, timeout=12):
             _EXH_AT.pop(m, None)
             _EXHAUSTED.discard(m)
     last = None
+    t0 = _t.time()
     for model in ([_os.environ["GEMINI_MODEL"]] if _os.environ.get("GEMINI_MODEL") else MODELS):
         if model in _EXHAUSTED:
             continue
+        if budget and _t.time() - t0 >= budget:
+            break  # سقف زمني كلي (بوابة المسار السريع): تجربة 8 نماذج × 12 ث كانت توقف طابور الإرسال كله (وسيط lat_s 31 ث — فحص 7، تدقيق 22:12 06/11)
         body = _json.dumps({"contents": [{"parts": list(parts or []) + [{"text": prompt}]}],
                             "generationConfig": {"temperature": temperature, "maxOutputTokens": max_tokens}}).encode()
         req = _ur.Request(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
                           data=body, headers={"Content-Type": "application/json", "x-goog-api-key": key})
         try:
-            with _ur.urlopen(req, timeout=timeout) as r:
+            with _ur.urlopen(req, timeout=min(timeout, max(1.0, budget - (_t.time() - t0))) if budget else timeout) as r:
                 d = _json.loads(r.read().decode())
             txt = "".join(p.get("text", "") for p in d["candidates"][0]["content"].get("parts", []))
             if not txt.strip():  # 06/11: رد فارغ (MAX_TOKENS) كان يُقرأ «لا» فيرفض أخباراً مهمة ويحجب كل الصور — نجرّب النموذج التالي

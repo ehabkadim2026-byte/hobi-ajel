@@ -214,9 +214,20 @@ _AMBIG_T = {norm_ar("السوداني"): re.compile("|".join([norm_ar("السو�
             norm_ar("الناصرية"): re.compile("|".join(norm_ar(w) for w in ["مصر", "المصري", "عبد الناصر", "جمال عبد"]))}
 
 
+_PEER_T = {norm_ar(w) for w in ["نظيره", "لنظيره", "بنظيره", "نظيريه", "نظيرته", "السفير", "للسفير", "والسفير", "بالسفير", "سفير", "مع", "ومع", "القنصل"]}
+
+
+def _foreign_role(head):
+    """الجهة بأول العنوان موصوفة بدولة أخرى («وزارة الصحة الإيرانية…»، «وزير الخارجية الإيراني:») لا جهة عراقية تخاطب نظيراً أجنبياً
+    («وزير الخارجية لنظيره الإيراني»، «وزير التربية للسفير اللبناني»)."""
+    w = head.split()
+    return any(i > 0 and any(r and r == x.rstrip(":،") for r in REG_T) and w[i - 1] not in _PEER_T for i, x in enumerate(w))
+
+
 def about_iraq_title(label, about):
     """يصحح «عن العراق» من العنوان: دولة بعيدة بلا كلمة عراقية صريحة ← لا؛ دولة إقليمية بلا كلمة عراقية ولا جهة محلية بأوله ← لا."""
     lab = norm_ar(label or "")
+    lab_head = " ".join(norm_ar(re.sub(r"[#_]", " ", label or "")).split()[:4])
     # «السوداني» (رئيس الوزراء السابق) تطابق «السودانيين»، و«الناصرية» تطابق الناصرية المصرية: لا تكفي وحدها مع اسم دولة أخرى
     # (فحص 6، تدقيق 04:11 06/11: «الجيش المصري… الدهابة السودانيين»، «المؤرخة الفرنسية: الناصرية… في مصر»)
     strong = [w for w in IRAQ_STRONG_T if _iq_in(w, lab)]
@@ -226,8 +237,10 @@ def about_iraq_title(label, about):
         return about
     if any(w in lab for w in FAR_T) or FAR_EN.search(label or ""):
         return False
-    if any(w in lab for w in REG_T) and not LOCAL_ROLE_T.search(label or ""):
-        return False
+    if re.search(r"(?<![\u0600-\u06FF])(?:أمريكي|أميركي|امريكي)(?![\u0600-\u06FF])", label or "") and not LOCAL_ROLE_T.search(label or ""):
+        return False  # «زلزال سياسي أمريكي» بلا أداة التعريف (فحص 6، تدقيق 22:12 06/11)؛ «شركة أمريكية» مع جهة عراقية تبقى
+    if any(w in lab for w in REG_T) and not (LOCAL_ROLE_T.search(label or "") and not _foreign_role(lab_head)):
+        return False  # الجهة بأول العنوان موصوفة بدولة أخرى («#وزارة_الصحة_الإيرانية…») ليست جهة محلية (فحص 6، تدقيق 22:12 06/11)
     return about
 
 

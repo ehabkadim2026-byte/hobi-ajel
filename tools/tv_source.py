@@ -58,15 +58,24 @@ MUST_RX = re.compile(
 SPECULATIVE_RX = re.compile(r"(أنباء أولية|انباء اولية|مقربين من|مقربون من|يلمح|تسريبات|أنباء عن|انباء عن|غير مؤكد|مصادر:|مصدر:|بحسب مصادر)")
 
 
+_GATE_DOWN = 0.0  # بوابة الأهمية بالمسار السريع: تعطّل النموذج يوقف الاستدعاء 60 ث بدل انتظار 7 ث لكل منشور
+
+
 def important(cap, news=False):
     """news=True لمنشورات القنوات النصية (المسار السريع): السؤال عن «منشور» لا «مقطع تلفزيوني» (تحليل السبق 2026-11-04)."""
     if news and MUST_RX.search(cap or "") and not SPECULATIVE_RX.search(cap or ""):
         return True, "قاعدة"
+    global _GATE_DOWN
+    if news and time.time() < _GATE_DOWN:
+        return bool(IMPORTANT.search(cap)), "كلمات"  # النموذج تعذّر قبل لحظات: لا نعيد الانتظار لكل منشور بالطابور (النتيجة نفسها: gem_unavailable)
     try:
         from tools.editorial import gemini
-        ans = gemini((NEWS_GATE_PROMPT if news else GATE_PROMPT) + cap[:600], max_tokens=64, temperature=0)
+        ans = gemini((NEWS_GATE_PROMPT if news else GATE_PROMPT) + cap[:600], max_tokens=64, temperature=0,
+                     **({"timeout": 5, "budget": 7} if news else {}))
         if ans is not None:
             return "نعم" in ans, "Gemini"
+        if news:
+            _GATE_DOWN = time.time() + 60
     except Exception:  # noqa: BLE001
         pass
     return bool(IMPORTANT.search(cap)), "كلمات"
