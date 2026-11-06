@@ -922,6 +922,16 @@ HOLIDAY_RX = re.compile(r"تعطيل الدوام الرسمي|عطلة رسمي
 SALARY_RX = re.compile(r"(?:إطلاق|اطلاق|تمويل|صرف|توزيع|إيداع|ايداع)\s+(?:ال)?رواتب|رواتب (?:شهر|موظفي|المتقاعدين)")
 
 
+def credited(n):
+    """منشور مصدره صفحة شخصية بقائمة credit_sources (fastlane.json) — يُذكر المصدر (إيهاب 06/11)."""
+    try:
+        cs = {x.lower() for x in json.loads((ROOT / "config" / "fastlane.json").read_text(encoding="utf-8")).get("credit_sources", [])}
+    except Exception:  # noqa: BLE001
+        return False
+    u = (src(n)[1] or "").lower()
+    return any(f"t.me/{h}" in u or f"t.me/s/{h}" in u for h in cs)
+
+
 def topic_mark(title):
     """(شارة، تثبيت؟) — إيهاب 06/11: «🎉 عطلة رسمية» تُثبّت بالقناة، و«💰 الرواتب» تتبع الرواتب. الأسئلة/التوقعات لا تُوسم."""
     t = title or ""
@@ -946,7 +956,7 @@ def fmt(n, update=False, kind="news"):
     if n.get("_lead"):
         lines[0] += "\n" + H.escape(n["_lead"])
     sl = src_label(n)
-    if sl and SHOW_SOURCE:  # إيهاب 06/11: لا نذكر اسم المصدر
+    if sl and (SHOW_SOURCE or credited(n)):  # إيهاب 06/11: لا نذكر اسم المصدر — إلا الصفحات الشخصية (credit_sources)
         lines.append(f"📌 المصدر: {H.escape(sl)}")
     if SHOW_VERIFY:  # إيهاب 06/11 مساءً: لا سطر تحقق بالمنشور
         lines.append(verify_line(n))

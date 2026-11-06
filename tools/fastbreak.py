@@ -76,7 +76,9 @@ def loud_of(text, first, head, flag=None):
     from tools import tg_push as T
     if flag is None:  # المسار السريع يمرر وسماً مُصفّى (قنوات تسم كل شيء عاجلاً لا يُعتد بوسمها)
         flag = bool(re.match(r"^\W{0,6}(عاجل|عــاجل|عاااجل|⚡|🔴|🚨)", text[:40] or ""))
-    return (flag or bool(T.SEC_RX.search(first) and T.iraq_strict(first))) and not T.NOT_URGENT_RX.search(head) \
+    # إيهاب 06/11 مساءً («مؤشرات العواجل اختفت» — 5–10% فقط حملت الوميض): الحدث العراقي (أمني/حادث/قرار عاجل) يحمل «عاجل» حتى بلا وسم المصدر
+    ev = bool((T.SEC_RX.search(first) or T.EVENT_RX.search(first) or T.URGENT_RX.search(first)) and T.iraq_strict(first))
+    return (flag or ev) and not T.NOT_URGENT_RX.search(head) \
         and bool(T.SEC_RX.search(head) or T.EVENT_RX.search(head) or T.URGENT_RX.search(head)) \
         and not (T.STATEMENT_RX.search(head) and not (T.SEC_RX.search(head) or T.EVENT_RX.search(head))) and T.iraq_strict(head)
 
@@ -139,12 +141,12 @@ SHOW_VERIFY = False  # إيهاب 06/11 مساءً: لا «مؤكد/غير مؤ�
 SHOW_SOURCE = False  # إيهاب 06/11: لا نذكر اسم المصدر في نص الخبر (سطر التحقق «أكدته» يبقى)
 
 
-def build_caption(head, loud, src, details=(), also=(), verify=None, keep=(), tags=(), channel="https://t.me/akamedia_iq"):
+def build_caption(head, loud, src, details=(), also=(), verify=None, keep=(), tags=(), channel="https://t.me/akamedia_iq", credit=False):
     """تعليق بقالب القناة: العنوان، التفاصيل، المصدر ومن نقله، سطر التحقق وسطور التأكيد السابقة، الوسوم، دعوة القناة. يقص حتى 1024."""
     details, also = list(details), list(also)
     while True:
         cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>" + "".join("\n" + H.escape(d) for d in details) + \
-              ((f"\n\n📌 المصدر: {H.escape(src)}" + (f" — ونقلته أيضاً: {H.escape('، '.join(also))}" if also else "")) if SHOW_SOURCE else "\n") + \
+              ((f"\n\n📌 المصدر: {H.escape(src)}" + (f" — ونقلته أيضاً: {H.escape('، '.join(also))}" if also and SHOW_SOURCE else "")) if SHOW_SOURCE or credit else "\n") + \
               (f"\n{verify}" if verify and SHOW_VERIFY else "") + "".join(f"\n{k}" for k in keep if SHOW_VERIFY) + \
               (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{channel}"
         if visible_len(cap) <= LIMIT:
@@ -293,7 +295,7 @@ def apply(job, plan, ledger, api, token, chat_id):
         verify = verify if verify and verify.startswith("✅ التحقق") else None
     elif vtyp and job["mid"] in ledger.edited_ids(vtyp):
         vtyp, verify = None, "⏳ التحقق: غير مؤكد بعد"  # جُرّب هذا النوع سابقاً (مرة لكل نوع)
-    cap = build_caption(plan["head"], job["loud"], job["src"], plan["details"], plan["also"], verify, keep, job.get("tags") or ())
+    cap = build_caption(plan["head"], job["loud"], job["src"], plan["details"], plan["also"], verify, keep, job.get("tags") or (), credit=bool(job.get("credit")))
     if not cap or not CF.html_ok(cap):
         return False, "caption"
     media = plan.get("media")

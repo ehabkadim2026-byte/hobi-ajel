@@ -563,7 +563,8 @@ def main():
                 card = tg_card.card_news4(photo, head, loud, p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"), source=re.sub(r" — .*$", "", cname), style="A")
                 tags = T.province_tags(first)
                 tmark, tpin = T.topic_mark(head)  # إيهاب 06/11: «🎉 عطلة رسمية» (تُثبّت) و«💰 الرواتب»
-                cap = f"<b>{tmark or ('🔴 عاجل | ' if loud else '')}{H.escape(head)}</b>" + (f"\n\n📌 المصدر: {H.escape(src_name)}" if FB.SHOW_SOURCE else "") + \
+                credit = FB.SHOW_SOURCE or ch.lower() in {x.lower() for x in CFG.get("credit_sources", [])}  # صفحة شخصية: يُذكر المصدر (إيهاب 06/11)
+                cap = f"<b>{tmark or ('🔴 عاجل | ' if loud else '')}{H.escape(head)}</b>" + (f"\n\n📌 المصدر: {H.escape(src_name)}" if credit else "") + \
                       (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"
                 kb = json.dumps({"inline_keyboard": [[{"text": "📖 التفاصيل", "url": p.get("url") or f"https://t.me/{ch}/{p['id']}"},
                                                       {"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fakamedia_iq"}]]})
@@ -622,7 +623,7 @@ def main():
                             print("::warning title=confirm add::", type(e).__name__)
                     if crit:  # المرحلة 2: إثراء المنشور نفسه بعد ~45 ث (مرة واحدة)
                         EN.add({"mid": r["result"]["message_id"], "sent_at": time.time(), "src_ts": p["t"].timestamp(), "ch": ch, "first": first,
-                                "text": p["text"], "head": head, "loud": bool(loud), "src": src_name, "when": p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                "text": p["text"], "head": head, "loud": bool(loud), "src": src_name, "credit": credit, "when": p["t"].strftime("%Y-%m-%dT%H:%M:%SZ"),
                                 "photo": photo, "photo_future": photo_fut, "img": p.get("img"), "kb": kb, "tags": tags, "hold": hold, "photo_hold": photo_hold,
                                 "official": bool(oname), "ref": RSS[ch]["url"] if tier == "rss" and ch in RSS else ch})
                     print(f"::notice title=fastlane posted::{ch}/{p['id']} بعد {age:.1f} د من نشر المصدر — {head[:80]}")
