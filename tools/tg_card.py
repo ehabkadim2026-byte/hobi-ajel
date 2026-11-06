@@ -1459,7 +1459,8 @@ def card_digest(title, sub, date, heads):
     d = _D.Draw(im)  # بلا شعار باهت بالخلفية: كان يتداخل مع التذييل، والشعار الحقيقي في القرص الأبيض أعلاه
     _paste_badge(im, W - P - 150 + 8, 44, 150)
     d = _D.Draw(im)
-    _draw_rtl(d, W - P, 200, title, _cairo(104, 900), (255, 255, 255))
+    ts = next((z for z in (104, 92, 80, 70) if d.textlength(title, font=_cairo(z, 900), direction="rtl") <= W - 2 * P), 64)  # عنوان أطول لا يتجاوز العرض (06/11)
+    _draw_rtl(d, W - P, 200 + (104 - ts) // 2, title, _cairo(ts, 900), (255, 255, 255))
     _draw_rtl(d, W - P, 390, sub, _cairo(40, 800), acc)
     _draw_rtl(d, W - P, 448, date, _cairo(30, 600), (170, 184, 214))
     d.rectangle([P, 468, P + 120, 474], fill=acc)

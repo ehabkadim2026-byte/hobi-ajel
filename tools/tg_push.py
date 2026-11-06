@@ -428,6 +428,10 @@ def low_value(t):
     mq = re.match(r"^\W{0,3}?[«\"“][^»\"”]{3,60}[»\"”]\s*(?:…|\.{2,})\s*(.*)$", t)
     if mq and ":" not in mq.group(1) and len(mq.group(1).split()) <= 6:
         return True  # عنوان مقال/تقرير: اقتباس بلا قائل ثم عبارة قصيرة «التغييب والهروب ليسا حلاً».. المواطن الكردي يدفع الضريبة (3448، تدقيق 10:11 06/11)
+    if re.search(r"خطب(?:ة|ه) (?:ال)?جمع(?:ة|ه)|أفلام (?:ال)?رعب|افلام (?:ال)?رعب|تجربة (?:أ|ا)فلام", t):
+        return True  # منوعات لا أخبار: «خطبة الجمعة اليوم من أحد جوامع الموصل»، «تطبيق… لتجربة أفلام الرعب» (قناة 06/11، ملاحظة إيهاب)
+    if re.search(r"(?:مرتزقة|عملاء|خيانة|تواطؤ).{0,80}(?:بعلم|بتواطؤ|بموافقة)\s+(?:حكومة|الحكومة|رئيس)", t) and not re.search(r"(?:وزارة|الحكومة|المتحدث|بيان)\s", t[:40]):
+        return True  # اتهام خطير لجهة رسمية بلا قائل رسمي: «…نشرت مرتزقة أجانب في العراق، بعلم حكومة الزيدي» (قناة 06/11)
     if re.search(r"[\u0621-\u064A]\s[a-z]\s[\u0621-\u064A]", t):
         return True  # كلمة مموهة بحرف لاتيني «الابتز l ز» (3392، فحص 4، تدقيق 04:11 06/11)
     if re.search(r"(?:الآن|الان)\s*$", t) and not VERB_RX.search(t) and not _has_verb(t):
@@ -1250,6 +1254,10 @@ def send_pending(token, chat_id, only_breaking=False):
         return done
     try:
         done.update(evening_digest(token, chat_id, msgs) or {})
+        try:
+            done.update(before_out(token, chat_id, msgs) or {})
+        except Exception as e:  # noqa: BLE001
+            DEBUG.append(f"before_out:{type(e).__name__}")
     except Exception as e:  # noqa: BLE001
         DEBUG.append(f"digest:{type(e).__name__}:{str(e)[:50]}")
     try:
@@ -1353,6 +1361,83 @@ def evening_digest(token, chat_id, msgs):
         msgs[slot] = today
         return {"digest": slot}
     return None
+
+
+BEFORE_OUT_CITIES = [("بغداد", 33.31, 44.37), ("البصرة", 30.51, 47.81), ("الموصل", 36.34, 43.13), ("أربيل", 36.19, 44.01)]
+
+
+def before_out(token, chat_id, msgs, http=None, now=None):
+    """«قبل لا تطلع» (إيهاب 06/11): 7:30 صباحاً بغداد — الدولار، الطقس، الدوام/العطل، الطرق — بطاقة واحدة بالقناة. كل جزء يسقط بصمت إن لم تتوفر بياناته."""
+    import json as _json
+    import urllib.request as _u
+    now = now or datetime.now(timezone.utc)
+    bgd = now + timedelta(hours=3)
+    today = bgd.strftime("%Y-%m-%d")
+    if not (bgd.hour == 7 and bgd.minute >= 25) or msgs.get("_before") == today:
+        return None
+    get = http or (lambda url: _u.urlopen(_u.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=15).read().decode("utf-8", "ignore"))
+    rows = []
+    try:  # الدولار: أحدث منشور بورصة بسعر بغداد
+        from tools import signal_radars as SR
+        for ch in SR.USD_CH:
+            pg = get(f"https://t.me/s/{ch}")
+            texts = [re.sub(r"<br\s*/?>", "\n", x) for x in re.findall(r'<div class="tgme_widget_message_text[^>]*>(.*?)</div>', pg, re.S)]
+            for t in reversed(texts):
+                r = SR.parse_rates(H.unescape(re.sub(r"<(?!br)[^>]+>", "", t)))
+                if r.get("بغداد"):
+                    rows.append(f"💵 الدولار ببورصة بغداد: {r['بغداد']:,} دينار لكل 100 دولار" + (f" — أربيل {r['أربيل']:,}" if r.get("أربيل") else ""))
+                    break
+            if rows:
+                break
+    except Exception as e:  # noqa: BLE001
+        DEBUG.append(f"before_usd:{type(e).__name__}")
+    try:  # الطقس: Open-Meteo (مجاني بلا مفتاح)
+        lat = ",".join(str(c[1]) for c in BEFORE_OUT_CITIES)
+        lon = ",".join(str(c[2]) for c in BEFORE_OUT_CITIES)
+        d = _json.loads(get(f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FBaghdad&forecast_days=1"))
+        d = d if isinstance(d, list) else [d]
+        parts = []
+        for (name, _, _), w in zip(BEFORE_OUT_CITIES, d):
+            dl = w["daily"]
+            rain = dl.get("precipitation_probability_max", [0])[0] or 0
+            parts.append(f"{name} {round(dl['temperature_2m_max'][0])}" + (" مع أمطار" if rain >= 50 else ""))
+        rows.append("🌤 الحرارة العظمى: " + "، ".join(parts))
+    except Exception as e:  # noqa: BLE001
+        DEBUG.append(f"before_wx:{type(e).__name__}")
+    news = load(PWA / "news.json", [])
+    since = (now - timedelta(hours=18)).strftime("%Y-%m-%dT%H:%M")
+    recent = [n for n in news if (n.get("latest_utc") or "") >= since and iraq_strict(n.get("title") or "")]
+    hol = [n for n in recent if re.search(r"تعطيل الدوام|عطلة رسمية|عطلة ل|تعطيل الدوام الرسمي|الدوام الرسمي", n["title"]) and not low_value(n["title"])]
+    rows.append("🏫 الدوام: " + (clean_headline_safe(hol[0]["title"]) if hol else "دوام رسمي اعتيادي — لا قرار تعطيل حتى الآن"))
+    roads = [n for n in recent if re.search(r"(?:قطع|إغلاق|اغلاق|غلق)\s+(?:طريق|شارع|جسر)|طريق .{0,20}مغلق|زخم مروري|زحام", n["title"])]
+    if roads:
+        rows.append("🚧 الطرق: " + clean_headline_safe(roads[0]["title"]))
+    if len(rows) < 2:
+        return None
+    months = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول']
+    date = f"{bgd.day} {months[bgd.month - 1]} {bgd.year}"
+    cap = "\n".join([f"☀️ <b>قبل لا تطلع</b> — {date}", ""] + [H.escape(r) for r in rows] + ["", f"صباح الخير من أكا ميديا 👇\n{CHANNEL}"])
+    r = {"ok": False}
+    try:
+        from tools import tg_card
+        card = tg_card.card_digest("صباح العراق: قبل لا تطلع", "الدولار · الطقس · الدوام · الطرق", date, [re.sub(r"^\S+\s", "", x) for x in rows])
+        r = api(token, "sendPhoto", files={"photo": ("before.jpg", card)}, chat_id=chat_id, caption=cap[:1024], parse_mode="HTML", disable_notification="true")
+    except Exception as e:  # noqa: BLE001
+        DEBUG.append(f"before_card:{type(e).__name__}:{str(e)[:40]}")
+    if not r.get("ok"):
+        r = api(token, "sendMessage", chat_id=chat_id, text=cap, parse_mode="HTML", disable_web_page_preview="true", disable_notification="true")
+    if r.get("ok"):
+        msgs["_before"] = today
+        return {"before_out": len(rows)}
+    return None
+
+
+def clean_headline_safe(t):
+    try:
+        from tools.editorial import clean_headline
+        return clean_headline(t, 110)
+    except Exception:  # noqa: BLE001
+        return (t or "")[:110]
 
 
 def daily_stats(token, msgs):
