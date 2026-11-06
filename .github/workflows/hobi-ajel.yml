@@ -209,6 +209,7 @@ jobs:
         if: always()
         env: {GH_TOKEN: "${{ github.token }}"}
         run: |
+          MARSAD_TG_BOT_TOKEN="${{ secrets.MARSAD_TG_BOT_TOKEN }}" MARSAD_TG_CHAT_ID="${{ secrets.MARSAD_TG_CHAT_ID }}" timeout 90 python3 -m tools.watchdog || true  # مراقب القطوعات (إيهاب 07/11)
           # احتياط السيرفر: جلسة مسار سريع عالقة بالانتظار >8 دقائق (سيرفر مرام مطفأ) تُلغى وتُطلق على GitHub
           stuck=$(timeout 20 gh api "repos/$GITHUB_REPOSITORY/actions/workflows/fastlane.yml/runs?per_page=5" --jq "[.workflow_runs[]|select(.status==\"queued\" and (.created_at|fromdateiso8601) < (now-480))|.id]|.[]" 2>/dev/null || true)
           for id in $stuck; do timeout 20 gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/cancel" >/dev/null 2>&1 && echo "::warning title=fastlane::سيرفر مرام لا يستجيب — إلغاء $id والتحويل إلى GitHub" && sleep 8 && timeout 20 gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/fastlane.yml/dispatches" -f ref=main -f "inputs[runner]=gh" || true; done
