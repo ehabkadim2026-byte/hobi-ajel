@@ -77,6 +77,28 @@ def story_old(sig, stories, now, fresh_min=None, title=None):
     return any(T.same_story(sig, s) for s in old) or bool(title and T.near_dup(title, old, now.timestamp(), hours=T.STORY_H))
 
 
+WEATHER_RX = re.compile(r"(أمطار|امطار|الأمطار|الامطار|الأنواء|الانواء|سيول|السيول|الطقس|غرق|تغرق|تغمر|عاصفة|رياح|صواعق|الضباب|حالة جوية|موجة مطرية)")
+
+
+def burst_story(first, now_ts=None, recent=None):
+    """خبر متفجر: 4 قنوات مختلفة فأكثر نشرت القصة نفسها خلال 10 دقائق ← يتجاوز سقف الساعة (بحد burst_extra) فلا يضيع الحدث الكبير لأن
+    الساعة امتلأت (فحص 5، تدقيق 16:11 07/11: «وزير الخارجية: واشنطن طلبت رسمياً إغلاق جميع منافذنا مع إيران» من 15+ قناة رُفض «cap»).
+    الطقس لا يستثنى (سيله هو ما يملأ الساعة) إلا مع حدث (قتلى/انفجار). بلا انتظار ولا نموذج: مقارنة بصمات بالذاكرة."""
+    if WEATHER_RX.search(first) and not T.EVENT_RX.search(first):
+        return False
+    now_ts = now_ts or time.time()
+    sig = T.title_sig(first)
+    chs = set()
+    for r in recent or []:
+        if r.get("ts", 0) < now_ts - 600 or not r.get("first"):
+            continue
+        rs = r.get("_sig") or T.title_sig(r["first"])
+        r["_sig"] = rs
+        if T.same_story(sig, {"w": rs[0], "d": rs[1]}):
+            chs.add(r.get("ch"))
+    return len(chs) >= CFG.get("burst_min", 4)
+
+
 def gh_get(asset):
     with tempfile.TemporaryDirectory() as td:
         r = subprocess.run(["gh", "release", "download", "fastlane", "-p", asset, "-D", td, "--clobber"], capture_output=True, timeout=30)
@@ -427,7 +449,8 @@ def main():
                     skip("قديم"); continue
                 if not first or PROMO.search(first) or ROUTINE.search(first):
                     skip("روتيني", "routine" if first else "short"); continue
-                if sum(1 for x in mine if x.get("ts", 0) >= time.time() - 3600) >= CFG["per_hour"]:
+                n_hour = sum(1 for x in mine if x.get("ts", 0) >= time.time() - 3600)
+                if n_hour >= CFG["per_hour"] and not (n_hour < CFG["per_hour"] + CFG.get("burst_extra", 8) and burst_story(first, recent=RECENT)):
                     skip("سقف"); continue
                 regional = False
                 sig = T.title_sig(first)

@@ -77,4 +77,16 @@ assert not T.EVENT_RX.search("الزيدي يزور هيئة التصنيع ال
 assert T.incomplete("بتخصيص 467 مليار دينار ضمن الموازنة الاتحادية لعام 20") and not T.incomplete("ضمن الموازنة الاتحادية لعام 2026 تُقر غداً")
 from tools.export_pwa import about_iraq_title as _ait
 assert _ait("العثور على 6 نقوش لبابلو بيكاسو سرقت في فرنسا", True) is False and _ait("محافظ بابل يعلن عطلة رسمية في فرنسا", True) is True
+from datetime import datetime, timezone  # noqa: E402
+# تدقيق 16:11 07/11: رقم مميز مشترك = الحدث نفسه، خبر الأمس «غد السبت»، حدود كلمة المحافظة بالوسوم، الملتصقات، تجاوز السقف للخبر المتفجر
+_sg = lambda a, b: T.same_story(T.title_sig(a), dict(zip(("w", "d"), T.title_sig(b))))
+assert T.stale_day("أهالي سهل نينوى يعلنون تظاهرات حاشدة يوم غد السبت", datetime(2026, 11, 7, 10, 0, tzinfo=timezone.utc))
+assert not T.stale_day("مطالبات بتعطيل الدوام يوم غد الأحد في كركوك", datetime(2026, 11, 7, 10, 0, tzinfo=timezone.utc))
+assert "#واسط" not in T.province_tags("شخص يفجر نفسه بواسطة رمانة يدوية في البصرة") and "#واسط" in T.province_tags("أمطار في الكوت بواسط")
+from tools.proof import proof as _pf
+assert _pf("انقطاع خدمةالإنترنت عن مناطق متفرقة في الأنبار") == "انقطاع خدمة الإنترنت عن مناطق متفرقة في الأنبار"
+assert T.NOT_URGENT_RX.search("إحباط صفقة بيع أسلحة غير مرخصة ببابل") and not T.NOT_URGENT_RX.search("إحباط هجوم إرهابي بطائرة مسيرة على قاعدة عين الأسد")
+_rc = [{"ch": c, "first": "وزير الخارجية: واشنطن طلبت رسمياً إغلاق جميع منافذنا الحدودية مع إيران", "ts": 1000.0} for c in "abcd"]
+assert FL.burst_story("وزير الخارجية العراقي: واشنطن طلبت رسميا إغلاق جميع منافذنا الحدودية مع إيران", 1100.0, _rc)
+assert not FL.burst_story("موجة أمطار غزيرة في الموصل", 1100.0, [{"ch": c, "first": "موجة أمطار غزيرة في الموصل", "ts": 1000.0} for c in "abcd"])
 print("selftest ok")
