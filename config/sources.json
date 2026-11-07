@@ -8876,6 +8876,51 @@
    "region": "العراق",
    "lang": "ar",
    "official": false
+  },
+  {
+   "id": "telegram:t.me/edu211",
+   "name": "ابن الدورة (أخبار التربية) — telegram",
+   "url": "https://t.me/edu211",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "category": "قنوات تلغرام",
+   "region": "العراق",
+   "lang": "ar",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "official": false,
+   "added_by": "وكيل التطوير 2026-11-07",
+   "evidence": "667K مشترك؛ أخبار التربية والتعليم والطقس والعطل؛ 20 منشوراً عربياً، آخرها 06/11؛ استشهدت به edu2iq المرصودة"
+  },
+  {
+   "id": "telegram:t.me/tlab9",
+   "name": "نشرة الطلبة — telegram",
+   "url": "https://t.me/tlab9",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "category": "قنوات تلغرام",
+   "region": "العراق",
+   "lang": "ar",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "official": false,
+   "added_by": "وكيل التطوير 2026-11-07",
+   "evidence": "6.3K مشترك؛ أخبار وزارتي التربية والتعليم العالي ولجنة التربية النيابية؛ 20 منشوراً عربياً، آخرها 06/11؛ استشهد به aqeelwassaf1"
+  },
+  {
+   "id": "telegram:t.me/cities_najaff",
+   "name": "عطل النجف مدينتي — telegram",
+   "url": "https://t.me/cities_najaff",
+   "platform": "telegram",
+   "method": "telegram_preview",
+   "category": "قنوات تلغرام",
+   "region": "العراق",
+   "lang": "ar",
+   "status": "لم يُجمع بعد",
+   "frequency": "ساعي",
+   "official": false,
+   "added_by": "وكيل التطوير 2026-11-07",
+   "evidence": "957 مشتركاً؛ قرارات تعطيل الدوام بالنجف والمحافظات؛ 20 منشوراً عربياً، آخرها 04/11؛ تابعة لـ najaf_madinata المرصودة"
   }
  ]
 }
