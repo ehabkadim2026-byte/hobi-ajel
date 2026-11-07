@@ -59,6 +59,7 @@ SPECULATIVE_RX = re.compile(r"(أنباء أولية|انباء اولية|مق�
 
 
 _GATE_DOWN = 0.0  # بوابة الأهمية بالمسار السريع: تعطّل النموذج يوقف الاستدعاء 60 ث بدل انتظار 7 ث لكل منشور
+_GATE_FAILS = [0]  # إخفاقات متتالية: الإيقاف يتضاعف 60← 120← 240… حتى 15 د (كل إعادة تجربة كانت توقف الطابور 7 ث — وسيط lat_s 16.8 ث، فحص 7، تدقيق 10:11 07/11)
 
 
 def important(cap, news=False):
@@ -71,11 +72,14 @@ def important(cap, news=False):
     try:
         from tools.editorial import gemini
         ans = gemini((NEWS_GATE_PROMPT if news else GATE_PROMPT) + cap[:600], max_tokens=64, temperature=0,
-                     **({"timeout": 5, "budget": 7} if news else {}))
+                     **({"timeout": 3.5, "budget": 4.5} if news else {}))
         if ans is not None:
+            if news:
+                _GATE_FAILS[0] = 0
             return "نعم" in ans, "Gemini"
         if news:
-            _GATE_DOWN = time.time() + 60
+            _GATE_FAILS[0] += 1
+            _GATE_DOWN = time.time() + min(900, 60 * 2 ** (_GATE_FAILS[0] - 1))
     except Exception:  # noqa: BLE001
         pass
     return bool(IMPORTANT.search(cap)), "كلمات"

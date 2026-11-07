@@ -179,12 +179,12 @@ def run():
         finally:
             T.PENDING, T.MSGS, T.CARDS, T.ANIM, T.SENT, T.api, T.fastlane_sigs, CF.gh_get, CF.gh_put = old
 
-    # 12) سجل قرارات المسار السريع: دائري بحد 400 وحقول ثابتة، وأسباب العنوان غير الصالح محددة
+    # 12) سجل قرارات المسار السريع: دائري بحد DEC_MAX وحقول ثابتة، وأسباب العنوان غير الصالح محددة
     from tools import fastlane as F
     F.DECISIONS.clear()
-    for k in range(450):
+    for k in range(F.DEC_MAX + 50):
         F.decide("ch", k, "عنوان " * 30, "skip", "dup")
-    assert len(F.DECISIONS) == 400 and F.DECISIONS[0]["id"] == 50 and set(F.DECISIONS[0]) == {"t", "ch", "id", "head", "decision", "reason"}
+    assert len(F.DECISIONS) == F.DEC_MAX and F.DECISIONS[0]["id"] == 50 and set(F.DECISIONS[0]) == {"t", "ch", "id", "head", "decision", "reason"}
     assert len(F.DECISIONS[0]["head"]) <= 80
     assert F.bad_title_reason("شنو صار بالحفلة اليوم يمعود") == "dialect"
     assert F.bad_title_reason("كتائب حزب الله: نرفض الاتفاق الأمني مع واشنطن") == "excluded"

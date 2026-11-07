@@ -35,13 +35,16 @@ def regional_ok(ch, text, first, mine):
         return False
     if not (T.SEC_RX.search(first) or T.EVENT_RX.search(first)) or MINOR_RX.search(first) or T.MINOR_RX.search(first):
         return False
-    if SPEAKER_RX.search(first):
+    mil = bool(MIL_EVENT_RX.search(first))  # بيان عسكري عن الحدث نفسه («المتحدث باسم التحالف: اعتراض صاروخ كروز… باتجاه الرياض») ليس تصريحاً سياسياً (فاتنا 08:03–08:24 07/11)
+    if SPEAKER_RX.search(first) and not mil:
         return False  # تصريح مسؤول أجنبي («رئيس الوزراء وزير الخارجية القطري: في لبنان… القصف مستمر») ليس الحدث نفسه (3801، فحص 4، تدقيق 04:11 07/11)
-    if T.STATEMENT_RX.search(first) and not re.search(r"(قصف|غارة|غارات|ضربة|ضربات|انفجار|اغتيال|هجوم صاروخي|إطلاق صواريخ|اطلاق صواريخ)\s", first):
+    if T.STATEMENT_RX.search(first) and not mil and not re.search(r"(قصف|غارة|غارات|ضربة|ضربات|انفجار|اغتيال|هجوم صاروخي|إطلاق صواريخ|اطلاق صواريخ)\s", first):
         return False  # تصريح سياسي عن الحرب («ترمب: الحرب رفعت البنزين») ليس حدثاً إقليمياً كبيراً — كما is_regional بالجولة الرئيسية (3101)
     return sum(1 for x in mine if x.get("ts", 0) >= time.time() - 3600 and x.get("reg")) < CFG.get("region_per_hour", 6)
 
 
+MIL_EVENT_RX = re.compile(r"(?:اعتراض|اعترضت|تعترض|إسقاط|اسقاط|أسقطت|اسقطت|تدمير|دمرت)\s+(?:وتدمير\s+)?(?:\S+\s+){0,2}?(?:صاروخ|صواريخ|مسيرة|مسيّرة|مسيرات|مسيّرات|طائرة مسيرة|طائرات مسيرة)"
+                          r"|(?:صاروخ|صواريخ)\s+(?:كروز|باليستي|بالستي|باليستية)|(?:هجوم|هجمات)\s+(?:بصواريخ|بالصواريخ|بمسيرات|بالمسيرات|بطائرات)")
 SPEAKER_RX = re.compile(r"^\W*(?:عاجل\W*)?[^:]{0,20}(?:رئيس|وزير|وزيرة|المتحدث|الناطق|متحدث|سفير|مندوب|الأمين العام|الامين العام|مستشار|أمير|امير|ملك|ولي العهد)[^:]{0,45}:")
 # حادث إقليمي محدود (شهيد واحد، استهداف دراجة نارية) ليس «حدثاً كبيراً» يستحق القناة العراقية (فحص 4، تدقيق 18:15 04/11: 3047 لبنان)
 MINOR_RX = re.compile(r"(?:مصابون|مصابين|جرحى)\s+(?:في|ب|جراء)\s*(?:غارة|قصف|استهداف)|(?:شهيد|قتيل|مصاب|جريح)\s+(?:و(?:مصاب|جريح|مصابان)|واحد)|(?:شهيد|قتيل)ان?\s+في\s+غارة|استهدفت?\s+(?:دراجة|سيارة|مركبة)|(?:إصابة|اصابة)\s+(?:شخص|مواطن)\s")
@@ -165,7 +168,7 @@ def gem_ok():
 
 
 DECISIONS = []  # سجل دائري لقرارات المسار السريع (لماذا رُفض/نُشر كل منشور) يُرفع fast_decisions.json للمدقق
-DEC_MAX = 400
+DEC_MAX = 3000  # ~6 ساعات: 400 قرار كانت تغطي 30 دقيقة فقط فلا يعرف المدقق سبب رفض خبر بفجوة الإيقاع (فحص 5، تدقيق 10:11 07/11)
 REASON = {"قديم": "fresh", "روتيني": "routine", "سقف": "cap", "مكرر": "dup", "نفس الجهة خلال ساعة": "same_actor",
           "وكالة: ليس عراقياً": "not_iraq", "ليس عراقياً": "not_iraq", "سقف النموذج بالساعة": "gem_cap"}
 
@@ -661,7 +664,9 @@ def main():
             gh_put("fast_status.json", {**stats, "confirm_log": _CF.LOG[-10:], "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")})
         if time.time() - LAST_DEC[0] >= 300 and DECISIONS:  # سجل القرارات كل ~5 دقائق
             LAST_DEC[0] = time.time()
-            gh_put("fast_decisions.json", {"at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "n": len(DECISIONS), "items": DECISIONS})
+            import threading as _th  # الرفع بالخلفية: لا يوقف حلقة الإرسال (السجل أكبر الآن)
+            _snap = {"at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "n": len(DECISIONS), "items": list(DECISIONS)}
+            _th.Thread(target=gh_put, args=("fast_decisions.json", _snap), daemon=True).start()
         STATE.parent.mkdir(exist_ok=True)
         STATE.write_text(json.dumps({"last": last}, ensure_ascii=False), encoding="utf-8")
         # تهدئة تلقائية إذا كثرت أخطاء الجلب (حماية من حدود الطلبات)

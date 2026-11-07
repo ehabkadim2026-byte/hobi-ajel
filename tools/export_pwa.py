@@ -198,9 +198,15 @@ LOCAL_ROLE_T = re.compile(r"^\W*(?:وزير|وزيرة|وزارة|رئيس ال�
 _IQW = {}
 
 
+_WASIT = norm_ar("واسط")
+_BWASITA = re.compile("(?<![\u0600-\u06FF])[وف]?" + "(?:" + "|".join(re.escape(norm_ar(x)) for x in ("بواسطة", "بواسطه", "بوساطة", "واسطة", "واسطه")) + ")(?![\u0600-\u06FF])")
+
+
 def _iq_in(w, t):
     """الكلمة العراقية كلمةً لا جزء كلمة (سوابق و/ف/ب/ل/ك + ال مسموحة): «بابل» داخل «بابلو بيكاسو» جعلت خبر فرنسا «عن العراق»
     (فحص 6، تدقيق 14:11 05/11)، و«رانية» داخل «الأوكرانية/الإيرانية»."""
+    if w == _WASIT:  # «بواسطة» تطابق «واسط» بسابقة ب ولاحقة ة: فيديو ترامب «بواسطة الذكاء الاصطناعي» صار «عن العراق» (فحص 6، تدقيق 10:11 07/11)
+        t = _BWASITA.sub(" ", t)
     rx = _IQW.get(w)
     if rx is None:
         rx = _IQW[w] = re.compile(r"(?:^|[^\w]|_)(?:[وفبلك]{1,2})?(?:ال)?" + re.escape(w) + r"(?:يين|يون|ين|ون|ات|يه|ية|يا|ي|ها|هم|ه|ة|ا)?(?![^\W_])")
@@ -632,6 +638,10 @@ def main(hours=24):
             n["analyst"] = bool(n.get("about_iraq") and _an(n.get("title") or ""))
         except Exception:  # noqa: BLE001
             n["analyst"] = False
+        if n.get("about_iraq") and n.get("edited_title"):  # العنوان المعروض بعد التحرير/اختيار أنظف صياغة قد يكون غير الذي فُحص (قطار الهند، لاجئ قامشلو في ألمانيا — فحص 6، تدقيق 10:11 07/11)
+            n["about_iraq"] = about_iraq_title(n.get("title") or "", True) or about_iraq_title(n.get("title_src") or n.get("title") or "", True)
+            if not n["about_iraq"]:
+                n["analyst"] = False
         n["province"] = P.province_of(n.get("title") or "") if n.get("about_iraq") else None  # «محافظتي» والخريطة: أول محافظة بالعنوان
     analysis.sort(key=lambda x: (x["last_time"] or ""), reverse=True)
     try:
