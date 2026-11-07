@@ -135,7 +135,15 @@ def collect_all(con, limit, priority_only, workers=10):
         ops_p.write_text(json.dumps(ops, ensure_ascii=False), encoding="utf-8")
         rows = [r for r in rows if r["id"] not in pr.get("_disabled", set())][:max(limit, 600)]
     else:
-        rows = [r for r in rows if due(r)][:limit]
+        # تناوب عادل قبل القص: كان القص بترتيب القاعدة فآخر ~100 مصدر بالسجل لم يُجرَّب ولا مرة (فحص المتوقفة 07/11).
+        # ما لم يُجرَّب منذ 30 د (أو أبداً) يتقدم، ثم الأولوية، ثم الأقدم محاولةً — فيبقى تلغرام الأولوية 1 بكل جولة تقريباً ولا يُحرم مصدر.
+        stale = (datetime.now(timezone.utc) - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        rows = [r for r in rows if due(r)]
+
+        def _att(r):
+            return max(r.get("last_success_utc") or "", r.get("last_error_utc") or "")
+        rows.sort(key=lambda r: (_att(r) >= stale, pr.get(r["id"], 2), _att(r)))
+        rows = rows[:limit]
     last = {}
     for r in con.execute("SELECT source_id, url FROM items WHERE platform='telegram'"):
         n = int(r["url"].rstrip("/").split("/")[-1])
