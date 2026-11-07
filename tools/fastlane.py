@@ -637,6 +637,11 @@ def main():
                             T.api(token, "pinChatMessage", chat_id=chat_id, message_id=(r.get("result") or {}).get("message_id"), disable_notification="true")
                         except Exception:  # noqa: BLE001
                             pass
+                    try:  # قنوات الأقسام (معطلة حتى تُضاف معرّفاتها بـconfig/topic_channels.json)
+                        from tools import topic_channels
+                        topic_channels.mirror(T.api, token, chat_id, (r.get("result") or {}).get("message_id"), head)
+                    except Exception:  # noqa: BLE001
+                        pass
                     FB.LAT.add("fast" if crit else "normal", time.time() - t_det)
                     FB.STATUS["fast_sent"] += int(bool(crit))
                     mine.append({"w": sorted(sig[0]), "d": sorted(sig[1]), "ts": time.time(), "title": first[:200], "id": f"fast:{ch}/{p['id']}",

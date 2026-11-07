@@ -26,7 +26,16 @@ def tw(d, t, f):
     return d.textlength(C._shape(t), font=f, **KW)
 
 
-def photo(jpg, w, h):
+def photo(jpg, w, h, title=None):
+    if jpg and C.looks_like_logo(jpg):
+        jpg = None
+    if not jpg and title is not None:  # بلا صورة: خريطة الحدث (المحافظة المذكورة مضاءة) — إيهاب 07/11: لا قالب فارغ
+        try:
+            from tools import map_backdrop
+            return map_backdrop.backdrop(title, w, h, box=(70, 110, w - 70, int(h * 0.55)),
+                                         font=F("Alexandria-Black.ttf", 50), draw_rtl=C._draw_rtl)
+        except Exception as e:  # noqa: BLE001
+            print("::warning title=map_backdrop::", type(e).__name__, str(e)[:100])
     if not jpg:  # بلا صورة: تدرّج الهوية مع شعار أكا خافت (أفضل من الكحلي المسطح) — آخر خيار بعد مصادر الخبر والأرشيف
         try:
             from tools import aka_card
@@ -57,7 +66,7 @@ def logo(im, x, y, h):
 
 def card_A(jpg, title, breaking=True, when_utc=None, kind=None):
     """شريط الأخبار التلفزيوني."""
-    im = photo(jpg, W, H)
+    im = photo(jpg, W, H, title=title)
     g = Image.new("L", (1, H))
     for y in range(H):
         g.putpixel((0, y), int(max(0, (y - H * 0.45) / (H * 0.55)) ** 1.6 * 235))
