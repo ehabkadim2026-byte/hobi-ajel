@@ -82,6 +82,7 @@ def formal_rules(t):
     t = EXCL.sub("", t)
     t = QDUP.sub("؟", t)
     t = re.sub(r"\s*:\s*", ": ", t, count=1) if re.match(r"^[^:]{3,40}:", t) else t  # «الجهة: الخبر»
+    t = re.sub(r"»(?=[\u0621-\u064A])", "» ", t)  # «بواسطة «التواثي»اعتداء…» علامة تنصيص ملتصقة بالكلمة (3774، فحص 4، تدقيق 04:11 07/11)
     t = re.sub(r"\s{2,}", " ", t).strip(" -–—|:،.…")
     from tools.proof import proof  # المدقق اللغوي السريع (همزات، تشكيل، بادئات القنوات، حروف مكررة)
     return proof(t)

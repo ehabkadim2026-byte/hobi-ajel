@@ -35,11 +35,14 @@ def regional_ok(ch, text, first, mine):
         return False
     if not (T.SEC_RX.search(first) or T.EVENT_RX.search(first)) or MINOR_RX.search(first) or T.MINOR_RX.search(first):
         return False
+    if SPEAKER_RX.search(first):
+        return False  # تصريح مسؤول أجنبي («رئيس الوزراء وزير الخارجية القطري: في لبنان… القصف مستمر») ليس الحدث نفسه (3801، فحص 4، تدقيق 04:11 07/11)
     if T.STATEMENT_RX.search(first) and not re.search(r"(قصف|غارة|غارات|ضربة|ضربات|انفجار|اغتيال|هجوم صاروخي|إطلاق صواريخ|اطلاق صواريخ)\s", first):
         return False  # تصريح سياسي عن الحرب («ترمب: الحرب رفعت البنزين») ليس حدثاً إقليمياً كبيراً — كما is_regional بالجولة الرئيسية (3101)
     return sum(1 for x in mine if x.get("ts", 0) >= time.time() - 3600 and x.get("reg")) < CFG.get("region_per_hour", 6)
 
 
+SPEAKER_RX = re.compile(r"^\W*(?:عاجل\W*)?[^:]{0,20}(?:رئيس|وزير|وزيرة|المتحدث|الناطق|متحدث|سفير|مندوب|الأمين العام|الامين العام|مستشار|أمير|امير|ملك|ولي العهد)[^:]{0,45}:")
 # حادث إقليمي محدود (شهيد واحد، استهداف دراجة نارية) ليس «حدثاً كبيراً» يستحق القناة العراقية (فحص 4، تدقيق 18:15 04/11: 3047 لبنان)
 MINOR_RX = re.compile(r"(?:مصابون|مصابين|جرحى)\s+(?:في|ب|جراء)\s*(?:غارة|قصف|استهداف)|(?:شهيد|قتيل|مصاب|جريح)\s+(?:و(?:مصاب|جريح|مصابان)|واحد)|(?:شهيد|قتيل)ان?\s+في\s+غارة|استهدفت?\s+(?:دراجة|سيارة|مركبة)|(?:إصابة|اصابة)\s+(?:شخص|مواطن)\s")
 FLAG = re.compile(r"^\W{0,6}(عاجل|عــاجل|عاااجل|⚡|🔴|🚨)")
@@ -565,7 +568,7 @@ def main():
                 # «عاجل» (شارة حمراء + وميض) فقط لما وسمته المصادر عاجلاً أو حدث أمني عراقي — لا لكل منشورات الجهات الرسمية
                 # وسم «عاجل» من المصدر وحده لا يكفي: بعض القنوات (ABC العربية) تسم كل منشور عاجلاً — يلزم حدث عاجل بالمضمون
                 # (أمني/انفجار/كارثة/تعطيل دوام/استقالة) لا موعد مباراة ولا سعر أمبير ولا حالة جوية (فحص 4، تدقيق 18:15 04/11: 3025، 3038، 3044، 3049، 3060)
-                loud = (pflag or bool(T.SEC_RX.search(first) and T.iraq_strict(first))) and not T.NOT_URGENT_RX.search(head) \
+                loud = not is_an and (pflag or bool(T.SEC_RX.search(first) and T.iraq_strict(first))) and not T.NOT_URGENT_RX.search(head) \
                     and bool(T.SEC_RX.search(head) or T.EVENT_RX.search(head) or T.URGENT_RX.search(head)) \
                     and not (T.STATEMENT_RX.search(head) and not (T.SEC_RX.search(head) or T.EVENT_RX.search(head))) and T.iraq_strict(head)  # سعر الدولار/السلف/التقديم بلا «عاجل» (تدقيق 2835)
                 src_name = re.sub(r" — .*$", "", cname) + (" (وثيقة رسمية)" if from_doc else "")
@@ -573,7 +576,7 @@ def main():
                 tags = T.province_tags(first)
                 tmark, tpin = T.topic_mark(head)  # إيهاب 06/11: «🎉 عطلة رسمية» (تُثبّت) و«💰 الرواتب»
                 credit = FB.SHOW_SOURCE or ch.lower() in {x.lower() for x in CFG.get("credit_sources", [])}  # صفحة شخصية: يُذكر المصدر (إيهاب 06/11)
-                cap = f"<b>{tmark or ('🔴 عاجل | ' if loud else '')}{H.escape(head)}</b>" + (f"\n\n📌 المصدر: {H.escape(src_name)}" if credit else "") + \
+                cap = f"<b>{tmark or ('📊 تحليل | ' if is_an else '🔴 عاجل | ' if loud else '')}{H.escape(head)}</b>" + (f"\n\n📌 المصدر: {H.escape(src_name)}" if credit else "") + \
                       (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{T.CHANNEL}"
                 kb = json.dumps({"inline_keyboard": [[{"text": "📖 التفاصيل", "url": p.get("url") or f"https://t.me/{ch}/{p['id']}"},
                                                       {"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fakamedia_iq"}]]})

@@ -141,11 +141,17 @@ SHOW_VERIFY = False  # إيهاب 06/11 مساءً: لا «مؤكد/غير مؤ�
 SHOW_SOURCE = False  # إيهاب 06/11: لا نذكر اسم المصدر في نص الخبر (سطر التحقق «أكدته» يبقى)
 
 
+def _an(head):
+    """رأي محلل/خبير: وسم «📊 تحليل» بالتعليق بدل «عاجل» (قرار إيهاب 05/11؛ الوسم كان مفقوداً — 3768، 3790، 3795، تدقيق 04:11 07/11)."""
+    from tools import tg_push as T
+    return T.analyst(head)
+
+
 def build_caption(head, loud, src, details=(), also=(), verify=None, keep=(), tags=(), channel="https://t.me/akamedia_iq", credit=False):
     """تعليق بقالب القناة: العنوان، التفاصيل، المصدر ومن نقله، سطر التحقق وسطور التأكيد السابقة، الوسوم، دعوة القناة. يقص حتى 1024."""
     details, also = list(details), list(also)
     while True:
-        cap = f"<b>{'🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>" + "".join("\n" + H.escape(d) for d in details) + \
+        cap = f"<b>{'📊 تحليل | ' if _an(head) else '🔴 عاجل | ' if loud else ''}{H.escape(head)}</b>" + "".join("\n" + H.escape(d) for d in details) + \
               ((f"\n\n📌 المصدر: {H.escape(src)}" + (f" — ونقلته أيضاً: {H.escape('، '.join(also))}" if also and SHOW_SOURCE else "")) if SHOW_SOURCE or credit else "\n") + \
               (f"\n{verify}" if verify and SHOW_VERIFY else "") + "".join(f"\n{k}" for k in keep if SHOW_VERIFY) + \
               (("\n" + " ".join(tags)) if tags else "") + f"\n\nزورونا على الرابط للأخبار العاجلة 👇\n{channel}"

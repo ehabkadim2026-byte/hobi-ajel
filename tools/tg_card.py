@@ -1279,6 +1279,9 @@ def card_news4(photo_jpg, title, breaking=True, when_utc=None, tag=None, source=
             from tools import card_lab, aka_card
             k = aka_card.kind_of(title, breaking)
             kind = tag if tag not in (None, "عاجل", "خبر") else (aka_card.KINDS[k][0] if k in aka_card.KINDS else None)
+            from tools.tg_push import analyst as _an
+            if tag in (None, "عاجل", "خبر") and _an(title):
+                kind, breaking = "تحليل", False  # رأي محلل: لسان «تحليل» لا «عاجل» — v7 فقدها (aka_card.card كانت تكشفها؛ 3768، 3790، 3795 — تدقيق 04:11 07/11)
             return card_lab.card_A(photo_jpg, title, breaking=breaking, when_utc=when_utc, kind=kind)
         except Exception as e:  # noqa: BLE001
             print("::warning title=card_v7::", type(e).__name__, str(e)[:120])
