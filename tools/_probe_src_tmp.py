@@ -26,7 +26,10 @@ with ThreadPoolExecutor(8) as ex:
             if x.lower()!=h.lower(): cnt[x.lower()]+=1; src.setdefault(x.lower(),set()).add("ch:"+h)
 extra=sys.argv[1:]
 for e in extra: src.setdefault(e.lower(),set()).add("manual")
-cands=[h for h in src if h not in have and (len(src[h])>=2 or any(x.startswith("site:") or x=="manual" for x in src[h])) and h not in ("s","share","joinchat","addstickers","iv","proxy","contact")]
+bad=("share","joinchat","addstickers","iv","proxy","contact","addlist","boost")
+cands=[h for h in sorted(src,key=lambda h:-len(src[h])) if h not in have and h not in bad][:160]
+print("sites with links:",sorted({v for x in src.values() for v in x if v.startswith("site:")}))
+print("ch citations:",cnt.most_common(40))
 def probe(h):
     try:
         pg=get("https://t.me/s/"+h)
