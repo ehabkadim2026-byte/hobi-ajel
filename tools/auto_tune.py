@@ -76,6 +76,9 @@ def merge(base, auto):
     if not isinstance(auto, dict):
         return out
     off = {c.lower() for c in out["channels"]}
+    # 07/11: وكالات/قنوات كبرى (Sky، CNN، BBC، الشرق الأوسط، K24…) نُزّلت لأن الجامع النصي لا يقرأها رغم أن المستمع يستقبلها —
+    # الطبقتان الدولية والوكالات وقائمة never_demote لا تُنزَّل أبداً
+    off |= {c.lower() for k in ("intl", "agency") for c in out.get(k, [])} | {c.lower() for c in base.get("never_demote") or []}
     known = {c.lower() for k in out for c in out[k]}
     dem = {u.lower() for u in auto.get("demote") or [] if isinstance(u, str)} - off
     for k in TIER_KEYS:

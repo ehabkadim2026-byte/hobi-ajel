@@ -213,7 +213,7 @@ def load_trust():
     return bool(isinstance(d, dict) and d.get("sources"))
 
 
-AUTO_BASE = {k: list(CFG.get(k) or []) for k in ("channels", "breaking", "hot", "agency", "intl", "loud")}
+AUTO_BASE = {k: list(CFG.get(k) or []) for k in ("channels", "breaking", "hot", "agency", "intl", "loud", "never_demote")}
 
 
 def load_auto():

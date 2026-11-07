@@ -81,10 +81,7 @@
   "mayoraltybaghdad",
   "prisoners_iq",
   "engdbs",
-  "mociraq2023",
-  "ejolh",
-  "thkreatjanubi1",
-  "MydoctorA96"
+  "mociraq2023"
  ],
  "breaking": [
   "naya_foriraq",
@@ -223,7 +220,14 @@
   "Shahadyasiri",
   "Al_thawaq",
   "khbarpls",
-  "S0nia10"
+  "S0nia10",
+  "ejolh",
+  "thkreatjanubi1",
+  "MydoctorA96",
+  "zizee9",
+  "njafeoon_F",
+  "laylalbanafsj",
+  "leonp900"
  ],
  "_note_breaking": "قنوات الأخبار الأسرع (حسب من نشر الخبر الكبير أولاً ببيانات الرصد): يُنشر منها فقط ما وُسم «عاجل» ويخص العراق صراحة.",
  "hot": [
@@ -505,5 +509,21 @@
   "S0nia10"
  ],
  "_note_credit": "إيهاب 06/11: أخبار الصفحات الشخصية (صحفيون/أفراد) يُكتب مصدرها؛ بقية المصادر بلا اسم.",
- "_note_added_20261106b": "من قائمة إيهاب 06/11: منصة خبر، Sonia (عاجل)، رصد فضائيات، ذكريات جنوبي، العائلة الطبية (قنوات)، وكالة خبر اليمنية (دولي). الرابعة وتحريات والعربية موجودة. Sputnik_Arabic لا صفحة عامة له. جمهورية حناطة لم تُضف: قناة ساخرة (تنشر أقوالاً مختلقة بصيغة خبر) — خطر نشر سخرية كخبر."
+ "_note_added_20261106b": "من قائمة إيهاب 06/11: منصة خبر، Sonia (عاجل)، رصد فضائيات، ذكريات جنوبي، العائلة الطبية (عاجل — ليست رسمية)، وكالة خبر اليمنية (دولي). الرابعة وتحريات والعربية موجودة. Sputnik_Arabic لا صفحة عامة له. جمهورية حناطة لم تُضف: قناة ساخرة (تنشر أقوالاً مختلقة بصيغة خبر) — خطر نشر سخرية كخبر.",
+ "never_demote": [
+  "SkyNewsArabia_Breaking",
+  "skynewsarabia",
+  "CNNArabic",
+  "bbcarabic",
+  "asharqalawsat",
+  "k24Arabic",
+  "independentarabia",
+  "ajmubasher",
+  "azzaman_iraq",
+  "basrahtv",
+  "Alanbar_Tv",
+  "najafmc",
+  "airport_iraq"
+ ],
+ "_note_added_20261107": "اكتشاف 07/11: الكوت نيوز/عين واسط/النجف نيوز (zizee9, njafeoon_F, laylalbanafsj, leonp900) — مستشهد بها من قناتين؛ طبقة عاجل غير رسمية. never_demote يحمي الوكالات الكبرى من التنزيل الآلي."
 }
