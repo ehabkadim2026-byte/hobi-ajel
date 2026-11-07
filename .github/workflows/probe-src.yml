@@ -1,0 +1,15 @@
+name: probe-src
+on:
+  workflow_dispatch:
+    inputs: {extra: {description: "معرّفات إضافية", required: false, default: ""}}
+permissions: {contents: write}
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          python3 tools/_probe_src_tmp.py ${{ inputs.extra }}
+          gh release upload probe probe_src.json --clobber
