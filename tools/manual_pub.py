@@ -28,6 +28,20 @@ SRC_LINE = re.compile(r"^(?:المصدر|مصدر)\s*[:：]\s*(.+)$")
 SHARE_KB = json.dumps({"inline_keyboard": [[{"text": "↗️ شارك القناة", "url": "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fakamedia_iq"}]]})
 
 
+TIP_ON = True          # «ابعث خبرك» (إيهاب 07/11)
+TIP_PER_HOUR = 5       # حد لكل متابع بالساعة (منع الإغراق)
+_TIPS = {}
+
+
+def _tip_ok(uid):
+    now = time.time()
+    lst = [t for t in _TIPS.get(uid, []) if now - t < 3600]
+    if len(lst) >= TIP_PER_HOUR:
+        return False
+    _TIPS[uid] = lst + [now]
+    return True
+
+
 def is_cmd(m):
     return bool(CMD.match((m.get("text") or m.get("caption") or "").strip()))
 
@@ -355,10 +369,23 @@ def _await_edit(uid, m):
     return max(cands, key=lambda d: d["ts"]) if cands else None
 
 
-def handle_message(token, chat_id, m, uid, editor_name, api):
-    """رسالة محرر غير أمر: تعديل مسودة، أو مدخل جديد لبوابة المراسل. يرجع True إذا عولجت."""
+def handle_message(token, chat_id, m, uid, editor_name, api, tip=None):
+    """رسالة محرر غير أمر: تعديل مسودة، أو مدخل جديد لبوابة المراسل. يرجع True إذا عولجت.
+    tip={"eds": [...], "who": "..."}: «ابعث خبرك» (إيهاب 07/11) — مدخل من متابع: المسودة تذهب لكل المحررين (أول ضغطة تنشر)، والمتابع يُشكر."""
     cid = m["chat"]["id"]
-    old = _await_edit(uid, m) if (m.get("text") or "").strip() and not (m.get("text") or "").startswith("/") else None
+
+    def draft(head, details=(), src=None, photo=None, **kw):
+        if not tip:
+            return new_draft(token, api, uid, cid, head, details, src, photo, **kw)
+        kw.pop("reply_to", None)
+        kw["note"] = f"📩 <b>خبر من متابع</b>: {H.escape(tip['who'])}\n" + (kw.get("note") or "")
+        g = "tip:" + secrets.token_hex(3)
+        for e in tip["eds"]:
+            new_draft(token, api, e, int(e), head, details, src, photo, group=g, **kw)
+        api(token, "sendMessage", chat_id=cid, reply_to_message_id=m["message_id"],
+            text="✅ وصل خبرك لفريق تحرير أكا ميديا، شكراً إلك. نراجعه ونتأكد منه قبل النشر.")
+        return g
+    old = None if tip else _await_edit(uid, m) if (m.get("text") or "").strip() and not (m.get("text") or "").startswith("/") else None
     if old:
         lines, src = _parse_lines(m["text"])
         if not lines or len(lines[0].split()) < 4:
@@ -412,8 +439,8 @@ def handle_message(token, chat_id, m, uid, editor_name, api):
                 if block:
                     api(token, "sendMessage", chat_id=cid, text=block)
                     return True
-                new_draft(token, api, uid, cid, head, lines[1:3], src, None, note="(بلا صياغة آلية: النموذج غير متاح الآن)", warn=warn, kind=kind,
-                          reply_to=m["message_id"])
+                draft(head, lines[1:3], src, None, note="(بلا صياغة آلية: النموذج غير متاح الآن)", warn=warn, kind=kind,
+                      reply_to=m["message_id"])
                 return True
         msg = {"cap": "⏳ وصلنا سقف الصياغة الآلية لهذه الساعة.", "gem": "تعذر الفهم الآلي الآن (النموذج غير متاح).",
                "unclear": "ما كدرت أطلع خبر واضح من المدخل."}[why]
@@ -439,8 +466,8 @@ def handle_message(token, chat_id, m, uid, editor_name, api):
         note += f"\n🏛 الجهة: {H.escape(str(out.get('issuer') or 'غير واضحة'))} — 📅 التاريخ: {H.escape(str(out.get('date') or 'غير واضح'))}" + \
                 f"\n🔎 تبدو وثيقة رسمية؟ {H.escape(str(out.get('official') or 'غير واضح'))} (تقدير آلي، تحقق منه)"
     details = out.get("details") if isinstance(out.get("details"), list) else []
-    new_draft(token, api, uid, cid, head, [str(x) for x in details], str(out.get("source") or "") or None, photo, note=note, warn=warn, kind=kind,
-              reply_to=m["message_id"])
+    draft(head, [str(x) for x in details], str(out.get("source") or "") or None, photo, note=note, warn=warn, kind=kind,
+          reply_to=m["message_id"])
     return True
 
 
@@ -575,6 +602,18 @@ def poll(token, chat_id, seen, api=None, bg=True, save=None):
         eds = eds if eds is not None else editors(token, chat_id)
         uid = str((m.get("from") or {}).get("id"))
         if uid not in eds:
+            if not cmd and TIP_ON and insider_kind(m) and eds and _tip_ok(uid):  # «ابعث خبرك»: متابع يرسل صورة/بصمة/نص خبر
+                seen.add(key)
+                changed = True
+                fr = m.get("from") or {}
+                who = (fr.get("first_name") or "متابع")[:30] + (f" (@{fr['username']})" if fr.get("username") else "")
+                STATUS["tips"] = STATUS.get("tips", 0) + 1
+                tip = {"eds": list(eds), "who": who}
+                if bg:
+                    _bg(handle_message, token, chat_id, m, uid, "متابع", api, tip)
+                else:
+                    handle_message(token, chat_id, m, uid, "متابع", api, tip)
+                continue
             STATUS["ignored"] += int(not cmd)
             if cmd:
                 seen.add(key)

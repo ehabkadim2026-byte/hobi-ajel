@@ -1408,6 +1408,10 @@ def send_pending(token, chat_id, only_breaking=False):
     try:
         done.update(evening_digest(token, chat_id, msgs) or {})
         try:
+            done.update(daily_poll(token, chat_id, msgs) or {})
+        except Exception as e:  # noqa: BLE001
+            DEBUG.append(f"poll:{type(e).__name__}")
+        try:
             done.update(before_out(token, chat_id, msgs) or {})
         except Exception as e:  # noqa: BLE001
             DEBUG.append(f"before_out:{type(e).__name__}")
@@ -1582,6 +1586,47 @@ def before_out(token, chat_id, msgs, http=None, now=None):
     if r.get("ok"):
         msgs["_before"] = today
         return {"before_out": len(rows)}
+    return None
+
+
+POLL_AVOID = re.compile(r"مقتل|قتل|وفاة|جثة|انفجار|اغتيال|طائف|مذهب|شيع|سن[ةي]|كرد|عرب|تركمان|انتخاب|مرشح|حزب|فصيل|الحشد|إرهاب|اعتقال|متهم")
+
+
+def daily_poll(token, chat_id, msgs, now=None):
+    """«استفتاء اليوم» (إيهاب 07/11): 8 مساءً بغداد سؤال محايد خدمي عن قضية اليوم الأبرز، مجهول الهوية.
+    لا موضوعات أمنية/طائفية/انتخابية، ولا يُقدَّم كـ«رأي عام عراقي» (تعليمات المشروع)."""
+    import json as _json
+    now = now or datetime.now(timezone.utc)
+    bgd = now + timedelta(hours=3)
+    today = bgd.strftime("%Y-%m-%d")
+    if bgd.hour != 20 or msgs.get("_poll") == today:
+        return None
+    news = load(PWA / "news.json", [])
+    since = (now - timedelta(hours=12)).strftime("%Y-%m-%dT%H:%M")
+    cand = sorted([n for n in news if (n.get("latest_utc") or "") >= since and iraq_strict(n.get("title") or "")
+                   and not POLL_AVOID.search(n.get("title") or "") and not low_value(n.get("title") or "")],
+                  key=lambda n: -(n.get("n_sources") or 1))[:5]
+    if not cand:
+        return None
+    try:
+        from tools.editorial import gemini
+        lst = "\n".join(f"- {headline(n)}" for n in cand)
+        out = gemini("اختر من هذه الأخبار العراقية اليوم خبراً خدمياً/اقتصادياً/رياضياً يهم الناس، واكتب سؤال استفتاء محايداً تماماً بالعربية الفصحى المبسطة "
+                     "(لا يميل لطرف، لا يسأل عن أشخاص أو أحزاب أو طوائف)، مع 3 أو 4 خيارات قصيرة متوازنة. أعد JSON فقط: "
+                     '{"q": "...", "options": ["...", "..."]}\n' + lst, max_tokens=300)
+        js = _json.loads(re.search(r"\{.*\}", out or "", re.S).group(0))
+        q, opts = str(js["q"]).strip()[:250], [str(o).strip()[:90] for o in js["options"] if str(o).strip()][:4]
+    except Exception as e:  # noqa: BLE001
+        DEBUG.append(f"poll:{type(e).__name__}")
+        return None
+    if len(opts) < 2 or POLL_AVOID.search(q):
+        return None
+    r = api(token, "sendPoll", chat_id=chat_id, question=f"📊 استفتاء أكا: {q}"[:300], options=_json.dumps(opts, ensure_ascii=False),
+            is_anonymous="true", disable_notification="true")
+    if r.get("ok"):
+        msgs["_poll"] = today
+        return {"poll": q[:60]}
+    DEBUG.append(f"poll_send:{str(r)[:60]}")
     return None
 
 

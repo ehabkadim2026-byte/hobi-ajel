@@ -122,12 +122,23 @@ def run_insider():
     assert "مدارس بغداد" in api.last("sendPhoto")["caption"] and "📌 المصدر" not in api.last("sendPhoto")["caption"]
     assert MP.DRAFTS[did2]["photo"] is None  # الصورة تُحذف من الذاكرة بعد النشر
 
-    # 5) غير المشرف: تجاهل تام (لا نموذج، لا رد، لا تعليم)
+    # 5) غير المشرف و«ابعث خبرك» مطفأ: تجاهل تام (لا نموذج، لا رد، لا تعليم)
+    MP.TIP_ON = False
     n_gem, n_calls = gem["n"], len(api.calls)
     api.ups = [_msg(3, uid=STRANGER, voice={"file_id": "v9", "duration": 5}), _msg(4, uid=STRANGER, text="صار انفجار قرب ساحة التحرير هسه")]
     poll()
     assert gem["n"] == n_gem and api.n("sendMessage", STRANGER) == 0 and f"{STRANGER}:3" not in seen
     assert len(api.calls) == n_calls + 1  # getUpdates فقط
+    # 5ب) «ابعث خبرك» مفعّل (إيهاب 07/11): خبر المتابع ← مسودة لكل محرر (مجموعة واحدة) + شكر للمتابع
+    MP.TIP_ON = True
+    MP._TIPS.clear()
+    api.ups = [_msg(5, uid=STRANGER, text="صار انفجار قرب ساحة التحرير هسه وسمعناه بكل المنطقة")]
+    poll()
+    assert api.n("sendMessage", STRANGER) == 1 and "وصل خبرك" in api.last("sendMessage")["text"], api.calls[-3:]
+    grp = [d for d in MP.DRAFTS.values() if (d.get("group") or "").startswith("tip:")]
+    assert grp and len({d["group"] for d in grp}) == 1
+    for k in [k for k, d in MP.DRAFTS.items() if (d.get("group") or "").startswith("tip:")]:
+        MP.DRAFTS.pop(k)
     # ضغطة زر من غير مشرف: لا نشر
     api.ups = [_cb(4, did2, "h", uid=STRANGER)]
     assert poll() == 0 and "للمحررين" in api.last("answerCallbackQuery")["text"]
