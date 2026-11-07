@@ -4,15 +4,15 @@ name: fastlane
 on:
   workflow_dispatch:
     inputs:
-      runner: {description: "aka = سيرفر مرام (جلسة 23 ساعة بلا انقطاع)، فارغ = GitHub", required: false, default: ""}
+      runner: {description: "فارغ = سيرفر مرام (جلسة 23 ساعة)، gh = مشغّلات GitHub (احتياط)", required: false, default: ""}
   schedule:
     - cron: "7 */6 * * *"
 permissions: {contents: write}
 concurrency: {group: fastlane, cancel-in-progress: false}
 jobs:
   fast:
-    runs-on: ${{ inputs.runner == 'aka' && fromJSON('["self-hosted","aka"]') || 'ubuntu-latest' }}
-    timeout-minutes: ${{ inputs.runner == 'aka' && 1440 || 350 }}
+    runs-on: ${{ inputs.runner == 'gh' && 'ubuntu-latest' || fromJSON('["self-hosted","aka"]') }}
+    timeout-minutes: ${{ inputs.runner == 'gh' && 350 || 1440 }}
     steps:
       - name: gh on self-hosted (لا يفعل شيئاً على مشغّلات GitHub)
         run: |
@@ -27,9 +27,9 @@ jobs:
       - uses: actions/cache/restore@v4
         with: {path: data/fastlane_state.json, key: "fastlane-${{ github.run_id }}", restore-keys: "fastlane-"}
       - run: python3 -m tools.fastlane
-        timeout-minutes: ${{ inputs.runner == 'aka' && 1420 || 340 }}
+        timeout-minutes: ${{ inputs.runner == 'gh' && 340 || 1420 }}
         env:
-          FAST_MINUTES: ${{ inputs.runner == 'aka' && '1380' || '330' }}
+          FAST_MINUTES: ${{ inputs.runner == 'gh' && '330' || '1380' }}
           GH_TOKEN: ${{ github.token }}
           MARSAD_TG_BOT_TOKEN: ${{ secrets.MARSAD_TG_BOT_TOKEN }}
           MARSAD_TG_CHAT_ID: ${{ secrets.MARSAD_TG_CHAT_ID }}
